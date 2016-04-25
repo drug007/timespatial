@@ -1,0 +1,19 @@
+name "timespatial"
+description "Timespatial data tool."
+copyright "Copyright © 2016, drug007"
+authors "drug007"
+dependency "gfm:sdl2" version="~>6.0.0"
+dependency "gfm:math" version="~>6.0.0"
+dependency "gfm:opengl" version="~>6.0.0"
+dependency "derelict-imgui" version="~>master" path="./DerelictImgui/"
+dflags "-profile=gc"
+
+configuration "lib" {
+	targetType "library"
+}
+
+configuration "demo" {
+    targetType  "executable"
+    targetName  "demoapp"
+    sourcePaths "demo"
+}
