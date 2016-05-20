@@ -6,7 +6,7 @@ dependency "gfm:sdl2" version="~>6.0.0"
 dependency "gfm:math" version="~>6.0.0"
 dependency "gfm:opengl" version="~>6.0.0"
 dependency "derelict-imgui" version="~>master" path="./DerelictImgui/"
-dflags "-profile=gc"
+license "BSL-1.0"
 
 configuration "lib" {
 	targetType "library"
