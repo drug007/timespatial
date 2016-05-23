@@ -111,8 +111,8 @@ class DataWidget2 : IDataWidget
 		_title  = title ~ "\0";
 		_timespatial = timespatial;
 
-		foreach(ref ds; _timespatial.dataset)
-			add(ds, ds.no.text ~ "\0");
+		foreach(ref r; _timespatial.record)
+			add(r.dataset, r.dataset.no.text ~ "\0");
 	}
 
 	override void draw()
