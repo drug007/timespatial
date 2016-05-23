@@ -36,8 +36,9 @@ class TestGui : BaseGui
         import vertex_provider: VertexProvider;
         
         VertexProvider[] vp;
-        foreach(dd; _data_provider.timeSpatial)
-            vp ~= dd.vertexProvider;
+        foreach(ts; _data_provider.timeSpatial)
+            foreach(r; ts.record)
+                vp ~= r.vertex_provider;
         setVertexProvider(vp);
     }
 
