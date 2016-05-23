@@ -13,15 +13,13 @@ struct InfoOfFrame
 class DataWidget : IDataWidget
 {
 	private InfoOfFrame[] _info;
-	bool show_properties;
-	bool show_log;
+	bool visible;
 	private string _title;
 
 	this(string title)
 	{
-		show_properties = true;
-		show_log        = true;
-		_title          = title ~ "\0";
+		visible = true;
+		_title  = title ~ "\0";
 	}
 
 	override void draw()
@@ -29,7 +27,7 @@ class DataWidget : IDataWidget
 		import derelict.imgui.imgui;
 
 		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
-		igBegin(_title.ptr, &show_log);
+		igBegin(_title.ptr, &visible);
 		version(widget_clipping_enabled)
 		{
 			import imgui_helpers: ImGuiListClipper;
@@ -101,15 +99,13 @@ struct InfoOfFrameV // V means visability
 class DataWidget2 : IDataWidget
 {
 	private InfoOfFrameV[] _info;
-	bool show_properties;
-	bool show_log;
+	bool visible;
 	private string _title;
 
 	this(string title)
 	{
-		show_properties = true;
-		show_log        = true;
-		_title          = title ~ "\0";
+		visible = true;
+		_title  = title ~ "\0";
 	}
 
 	override void draw()
@@ -117,7 +113,7 @@ class DataWidget2 : IDataWidget
 		import derelict.imgui.imgui;
 
 		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
-		igBegin(_title.ptr, &show_log);
+		igBegin(_title.ptr, &visible);
 		version(widget_clipping_enabled)
 		{
 			import imgui_helpers: ImGuiListClipper;

@@ -174,7 +174,7 @@ class TimeSpatial
 
     VertexProvider[] vertex_provider;
 
-    Data[] raw_data;
+    long[] times;
 
     this(Data[] data)
     {
@@ -182,8 +182,8 @@ class TimeSpatial
         import std.array: array;
 
         assert(data.length);
-    	this.raw_data = data;
-    	prepareData();
+    	prepareData(data);
+        times = data.map!("a.timestamp").array;
     }
 
     /// Освобождает ресурсы
@@ -255,7 +255,7 @@ class TimeSpatial
 
 private:
 
-    private void prepareData()
+    private void prepareData(Data[] data)
 	{
 		import std.algorithm: filter, sort, map;
 	    import std.array: array, back;
@@ -269,7 +269,7 @@ private:
 
 	    Path[uint][uint] idata;
 
-	    foreach(e; raw_data)
+	    foreach(e; data)
 	    {
 	        auto s = idata.get(e.id.source, null);
 
@@ -387,7 +387,13 @@ public:
         long[] times;
         foreach(dd; _timespatial)
         {
-            times ~= dd.raw_data.map!("a.timestamp").array;
+            times ~= dd.times;
+            version(none)
+            {
+                // here we can dispose allocated memory if `times` aren't
+                // needed more
+                dd.times = []; 
+            }
             updateBoundingBox(dd.box);
         }
         times = times.sort().uniq().array;
