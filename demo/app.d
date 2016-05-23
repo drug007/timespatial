@@ -68,7 +68,7 @@ int main(string[] args)
 
     auto data4D = new TimeSpatial(testData);
     auto data_widget1 = makeDataWidget1("Widget1");
-    auto data_widget2 = makeDataWidget2("Widget2", data4D);
+    auto data_widget2 = new DataWidget2("Widget2", data4D);
 
     IDataWidget[] data_widget;
     data_widget ~= data_widget1;
