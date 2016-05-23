@@ -227,15 +227,22 @@ class TimeSpatial
 	    {
 	        foreach(ref path; ds.path)
 	        {
-	        	slices  ~= VertexSlice(VertexSlice.Kind.LineStrip, vertices.length, 0);
-	            slices2 ~= VertexSlice(VertexSlice.Kind.Triangles, vertices.length*3, 0);
+	        	auto s  = VertexSlice(VertexSlice.Kind.LineStrip, vertices.length, 0);
+	            auto s2 = VertexSlice(VertexSlice.Kind.Triangles, vertices.length*3, 0);
 	            auto filtered_points = path.point.filter!(a => a.timestamp > min && a.timestamp <= max);
-	            auto color = sourceToColor(ds.no);
-	            vertices  ~= intermediateToTarget(color, filtered_points).array;
+                auto color = sourceToColor(ds.no);
+	            auto buf = intermediateToTarget(color, filtered_points).array;
+                if(!buf.length)
+                    continue;
+                
+                vertices ~= buf;
 	            color = vec4f(0.1, 0.99, 0.2, 1);
 	            vertices2 ~= intermediateToTriangle(color, filtered_points).array;
-	            slices.back.length = vertices.length - slices.back.start;
-	            slices2.back.length = 3*slices.back.length;
+	            s.length = vertices.length - s.start;
+	            s2.length = 3*s.length;
+	            
+                slices ~= s;
+                slices2 ~= s2;
 	        }
 	    }
 
