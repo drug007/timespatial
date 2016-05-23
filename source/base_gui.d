@@ -29,10 +29,11 @@ import gfm.sdl2: SDL2, SDL2Window, SDL_GL_SetAttribute, SharedLibVersion,
 
 import vertex_provider: Vertex, VertexSlice, VertexProvider;
 
-struct GLProvider
+class GLProvider
 {
     this(ref OpenGL gl, ref GLProgram program, Vertex[] vertices)
     {
+        assert(vertices.length);
         freeResources();
 
         _vbo = new GLBuffer(gl, GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices);
@@ -51,11 +52,6 @@ struct GLProvider
         }
     }
 
-    ~this()
-    {
-        freeResources();
-    }
-
     void drawVertices(VertexSlice[] slices)
     {
         _vao_points.bind();
@@ -71,11 +67,20 @@ struct GLProvider
     void freeResources()
     {
         if(_vbo)
+        {
             _vbo.destroy();
+            _vbo = null;
+        }
         if(_vert_spec)
+        {
             _vert_spec.destroy(); 
+            _vert_spec = null;
+        }
         if(_vao_points)
+        {
             _vao_points.destroy();
+            _vao_points = null;
+        }
     }
 
     uint[]        _indices;
@@ -153,10 +158,10 @@ class BaseGui
         program = new GLProgram(_gl, program_source);
     }
 
-    ~this()
+    public void close()
     {
         foreach(gp; _glprovider)
-            gp.destroy();
+            gp.freeResources();
         program.destroy();
 
         _gl.destroy();
@@ -173,15 +178,16 @@ class BaseGui
         if(_vertex_provider.length > _glprovider.length)
             _glprovider.length = _vertex_provider.length;
         
-        foreach(ref vp, ref gp; lockstep(vertex_provider, _glprovider))
+        foreach(ref vp, ref gp; lockstep(_vertex_provider, _glprovider))
         {
-            if(gp._vao_points is null)
-                gp = GLProvider(_gl, program, vp.vertices());
+            if(gp is null)
+                gp = new GLProvider(_gl, program, vp.vertices());
             else
                 gp._vbo.setData(vp.vertices());
 
             gp._indices = iota(0, vp.vertices.length).map!"cast(uint)a".array;
         }
+        _current_glprovider = _glprovider[0.._vertex_provider.length];
     }
 
     auto run()
@@ -223,7 +229,7 @@ class BaseGui
     {
         import std.range: lockstep;
 
-        foreach(vp, ref gp; lockstep(_vertex_provider, _glprovider))
+        foreach(vp, ref gp; lockstep(_vertex_provider, _current_glprovider))
         {
             assert(vp !is null);
             gp.drawVertices(vp.currSlices);
@@ -261,7 +267,7 @@ protected:
     SDL2 _sdl2;        
     GLProgram program;
     VertexProvider[] _vertex_provider;
-    GLProvider[]     _glprovider;
+    GLProvider[]     _glprovider, _current_glprovider;
 
     void updateMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
     {

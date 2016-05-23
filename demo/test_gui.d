@@ -41,13 +41,15 @@ class TestGui : BaseGui
         setVertexProvider(vp);
     }
 
-    void close()
+    override void close()
     {
         import imgui_helpers: shutdown;
 
         _data_provider.close();
 
         shutdown();
+
+        super.close();
     }
 
     /// Override rendering to embed imgui
