@@ -181,6 +181,7 @@ class TimeSpatial
         import std.algorithm: map, sort, uniq;
         import std.array: array;
 
+        assert(data.length);
     	this.raw_data = data;
     	prepareData();
     }
@@ -238,10 +239,11 @@ class TimeSpatial
 	        }
 	    }
 
-	    vertex_provider = [
-	    	new VertexProvider(vertices, slices, _box.min, _box.max),
-            new VertexProvider(vertices2, slices2, _box.min, _box.max),
-	    ];
+        vertex_provider = null;
+        if(vertices.length)
+            vertex_provider ~= new VertexProvider(vertices, slices, _box.min, _box.max);
+        if(vertices2.length)
+	       vertex_provider  ~= new VertexProvider(vertices2, slices2, _box.min, _box.max);
     }
 
 private:

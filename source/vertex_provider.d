@@ -106,6 +106,8 @@ class VertexProvider
 
 	this(Vertex[] vertices, VertexSlice[] slices, vec3f minimal, vec3f maximum)
 	{
+        assert(vertices.length);
+        assert(slices.length);
 		_vertices    = vertices;
 		_slices      = slices; 
 		_curr_slices = slices.dup;
