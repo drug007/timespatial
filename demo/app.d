@@ -42,18 +42,6 @@ auto makeDataWidget1(string title)
     return data_widget;
 }
 
-auto makeDataWidget2(string title, TimeSpatial data)
-{
-    import std.conv: text;
-
-    auto data_widget = new DataWidget2(title);
-
-    foreach(ref ds; data.dataset)
-        data_widget.add(ds, ds.no.text ~ "\0");
-
-    return data_widget;
-}
-
 int main(string[] args)
 {
     import derelict.imgui.imgui;
@@ -68,7 +56,7 @@ int main(string[] args)
 
     auto data4D = new TimeSpatial(testData);
     auto data_widget1 = makeDataWidget1("Widget1");
-    auto data_widget2 = makeDataWidget2("Widget2", data4D);
+    auto data_widget2 = new DataWidget2("Widget2", data4D);
 
     IDataWidget[] data_widget;
     data_widget ~= data_widget1;

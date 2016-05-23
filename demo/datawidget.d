@@ -1,6 +1,6 @@
 module datawidget;
 
-import data_provider: IDataWidget;
+import data_provider: IDataWidget, TimeSpatial;
 import infoof: IInfoOf, InfoOf;
 
 struct InfoOfFrame
@@ -101,11 +101,18 @@ class DataWidget2 : IDataWidget
 	private InfoOfFrameV[] _info;
 	bool visible;
 	private string _title;
+	private TimeSpatial _timespatial;
 
-	this(string title)
+	this(string title, TimeSpatial timespatial)
 	{
+		import std.conv: text;
+
 		visible = true;
 		_title  = title ~ "\0";
+		_timespatial = timespatial;
+
+		foreach(ref ds; _timespatial.dataset)
+			add(ds, ds.no.text ~ "\0");
 	}
 
 	override void draw()
@@ -134,12 +141,6 @@ class DataWidget2 : IDataWidget
 			igCheckbox("", &_info[i].self.visible);
 			igPopId();
 			igSameLine();
-
-			if(old != _info[i].self.visible)
-			{
-				import std.stdio;
-				writeln(123);
-			}
 
 			auto r = _info[i].self.self.draw();
 			if(r)
