@@ -28,7 +28,7 @@ struct FooBar
 Bar bar;
 Foo foo;
 FooBar foo_bar;
-    
+
 
 auto makeDataWidget1()
 {
@@ -38,7 +38,7 @@ auto makeDataWidget1()
 
     auto data_widget = new DataWidget("Widget1");
     data_widget.add!FooBar(foo_bar, "header");
-    
+
     return data_widget;
 }
 
@@ -50,7 +50,7 @@ auto makeDataWidget2(TimeSpatial data)
 
     foreach(ref ds; data.dataset)
         data_widget.add(ds, ds.no.text ~ "\0");
-    
+
     return data_widget;
 }
 
@@ -58,7 +58,10 @@ int main(string[] args)
 {
     import derelict.imgui.imgui;
 
-    DerelictImgui.load("DerelictImgui/cimgui/cimgui/cimgui.so");
+    version(Windows)
+        DerelictImgui.load("cimgui.dll");
+    else
+        DerelictImgui.load("DerelictImgui/cimgui/cimgui/cimgui.so");
 
     int width = 1800;
     int height = 768;
@@ -78,4 +81,4 @@ int main(string[] args)
     destroy(gui);
 
     return 0;
-} 
+}
