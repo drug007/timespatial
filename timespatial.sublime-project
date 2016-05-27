@@ -1,0 +1,33 @@
+{
+	"folders": [
+		{
+			"path": "source"
+		},
+		{
+			"path": "demo"
+		}
+	],
+	"build_systems": [
+		{
+			"name": "dub",
+			"shell_cmd": "dub build --config=demo --build=unittest --arch=x86_64",
+			"working_dir": "$project_path",
+			"file_regex": "^(.+)\\(([0-9]+),\\d+\\)(): (.+)$",
+
+			"variants": [
+				{
+					"name": "Release",
+					"shell_cmd": "dub build --config=demo --build=release --arch=x86_64"
+				},
+				{
+					"name": "Build lib",
+					"shell_cmd": "dub build --build=unittest --arch=x86_64"
+				},
+				{
+					"name": "Run",
+					"shell_cmd": "start cmd /c \"bin\\demoapp & pause\""
+				}
+			]
+		}
+	]
+}
