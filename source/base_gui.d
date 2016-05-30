@@ -10,22 +10,8 @@ import std.range: iota;
 import std.experimental.logger: Logger, NullLogger;
 
 import gfm.math: mat4f, vec3f, vec4f;
-import gfm.opengl: OpenGL, GLProgram, GLBuffer, VertexSpecification, GLVAO,
-    glClearColor, glEnable, glBlendFunc, glDisable, glViewport, glClear,
-    glDrawArrays, glDrawElements, glPointSize, 
-    GL_ARRAY_BUFFER, GL_BLEND, GL_TRIANGLES, GL_POINTS, GL_STATIC_DRAW, 
-    GL_COLOR_BUFFER_BIT, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DEPTH_TEST,
-    GL_DEPTH_BUFFER_BIT, GL_LINE_STRIP, GL_UNSIGNED_INT;
-import gfm.sdl2: SDL2, SDL2Window, SDL_GL_SetAttribute, SharedLibVersion,
-    SDL_Event,
-    SDL_WINDOWPOS_UNDEFINED, SDL_INIT_VIDEO, SDL_GL_CONTEXT_MAJOR_VERSION,
-    SDL_INIT_EVENTS, SDL_WINDOW_OPENGL, SDL_GL_CONTEXT_MINOR_VERSION,
-    SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE, SDLK_ESCAPE,
-    SDLK_LEFT, SDLK_RIGHT, SDLK_KP_PLUS, SDLK_KP_MINUS, SDLK_KP_MULTIPLY,
-    SDL_WINDOW_FULLSCREEN_DESKTOP, SDL_BUTTON_LMASK, SDL_BUTTON_RMASK, 
-    SDL_BUTTON_MMASK, SDL_QUIT, SDL_KEYDOWN, SDL_MOUSEBUTTONDOWN,
-    SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION, SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT,
-    SDL_BUTTON_MIDDLE, SDLK_SPACE, SDL_MOUSEWHEEL, SDL_KEYUP;
+import gfm.opengl;
+import gfm.sdl2;
 
 import vertex_provider: Vertex, VertexSlice, VertexProvider;
 
@@ -36,8 +22,10 @@ class GLProvider
         assert(vertices.length);
         freeResources();
 
-        _vbo = new GLBuffer(gl, GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices);
         _indices     = iota(0, vertices.length).map!"cast(uint)a".array;
+
+        _vbo = new GLBuffer(gl, GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices);
+        _ibo = new GLBuffer(gl, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, _indices);
 
         // Create an OpenGL vertex description from the Vertex structure.
         _vert_spec = new VertexSpecification!Vertex(program);
@@ -47,6 +35,7 @@ class GLProvider
         {
             _vao_points.bind();
             _vbo.bind();
+            _ibo.bind();
             _vert_spec.use();
             _vao_points.unbind();
         }
@@ -59,7 +48,8 @@ class GLProvider
         {
             auto length = cast(int) vslice.length;
             auto start  = cast(int) vslice.start;
-            glDrawElements(vslice.glKind, length, GL_UNSIGNED_INT, &_indices[start]);
+
+            glDrawElements(vslice.glKind, length, GL_UNSIGNED_INT, cast(void *)(start * 4));
         }
         _vao_points.unbind();
     }
@@ -73,7 +63,7 @@ class GLProvider
         }
         if(_vert_spec)
         {
-            _vert_spec.destroy(); 
+            _vert_spec.destroy();
             _vert_spec = null;
         }
         if(_vao_points)
@@ -84,7 +74,7 @@ class GLProvider
     }
 
     uint[]        _indices;
-    GLBuffer      _vbo;
+    GLBuffer      _vbo, _ibo;
     GLVAO         _vao_points;
     VertexSpecification!Vertex _vert_spec;
 }
@@ -121,7 +111,7 @@ class BaseGui
 
         window.setTitle(title);
         //window.setFullscreenSetting(SDL_WINDOW_FULLSCREEN_DESKTOP);
-        
+
         // reload OpenGL now that a context exists
         _gl.reload();
 
@@ -172,12 +162,12 @@ class BaseGui
     public auto setVertexProvider(VertexProvider[] vertex_provider)
     {
         import std.range: lockstep;
-        
+
         _vertex_provider = vertex_provider;
 
         if(_vertex_provider.length > _glprovider.length)
             _glprovider.length = _vertex_provider.length;
-        
+
         foreach(ref vp, ref gp; lockstep(_vertex_provider, _glprovider))
         {
             if(gp is null)
@@ -186,6 +176,7 @@ class BaseGui
                 gp._vbo.setData(vp.vertices());
 
             gp._indices = iota(0, vp.vertices.length).map!"cast(uint)a".array;
+            gp._ibo.setData(gp._indices);
         }
         _current_glprovider = _glprovider[0.._vertex_provider.length];
     }
@@ -195,13 +186,13 @@ class BaseGui
         import gfm.sdl2: SDL_GetTicks, SDL_QUIT, SDL_KEYDOWN, SDL_KEYDOWN, SDL_KEYUP, SDL_MOUSEBUTTONDOWN,
             SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION, SDL_MOUSEWHEEL, SDLK_ESCAPE;
 
-        while(!_sdl2.keyboard.isPressed(SDLK_ESCAPE)) 
+        while(!_sdl2.keyboard.isPressed(SDLK_ESCAPE))
         {
             SDL_Event event;
             while(_sdl2.pollEvent(&event))
             {
                 processImguiEvent(event);
-                
+
                 switch(event.type)
                 {
                     case SDL_QUIT:            return;
@@ -264,7 +255,7 @@ protected:
     NullLogger _null_logger;
 
     OpenGL _gl;
-    SDL2 _sdl2;        
+    SDL2 _sdl2;
     GLProgram program;
     VertexProvider[] _vertex_provider;
     GLProvider[]     _glprovider, _current_glprovider;
@@ -272,7 +263,7 @@ protected:
     void updateMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
     {
         auto aspect_ratio= width/cast(double)height;
-        
+
         if(width <= height)
             projection = mat4f.orthographic(-size, +size,-size/aspect_ratio, +size/aspect_ratio, -size, +size);
         else
@@ -281,7 +272,7 @@ protected:
         {
             auto camera_x = this.camera_x + (max_space.x + min_space.x)/2.;
             auto camera_y = this.camera_y + (max_space.y + min_space.y)/2.;
-        
+
             // Матрица камеры
             view = mat4f.lookAt(
                 vec3f(camera_x, camera_y, +size), // Камера находится в мировых координатах
@@ -318,19 +309,19 @@ protected:
 
     public void onKeyDown(ref const(SDL_Event) event)
     {
-        
+
     }
 
     public void onKeyUp(ref const(SDL_Event) event)
     {
-        
+
     }
 
     public void onMouseWheel(ref const(SDL_Event) event)
     {
-       
+
     }
-    
+
     public void onMouseMotion(ref const(SDL_Event) event)
     {
         mouse_x = event.motion.x;
