@@ -8,6 +8,8 @@ dependency "gfm:opengl" version="~>6.0.0"
 dependency "derelict-imgui" version="~>master" path="./DerelictImgui/"
 license "BSL-1.0"
 
+targetPath "bin"
+
 configuration "lib" {
 	targetType "library"
 }
