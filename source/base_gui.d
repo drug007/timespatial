@@ -61,6 +61,11 @@ class GLProvider
             _vbo.destroy();
             _vbo = null;
         }
+        if(_ibo)
+        {
+            _ibo.destroy();
+            _ibo = null;
+        }
         if(_vert_spec)
         {
             _vert_spec.destroy();
