@@ -30,6 +30,8 @@ class TestGui : BaseGui
 
     private auto updateGlData()
     {
+        import std.algorithm: filter;
+
         // TODO очень топорное решение - после обновления данных нужно пробежаться
         // по всем VertexProvider'ам, собрать в один массив и передать в BaseGui для
         // обновления/создания соответствующих GLProvider
@@ -37,8 +39,12 @@ class TestGui : BaseGui
         
         VertexProvider[] vp;
         foreach(ts; _data_provider.timeSpatial)
-            foreach(r; ts.record)
+        {
+            foreach(r; ts.record.filter!"a.visible")
+            {
                 vp ~= r.vertex_provider;
+            }
+        }
         setVertexProvider(vp);
     }
 
@@ -67,8 +73,8 @@ class TestGui : BaseGui
 
         imguiNewFrame(window);
 
+        bool invalidated = false;
         {
-            bool invalidated = false;
             igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
             igBegin("Settings", &show_settings);
             const old_value = max_point_counts;
@@ -105,11 +111,12 @@ class TestGui : BaseGui
                 igText(timeByIndex(max).timeToStringz);
             }
             igEnd();
-            if(invalidated)
-                updateGlData();
         }
 
-        _data_provider.drawGui();
+        /// if during imgui phase some data has been changed
+        /// update data
+        if(_data_provider.drawGui() || invalidated)
+            updateGlData();
 
         // 1. Show a simple window
         // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"

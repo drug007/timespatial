@@ -22,7 +22,7 @@ class DataWidget : IDataWidget
 		_title  = title ~ "\0";
 	}
 
-	override void draw()
+	override bool draw()
 	{
 		import derelict.imgui.imgui;
 
@@ -54,6 +54,8 @@ class DataWidget : IDataWidget
 		}
 		version(widget_clipping_enabled) clipper.End();
 		igEnd();
+
+		return false;
 	}
 
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))
@@ -115,9 +117,11 @@ class DataWidget2 : IDataWidget
 			add(r.dataset, r.dataset.no.text ~ "\0");
 	}
 
-	override void draw()
+	override bool draw()
 	{
 		import derelict.imgui.imgui;
+
+		auto invalidated = false;
 
 		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
 		igBegin(_title.ptr, &visible);
@@ -142,6 +146,19 @@ class DataWidget2 : IDataWidget
 			igPopId();
 			igSameLine();
 
+			if(old != _info[i].self.visible)
+			{
+				if(old)
+				{
+					_timespatial.record[i].visible = false;
+				}
+				else
+				{
+					_timespatial.record[i].visible = true;
+				}
+				invalidated = true;
+			}
+
 			auto r = _info[i].self.self.draw();
 			if(r)
 			{
@@ -153,6 +170,8 @@ class DataWidget2 : IDataWidget
 		}
 		version(widget_clipping_enabled) clipper.End();
 		igEnd();
+
+		return invalidated;
 	}
 
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))

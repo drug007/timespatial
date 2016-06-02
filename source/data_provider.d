@@ -175,6 +175,7 @@ class TimeSpatial
     static struct Record
     {
         Dataset dataset;
+        bool visible;
         VertexProvider[] vertex_provider;
     }
 
@@ -317,7 +318,7 @@ private:
             {
                 ds.path ~= path;
             }
-            record ~= Record(ds, null);
+            record ~= Record(ds, true, null);
         }
     }
 
@@ -366,7 +367,9 @@ private:
 
 interface IDataWidget
 {
-    abstract void draw();
+    /// return true if during gui phase data has been changed
+    /// and updating is requiring
+    abstract bool draw();
 }
 
 struct DataProvider
@@ -439,10 +442,13 @@ public:
         // do nothing
     }
 
-    auto drawGui()
+    bool drawGui()
     {
+        auto invalidated = false;
         foreach(ref dw; _data_widget)
-            dw.draw();
+            if(dw.draw())
+                invalidated = true;
+        return invalidated;
     }
 
 private:
