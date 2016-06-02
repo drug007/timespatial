@@ -1,5 +1,7 @@
 module data_provider;
 
+import std.algorithm: map;
+
 import gfm.math: vec3f, vec4f, box3f;
 
 import infoof: InfoOf, IInfoOf;
@@ -170,11 +172,16 @@ class TimeSpatial
 	// Ограничивающий параллелепипед
 	box3f _box;
 
-    Dataset[] dataset;
+    static struct Record
+    {
+        Dataset dataset;
+        bool visible;
+        VertexProvider[] vertex_provider;
+    }
 
-    VertexProvider[] vertex_provider;
+    Record[] record;
 
-    Data[] raw_data;
+    long[] times;
 
     this(Data[] data)
     {
@@ -182,19 +189,13 @@ class TimeSpatial
         import std.array: array;
 
         assert(data.length);
-    	this.raw_data = data;
-    	prepareData();
+    	prepareData(data);
+        times = data.map!("a.timestamp").array;
     }
 
     /// Освобождает ресурсы
     void close()
     {
-    }
-
-    /// Массив сгенерированных в промежуточном формате данных
-    VertexProvider[] vertexProvider()
-    {
-        return vertex_provider;
     }
 
     ref const(box3f) box() const return
@@ -207,8 +208,9 @@ class TimeSpatial
     /// числа элементов
     void setElementCount(long n)
     {
-    	foreach(ref vp; vertex_provider)
-    		vp.setElementCount(n);
+    	foreach(ref nested; record.map!"a.vertex_provider")
+    		foreach(ref vp; nested)
+                vp.setElementCount(n);
     }
 
     /// Устанавливает временное окно, доступными становятся только
@@ -223,14 +225,15 @@ class TimeSpatial
 	    Vertex[] vertices, vertices2;
 	    VertexSlice[] slices, slices2;
 
-	    foreach(ref ds; dataset)
+	    foreach(ref r; record)
 	    {
-	        foreach(ref path; ds.path)
+            r.vertex_provider = null;
+	        foreach(ref path; r.dataset.path)
 	        {
 	        	auto s  = VertexSlice(VertexSlice.Kind.LineStrip, vertices.length, 0);
 	            auto s2 = VertexSlice(VertexSlice.Kind.Triangles, vertices.length*3, 0);
 	            auto filtered_points = path.point.filter!(a => a.timestamp > min && a.timestamp <= max);
-                auto color = sourceToColor(ds.no);
+                auto color = sourceToColor(r.dataset.no);
 	            auto buf = intermediateToTarget(color, filtered_points).array;
                 if(!buf.length)
                     continue;
@@ -243,19 +246,18 @@ class TimeSpatial
 	            
                 slices ~= s;
                 slices2 ~= s2;
+
+                if(vertices.length)
+                    r.vertex_provider ~= new VertexProvider(vertices, slices, _box.min, _box.max);
+                if(vertices2.length)
+                   r.vertex_provider  ~= new VertexProvider(vertices2, slices2, _box.min, _box.max);
 	        }
 	    }
-
-        vertex_provider = null;
-        if(vertices.length)
-            vertex_provider ~= new VertexProvider(vertices, slices, _box.min, _box.max);
-        if(vertices2.length)
-	       vertex_provider  ~= new VertexProvider(vertices2, slices2, _box.min, _box.max);
     }
 
 private:
 
-    private void prepareData()
+    private void prepareData(Data[] data)
 	{
 		import std.algorithm: filter, sort, map;
 	    import std.array: array, back;
@@ -269,7 +271,7 @@ private:
 
 	    Path[uint][uint] idata;
 
-	    foreach(e; raw_data)
+	    foreach(e; data)
 	    {
 	        auto s = idata.get(e.id.source, null);
 
@@ -316,7 +318,7 @@ private:
             {
                 ds.path ~= path;
             }
-            dataset ~= ds;
+            record ~= Record(ds, true, null);
         }
     }
 
@@ -365,7 +367,9 @@ private:
 
 interface IDataWidget
 {
-    abstract void draw();
+    /// return true if during gui phase data has been changed
+    /// and updating is requiring
+    abstract bool draw();
 }
 
 struct DataProvider
@@ -387,7 +391,13 @@ public:
         long[] times;
         foreach(dd; _timespatial)
         {
-            times ~= dd.raw_data.map!("a.timestamp").array;
+            times ~= dd.times;
+            version(none)
+            {
+                // here we can dispose allocated memory if `times` aren't
+                // needed more
+                dd.times = []; 
+            }
             updateBoundingBox(dd.box);
         }
         times = times.sort().uniq().array;
@@ -432,10 +442,13 @@ public:
         // do nothing
     }
 
-    auto drawGui()
+    bool drawGui()
     {
+        auto invalidated = false;
         foreach(ref dw; _data_widget)
-            dw.draw();
+            if(dw.draw())
+                invalidated = true;
+        return invalidated;
     }
 
 private:

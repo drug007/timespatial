@@ -220,7 +220,7 @@ class BaseGui
     {
         import std.range: lockstep;
 
-        foreach(vp, ref gp; lockstep(_vertex_provider, _current_glprovider))
+        foreach(vp, gp; lockstep(_vertex_provider, _current_glprovider))
         {
             assert(vp !is null);
             gp.drawVertices(vp.currSlices);
