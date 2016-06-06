@@ -1,4 +1,4 @@
-module base_gui;
+module base_viewer;
 
 import std.algorithm: map;
 import std.array: array;
@@ -12,6 +12,8 @@ import std.experimental.logger: Logger, NullLogger;
 import gfm.math: mat4f, vec3f, vec4f;
 import gfm.opengl;
 import gfm.sdl2;
+
+import derelict.imgui.imgui: ImGuiIO;
 
 import vertex_provider: Vertex, VertexSlice, VertexProvider;
 
@@ -84,10 +86,12 @@ class GLProvider
     VertexSpecification!Vertex _vert_spec;
 }
 
-class BaseGui
+class BaseViewer
 {
     this(int width, int height, string title)
     {
+        import imgui_helpers: imguiInit;
+
         this.width = width;
         this.height = height;
 
@@ -151,10 +155,17 @@ class BaseGui
         };
 
         program = new GLProgram(_gl, program_source);
+
+        imguiInit(window);
+        _invalidated = false;
     }
 
     public void close()
     {
+        import imgui_helpers: shutdown;
+
+        shutdown();
+
         foreach(gp; _glprovider)
             gp.freeResources();
         program.destroy();
@@ -216,8 +227,25 @@ class BaseGui
                     default:
                 }
             }
+            
+            import imgui_helpers: imguiNewFrame, igGetIO, igRender;
+        
+            _imgui_io = igGetIO();
+            imguiNewFrame(window);
 
             draw();
+
+            if(_invalidated)
+                updateGlData();
+
+            program.uniform("mvp_matrix").set(mvp_matrix);
+            program.use();
+            drawObjects();
+            program.unuse();
+
+            igRender();
+
+            window.swapBuffers();
         }
     }
 
@@ -238,8 +266,6 @@ class BaseGui
         glViewport(0, 0, width, height);
         glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        window.swapBuffers();
     }
 
 protected:
@@ -264,6 +290,11 @@ protected:
     GLProgram program;
     VertexProvider[] _vertex_provider;
     GLProvider[]     _glprovider, _current_glprovider;
+
+    ImGuiIO* _imgui_io;
+    bool _invalidated;
+
+    abstract void updateGlData();
 
     void updateMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
     {

@@ -1,4 +1,4 @@
-import test_gui: TestGui;
+import test_viewer: TestViewer;
 
 import data_provider: DataProvider, TimeSpatial;
 import datawidget: IDataWidget, DataWidget, DataWidget2;
@@ -64,7 +64,7 @@ int main(string[] args)
 
     auto dprovider = DataProvider([data4D], data_widget);
 
-    auto gui = new TestGui(width, height, dprovider);
+    auto gui = new TestViewer(width, height, "Test gui", dprovider);
     auto max_value = dprovider.box.max;
     auto min_value = dprovider.box.min;
     gui.setMatrices(max_value, min_value);

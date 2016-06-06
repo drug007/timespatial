@@ -3,7 +3,7 @@ module datawidget;
 import data_provider: IDataWidget, TimeSpatial;
 import infoof: IInfoOf, InfoOf;
 
-struct InfoOfFrame
+struct InfoOfGroup
 {
 	IInfoOf self;
 	IInfoOf[] child;
@@ -12,7 +12,7 @@ struct InfoOfFrame
 /// Создает иерархию виджетов, позволяющих исследовать данные
 class DataWidget : IDataWidget
 {
-	private InfoOfFrame[] _info;
+	private InfoOfGroup[] _info;
 	bool visible;
 	private string _title;
 
@@ -58,9 +58,22 @@ class DataWidget : IDataWidget
 		return false;
 	}
 
+	auto addGroup(T)(ref const(T) value, string header)
+	{
+		_info ~= InfoOfGroup(
+			new InfoOf!(T)(value, header),
+			null,
+		);
+	}
+
+	auto addGroup(T)(const(T) value, string header)
+	{
+		add!T(value, header);
+	}
+
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))
 	{
-		_info ~= InfoOfFrame(
+		_info ~= InfoOfGroup(
 			new InfoOf!(T)(value, header),
 			null,
 		);
@@ -90,7 +103,7 @@ struct InfoOfV // V means visability
 	bool visible;
 }
 
-struct InfoOfFrameV // V means visability
+struct InfoOfGroupV // V means visability
 {
 	InfoOfV self;
 	InfoOfV[] child;
@@ -100,7 +113,7 @@ struct InfoOfFrameV // V means visability
 /// выключения видимости данных
 class DataWidget2 : IDataWidget
 {
-	private InfoOfFrameV[] _info;
+	private InfoOfGroupV[] _info;
 	bool visible;
 	private string _title;
 	private TimeSpatial _timespatial;
@@ -176,7 +189,7 @@ class DataWidget2 : IDataWidget
 
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))
 	{
-		_info ~= InfoOfFrameV(
+		_info ~= InfoOfGroupV(
 			InfoOfV(new InfoOf!(T)(value, header), true),
 			null,
 		);

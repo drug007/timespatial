@@ -1,79 +1,30 @@
-module test_gui;
+module test_viewer;
 
-import gfm.opengl: glClearColor, glViewport, glClear, GL_COLOR_BUFFER_BIT;
-import gfm.sdl2: SDL_Event;
-
-import base_gui: BaseGui;
+import data_viewer: DataViewer;
 import data_provider: DataProvider;
 import infoof: timeToStringz;
 
-class TestGui : BaseGui
+class TestViewer : DataViewer
 {
-    this(int width, int height, ref DataProvider dprovider)
+    this(int width, int height, string title, ref DataProvider dprovider)
     {
-        import std.array: back;
-        import imgui_helpers: imguiInit, igGetStyle;
+        import imgui_helpers: igGetStyle;
 
-        imguiInit(window);
         with(igGetStyle())
         {
             FrameRounding = 4.0;
             GrabRounding  = 4.0;
         }
 
-        _data_provider = dprovider;
-        super(width, height, "Title");
-        _data_provider.updateTimeWindow();
-        _data_provider.setElementCount(max_point_counts);
-        updateGlData();
-    }
-
-    private auto updateGlData()
-    {
-        import std.algorithm: filter;
-
-        // TODO очень топорное решение - после обновления данных нужно пробежаться
-        // по всем VertexProvider'ам, собрать в один массив и передать в BaseGui для
-        // обновления/создания соответствующих GLProvider
-        import vertex_provider: VertexProvider;
-        
-        VertexProvider[] vp;
-        foreach(ts; _data_provider.timeSpatial)
-        {
-            foreach(r; ts.record.filter!"a.visible")
-            {
-                vp ~= r.vertex_provider;
-            }
-        }
-        setVertexProvider(vp);
-    }
-
-    override void close()
-    {
-        import imgui_helpers: shutdown;
-
-        _data_provider.close();
-
-        shutdown();
-
-        super.close();
+        super(width, height, title, dprovider);
     }
 
     /// Override rendering to embed imgui
     override void draw()
     {
-        import derelict.imgui.imgui: igText, igButton, igBegin, igEnd, igRender, igGetIO,
-            igSliderFloat, igColorEdit3, igTreePop, igTreeNode, igSameLine, igSmallButton,
-            ImGuiIO, igSetNextWindowSize, igSetNextWindowPos, igTreeNodePtr, igShowTestWindow,
-            ImVec2, ImGuiSetCond_FirstUseEver, igSliderInt, igGetTextLineHeightWithSpacing,
-            igIndent, igUnindent;
-		import imgui_helpers: imguiNewFrame;
-        
-        ImGuiIO* io = igGetIO();
+        import gfm.opengl;  
+        import derelict.imgui.imgui;
 
-        imguiNewFrame(window);
-
-        bool invalidated = false;
         {
             igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
             igBegin("Settings", &show_settings);
@@ -82,7 +33,7 @@ class TestGui : BaseGui
             if(old_value != max_point_counts)
             {
                 _data_provider.setElementCount(max_point_counts);
-                invalidated = true;
+                invalidate();
             }
 
             with(_data_provider.timeslider)
@@ -96,7 +47,7 @@ class TestGui : BaseGui
                     setIndex(curr_idx);
                     _data_provider.updateTimeWindow();
                     _data_provider.setElementCount(max_point_counts);
-                    invalidated = true;
+                    invalidate();
                 }
                 igText("Min time");
                 igSameLine();
@@ -112,11 +63,6 @@ class TestGui : BaseGui
             }
             igEnd();
         }
-
-        /// if during imgui phase some data has been changed
-        /// update data
-        if(_data_provider.drawGui() || invalidated)
-            updateGlData();
 
         // 1. Show a simple window
         // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
@@ -160,22 +106,20 @@ class TestGui : BaseGui
             igShowTestWindow(&show_test_window);
         }
 
+        /// if during imgui phase some data has been changed
+        /// update data
+        if(_data_provider.drawGui())
+            invalidate();
+
         // Rendering
-        glViewport(0, 0, cast(int)io.DisplaySize.x, cast(int)io.DisplaySize.y);
+        // Only clearing specifig color here because imgui and timespatial objects rendering is built-in in BaseViewer
+        auto ds = _imgui_io.DisplaySize;
+        glViewport(0, 0, cast(int) ds.x, cast(int) ds.y);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        program.uniform("mvp_matrix").set(mvp_matrix);
-        program.use();
-        drawObjects();
-        program.unuse();
-
-        igRender();
-
-        window.swapBuffers();
     }
+
 private:
-    DataProvider _data_provider;
 
     bool show_test_window    = false;
     bool show_another_window = false;
