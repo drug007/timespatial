@@ -1,6 +1,6 @@
-module datawidget;
+module data_layout;
 
-import data_provider: IDataWidget, TimeSpatial;
+import data_provider: IDataLayout, TimeSpatial;
 import infoof: IInfoOf, InfoOf;
 
 struct InfoOfGroup
@@ -10,7 +10,7 @@ struct InfoOfGroup
 }
 
 /// Создает иерархию виджетов, позволяющих исследовать данные
-class DataWidget : IDataWidget
+class DataLayout : IDataLayout
 {
 	private InfoOfGroup[] _info;
 	bool visible;
@@ -111,7 +111,7 @@ struct InfoOfGroupV // V means visability
 
 /// Создает иерархию виджетов с возможностью включения/
 /// выключения видимости данных
-class DataWidget2 : IDataWidget
+class DataLayout2 : IDataLayout
 {
 	private InfoOfGroupV[] _info;
 	bool visible;

@@ -365,7 +365,7 @@ private:
     }
 }
 
-interface IDataWidget
+interface IDataLayout
 {
     /// return true if during gui phase data has been changed
     /// and updating is requiring
@@ -376,7 +376,7 @@ struct DataProvider
 {
 public:
 
-    this(TimeSpatial[] timespatial, IDataWidget[] data_widget)
+    this(TimeSpatial[] timespatial, IDataLayout[] data_widget)
     {
     	import std.algorithm: map, sort, uniq;
 	    import std.array: array, back;
@@ -403,7 +403,7 @@ public:
         times = times.sort().uniq().array;
         _timeslider = TimestampSlider(times);
 
-        _data_widget = data_widget;
+        _data_layout = data_widget;
     }
 
     auto box() const
@@ -445,7 +445,7 @@ public:
     bool drawGui()
     {
         auto invalidated = false;
-        foreach(ref dw; _data_widget)
+        foreach(ref dw; _data_layout)
             if(dw.draw())
                 invalidated = true;
         return invalidated;
@@ -476,7 +476,7 @@ private:
 
     TimestampSlider _timeslider;
     
-    IDataWidget[]  _data_widget;
+    IDataLayout[]  _data_layout;
 }
 
 auto sourceToColor(uint source)
