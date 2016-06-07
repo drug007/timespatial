@@ -13,12 +13,10 @@ struct DataItemGroup
 class DataLayout : IDataLayout
 {
 	private DataItemGroup[] _info;
-	bool visible;
 	private string _title;
 
 	this(string title)
 	{
-		visible = true;
 		_title  = title ~ "\0";
 	}
 
@@ -27,7 +25,7 @@ class DataLayout : IDataLayout
 		import derelict.imgui.imgui;
 
 		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
-		igBegin(_title.ptr, &visible);
+		igBegin(_title.ptr);
 		version(widget_clipping_enabled)
 		{
 			import imgui_helpers: ImGuiListClipper;
@@ -97,33 +95,20 @@ class DataLayout : IDataLayout
 	}
 }
 
-struct DataItemV // V means visability
+/// specialized data layout for Timespatial with ability
+/// to control of visibility
+class TimeSpatialLayout : DataLayout
 {
-	BaseDataItem self;
-	bool visible;
-}
-
-struct DataItemGroupV // V means visability
-{
-	DataItemV self;
-	DataItemV[] child;
-}
-
-/// Создает иерархию виджетов с возможностью включения/
-/// выключения видимости данных
-class DataLayout2 : IDataLayout
-{
-	private DataItemGroupV[] _info;
-	bool visible;
-	private string _title;
 	private TimeSpatial _timespatial;
+	public bool visible;
 
 	this(string title, TimeSpatial timespatial)
 	{
 		import std.conv: text;
 
+		super(title);
+
 		visible = true;
-		_title  = title ~ "\0";
 		_timespatial = timespatial;
 
 		foreach(ref r; _timespatial.record)
@@ -172,12 +157,12 @@ class DataLayout2 : IDataLayout
 				invalidated = true;
 			}
 
-			auto r = _info[i].self.self.draw();
+			auto r = _info[i].self.draw();
 			if(r)
 			{
 				igIndent();
 				foreach(ref c; _info[i].child)
-					c.self.draw();
+					c.draw();
 				igUnindent();
 			}
 		}
@@ -185,30 +170,5 @@ class DataLayout2 : IDataLayout
 		igEnd();
 
 		return invalidated;
-	}
-
-	auto add(T)(ref const(T) value, string header) if(is(T==struct))
-	{
-		_info ~= DataItemGroupV(
-			DataItemV(new DataItem!(T)(value, header), true),
-			null,
-		);
-	}
-
-	auto add(T)(const(T) value, string header) if(is(T==struct))
-	{
-		add!T(value, header);
-	}
-
-	auto add(T)(ref const(T) value) if(is(T==struct))
-	{
-	    import std.array: back;
-
-		_info.back.child ~= DataItemV(new DataItem!T(value), true);
-	}
-
-	auto add(T)(const(T) value) if(is(T==struct))
-	{
-		add!T(value);
 	}
 }

@@ -25,6 +25,13 @@ abstract class BaseDataItem
 {
 public:
     bool draw();
+
+    bool visible;
+
+    this()
+    {
+        visible = true;
+    }
 }
 
 class DataItem(TT) : BaseDataItem if(is(TT == struct))

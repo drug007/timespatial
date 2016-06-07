@@ -1,7 +1,7 @@
 import test_viewer: TestViewer;
 
 import data_provider: DataProvider, TimeSpatial;
-import data_layout: IDataLayout, DataLayout, DataLayout2;
+import data_layout: IDataLayout, DataLayout, TimeSpatialLayout;
 import test_data: testData;
 
 struct Bar
@@ -30,7 +30,7 @@ Foo foo;
 FooBar foo_bar;
 
 
-auto makeDataLayout1(string title)
+auto makeDataLayout(string title)
 {
     bar = Bar(100, "some text");
     foo = Foo([bar, bar, bar, bar], "other text", size_t.min);
@@ -55,14 +55,14 @@ int main(string[] args)
     int height = 768;
 
     auto data4D = new TimeSpatial(testData);
-    auto data_layout1 = makeDataLayout1("Widget1");
-    auto data_layout2 = new DataLayout2("Widget2", data4D);
+    auto data_layout = makeDataLayout("DataLayout");
+    auto timespatial_layout = new TimeSpatialLayout("TimeSpatial", data4D);
 
-    IDataLayout[] data_layout;
-    data_layout ~= data_layout1;
-    data_layout ~= data_layout2;
+    IDataLayout[] layout;
+    layout ~= data_layout;
+    layout ~= timespatial_layout;
 
-    auto dprovider = DataProvider([data4D], data_layout);
+    auto dprovider = DataProvider([data4D], layout);
 
     auto gui = new TestViewer(width, height, "Test gui", dprovider);
     auto max_value = dprovider.box.max;
