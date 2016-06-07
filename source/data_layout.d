@@ -1,18 +1,18 @@
 module data_layout;
 
 import data_provider: IDataLayout, TimeSpatial;
-import infoof: IInfoOf, InfoOf;
+import data_item: DataItem, IDataItem;
 
-struct InfoOfGroup
+struct DataItemGroup
 {
-	IInfoOf self;
-	IInfoOf[] child;
+	IDataItem self;
+	IDataItem[] child;
 }
 
 /// Создает иерархию виджетов, позволяющих исследовать данные
 class DataLayout : IDataLayout
 {
-	private InfoOfGroup[] _info;
+	private DataItemGroup[] _info;
 	bool visible;
 	private string _title;
 
@@ -60,8 +60,8 @@ class DataLayout : IDataLayout
 
 	auto addGroup(T)(ref const(T) value, string header)
 	{
-		_info ~= InfoOfGroup(
-			new InfoOf!(T)(value, header),
+		_info ~= DataItemGroup(
+			new DataItem!(T)(value, header),
 			null,
 		);
 	}
@@ -73,8 +73,8 @@ class DataLayout : IDataLayout
 
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))
 	{
-		_info ~= InfoOfGroup(
-			new InfoOf!(T)(value, header),
+		_info ~= DataItemGroup(
+			new DataItem!(T)(value, header),
 			null,
 		);
 	}
@@ -88,7 +88,7 @@ class DataLayout : IDataLayout
 	{
 	    import std.array: back;
 
-		_info.back.child ~= new InfoOf!T(value);
+		_info.back.child ~= new DataItem!T(value);
 	}
 
 	auto add(T)(const(T) value) if(is(T==struct))
@@ -97,23 +97,23 @@ class DataLayout : IDataLayout
 	}
 }
 
-struct InfoOfV // V means visability
+struct DataItemV // V means visability
 {
-	IInfoOf self;
+	IDataItem self;
 	bool visible;
 }
 
-struct InfoOfGroupV // V means visability
+struct DataItemGroupV // V means visability
 {
-	InfoOfV self;
-	InfoOfV[] child;
+	DataItemV self;
+	DataItemV[] child;
 }
 
 /// Создает иерархию виджетов с возможностью включения/
 /// выключения видимости данных
 class DataLayout2 : IDataLayout
 {
-	private InfoOfGroupV[] _info;
+	private DataItemGroupV[] _info;
 	bool visible;
 	private string _title;
 	private TimeSpatial _timespatial;
@@ -189,8 +189,8 @@ class DataLayout2 : IDataLayout
 
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))
 	{
-		_info ~= InfoOfGroupV(
-			InfoOfV(new InfoOf!(T)(value, header), true),
+		_info ~= DataItemGroupV(
+			DataItemV(new DataItem!(T)(value, header), true),
 			null,
 		);
 	}
@@ -204,7 +204,7 @@ class DataLayout2 : IDataLayout
 	{
 	    import std.array: back;
 
-		_info.back.child ~= InfoOfV(new InfoOf!T(value), true);
+		_info.back.child ~= DataItemV(new DataItem!T(value), true);
 	}
 
 	auto add(T)(const(T) value) if(is(T==struct))
