@@ -4,7 +4,7 @@ import std.algorithm: map;
 
 import gfm.math: vec3f, vec4f, box3f;
 
-import data_item: DataItem, IDataItem;
+import data_item: DataItem;
 import vertex_provider: VertexProvider;
 
 struct TimestampSlider

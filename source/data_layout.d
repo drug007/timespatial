@@ -1,12 +1,12 @@
 module data_layout;
 
 import data_provider: IDataLayout, TimeSpatial;
-import data_item: DataItem, IDataItem;
+import data_item: DataItem, BaseDataItem;
 
 struct DataItemGroup
 {
-	IDataItem self;
-	IDataItem[] child;
+	BaseDataItem self;
+	BaseDataItem[] child;
 }
 
 /// Создает иерархию виджетов, позволяющих исследовать данные
@@ -99,7 +99,7 @@ class DataLayout : IDataLayout
 
 struct DataItemV // V means visability
 {
-	IDataItem self;
+	BaseDataItem self;
 	bool visible;
 }
 

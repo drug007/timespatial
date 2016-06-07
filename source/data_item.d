@@ -21,13 +21,13 @@ auto timeToString(long timestamp)
     return timestamp.SysTime.toUTC.toISOExtString[$-9..$];
 }
 
-interface IDataItem
+abstract class BaseDataItem
 {
 public:
     bool draw();
 }
 
-class DataItem(TT) : IDataItem if(is(TT == struct))
+class DataItem(TT) : BaseDataItem if(is(TT == struct))
 {
     @disable
     this();
@@ -43,7 +43,7 @@ class DataItem(TT) : IDataItem if(is(TT == struct))
         this.header = header;
     }
 
-    bool draw()
+    override bool draw()
     {
         if(header.length == 0)
             header = T.stringof;
