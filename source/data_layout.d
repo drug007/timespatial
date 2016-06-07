@@ -14,10 +14,12 @@ class DataLayout : IDataLayout
 {
 	private DataItemGroup[] _info;
 	private string _title;
+	private bool _uncollapsed;
 
 	this(string title)
 	{
 		_title  = title ~ "\0";
+		_uncollapsed = true;
 	}
 
 	override bool draw()
@@ -25,7 +27,7 @@ class DataLayout : IDataLayout
 		import derelict.imgui.imgui;
 
 		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
-		igBegin(_title.ptr);
+		igBegin(_title.ptr, &_uncollapsed);
 		version(widget_clipping_enabled)
 		{
 			import imgui_helpers: ImGuiListClipper;
