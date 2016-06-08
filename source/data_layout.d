@@ -1,25 +1,25 @@
-module datawidget;
+module data_layout;
 
-import data_provider: IDataWidget, TimeSpatial;
-import infoof: IInfoOf, InfoOf;
+import data_provider: IDataLayout, TimeSpatial;
+import data_item: DataItem, BaseDataItem;
 
-struct InfoOfGroup
+struct DataItemGroup
 {
-	IInfoOf self;
-	IInfoOf[] child;
+	BaseDataItem self;
+	BaseDataItem[] child;
 }
 
 /// Создает иерархию виджетов, позволяющих исследовать данные
-class DataWidget : IDataWidget
+class DataLayout : IDataLayout
 {
-	private InfoOfGroup[] _info;
-	bool visible;
+	private DataItemGroup[] _info;
 	private string _title;
+	private bool _uncollapsed;
 
 	this(string title)
 	{
-		visible = true;
 		_title  = title ~ "\0";
+		_uncollapsed = true;
 	}
 
 	override bool draw()
@@ -27,7 +27,7 @@ class DataWidget : IDataWidget
 		import derelict.imgui.imgui;
 
 		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
-		igBegin(_title.ptr, &visible);
+		igBegin(_title.ptr, &_uncollapsed);
 		version(widget_clipping_enabled)
 		{
 			import imgui_helpers: ImGuiListClipper;
@@ -60,8 +60,8 @@ class DataWidget : IDataWidget
 
 	auto addGroup(T)(ref const(T) value, string header)
 	{
-		_info ~= InfoOfGroup(
-			new InfoOf!(T)(value, header),
+		_info ~= DataItemGroup(
+			new DataItem!(T)(value, header),
 			null,
 		);
 	}
@@ -73,8 +73,8 @@ class DataWidget : IDataWidget
 
 	auto add(T)(ref const(T) value, string header) if(is(T==struct))
 	{
-		_info ~= InfoOfGroup(
-			new InfoOf!(T)(value, header),
+		_info ~= DataItemGroup(
+			new DataItem!(T)(value, header),
 			null,
 		);
 	}
@@ -88,7 +88,7 @@ class DataWidget : IDataWidget
 	{
 	    import std.array: back;
 
-		_info.back.child ~= new InfoOf!T(value);
+		_info.back.child ~= new DataItem!T(value);
 	}
 
 	auto add(T)(const(T) value) if(is(T==struct))
@@ -97,33 +97,20 @@ class DataWidget : IDataWidget
 	}
 }
 
-struct InfoOfV // V means visability
+/// specialized data layout for Timespatial with ability
+/// to control of visibility
+class TimeSpatialLayout : DataLayout
 {
-	IInfoOf self;
-	bool visible;
-}
-
-struct InfoOfGroupV // V means visability
-{
-	InfoOfV self;
-	InfoOfV[] child;
-}
-
-/// Создает иерархию виджетов с возможностью включения/
-/// выключения видимости данных
-class DataWidget2 : IDataWidget
-{
-	private InfoOfGroupV[] _info;
-	bool visible;
-	private string _title;
 	private TimeSpatial _timespatial;
+	public bool visible;
 
 	this(string title, TimeSpatial timespatial)
 	{
 		import std.conv: text;
 
+		super(title);
+
 		visible = true;
-		_title  = title ~ "\0";
 		_timespatial = timespatial;
 
 		foreach(ref r; _timespatial.record)
@@ -172,12 +159,12 @@ class DataWidget2 : IDataWidget
 				invalidated = true;
 			}
 
-			auto r = _info[i].self.self.draw();
+			auto r = _info[i].self.draw();
 			if(r)
 			{
 				igIndent();
 				foreach(ref c; _info[i].child)
-					c.self.draw();
+					c.draw();
 				igUnindent();
 			}
 		}
@@ -185,30 +172,5 @@ class DataWidget2 : IDataWidget
 		igEnd();
 
 		return invalidated;
-	}
-
-	auto add(T)(ref const(T) value, string header) if(is(T==struct))
-	{
-		_info ~= InfoOfGroupV(
-			InfoOfV(new InfoOf!(T)(value, header), true),
-			null,
-		);
-	}
-
-	auto add(T)(const(T) value, string header) if(is(T==struct))
-	{
-		add!T(value, header);
-	}
-
-	auto add(T)(ref const(T) value) if(is(T==struct))
-	{
-	    import std.array: back;
-
-		_info.back.child ~= InfoOfV(new InfoOf!T(value), true);
-	}
-
-	auto add(T)(const(T) value) if(is(T==struct))
-	{
-		add!T(value);
 	}
 }

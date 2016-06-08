@@ -2,7 +2,7 @@ module data_viewer;
 
 import base_viewer: BaseViewer;
 import data_provider: DataProvider;
-import infoof: timeToStringz;
+import data_item: timeToStringz;
 
 class DataViewer : BaseViewer
 {

@@ -1,4 +1,4 @@
-module infoof;
+module data_item;
 
 import std.conv: text;
 import std.string: toStringz;
@@ -21,13 +21,20 @@ auto timeToString(long timestamp)
     return timestamp.SysTime.toUTC.toISOExtString[$-9..$];
 }
 
-interface IInfoOf
+abstract class BaseDataItem
 {
 public:
     bool draw();
+
+    bool visible;
+
+    this()
+    {
+        visible = true;
+    }
 }
 
-class InfoOf(TT) : IInfoOf if(is(TT == struct))
+class DataItem(TT) : BaseDataItem if(is(TT == struct))
 {
     @disable
     this();
@@ -43,7 +50,7 @@ class InfoOf(TT) : IInfoOf if(is(TT == struct))
         this.header = header;
     }
 
-    bool draw()
+    override bool draw()
     {
         if(header.length == 0)
             header = T.stringof;
@@ -65,7 +72,7 @@ class InfoOf(TT) : IInfoOf if(is(TT == struct))
                     static if(is(Type == struct))
                     {
                         mixin("
-                            auto local_info = scoped!(InfoOf!Type)(ptr." ~ E ~ ");
+                            auto local_info = scoped!(DataItem!Type)(ptr." ~ E ~ ");
                             local_info.draw();
                         ");
                     }
@@ -100,7 +107,7 @@ class InfoOf(TT) : IInfoOf if(is(TT == struct))
                                         import std.format: sformat;
                                         char[1024] header;
                                         sformat(header, \"%s[%d]\\0\", ElType.stringof, i);
-                                        auto local_info = scoped!(InfoOf!ElType)(e, cast(string) header[]);
+                                        auto local_info = scoped!(DataItem!ElType)(e, cast(string) header[]);
                                         local_info.draw();
                                     }
                                     else
