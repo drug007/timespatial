@@ -67,7 +67,19 @@ int main(string[] args)
     auto gui = new TestViewer(width, height, "Test gui", dprovider);
     auto max_value = dprovider.box.max;
     auto min_value = dprovider.box.min;
-    gui.setMatrices(max_value, min_value);
+    {
+        // camera initialization
+        import gfm.math: vec3f;
+        vec3f pos;
+        
+        pos.x = (max_value.x - min_value.x)/2.;
+        pos.y = (max_value.y - min_value.y)/2.;
+        gui.setCameraPosition(pos);
+
+        import std.algorithm: max;
+        auto size = max(pos.x, pos.y);
+        gui.setCameraSize(size);
+    }
     gui.run();
     gui.close();
     destroy(gui);

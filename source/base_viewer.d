@@ -216,13 +216,17 @@ class BaseViewer
                     break;
                     case SDL_KEYUP:           onKeyUp(event);
                     break;
-                    case SDL_MOUSEBUTTONDOWN: onMouseDown(event);
+                    case SDL_MOUSEBUTTONDOWN: processMouseDown(event);
+                                              onMouseDown(event);
                     break;
-                    case SDL_MOUSEBUTTONUP:   onMouseUp(event);
+                    case SDL_MOUSEBUTTONUP:   processMouseUp(event);
+                                              onMouseUp(event);
                     break;
-                    case SDL_MOUSEMOTION:     onMouseMotion(event);
+                    case SDL_MOUSEMOTION:     processMouseMotion(event);
+                                              onMouseMotion(event);
                     break;
-                    case SDL_MOUSEWHEEL:      onMouseWheel(event);
+                    case SDL_MOUSEWHEEL:      processMouseWheel(event);
+                                              onMouseWheel(event);
                     break;
                     default:
                 }
@@ -278,7 +282,7 @@ protected:
 
     // Определяет нужно выделять экстраполированные донесения
     bool highlight_predicted;
-    float camera_x = 0, camera_y = 0;
+    vec3f _camera_pos;
 
     float size;
     mat4f projection = void, view = void, mvp_matrix = void, model = mat4f.identity;
@@ -293,10 +297,11 @@ protected:
 
     ImGuiIO* _imgui_io;
     bool _invalidated;
+    bool _camera_moving;
 
     abstract void updateGlData();
 
-    void updateMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
+    protected void updateMatrices()
     {
         auto aspect_ratio= width/cast(double)height;
 
@@ -305,35 +310,114 @@ protected:
         else
             projection = mat4f.orthographic(-size*aspect_ratio,+size*aspect_ratio,-size, +size, -size, +size);
 
-        {
-            auto camera_x = this.camera_x + (max_space.x + min_space.x)/2.;
-            auto camera_y = this.camera_y + (max_space.y + min_space.y)/2.;
-
-            // Матрица камеры
-            view = mat4f.lookAt(
-                vec3f(camera_x, camera_y, +size), // Камера находится в мировых координатах
-                vec3f(camera_x, camera_y, -size), // И направлена в начало координат
-                vec3f(0, 1, 0)  // "Голова" находится сверху
-            );
-        }
+        // Матрица камеры
+        view = mat4f.lookAt(
+            vec3f(_camera_pos.x, _camera_pos.y, +size), // Камера находится в мировых координатах
+            vec3f(_camera_pos.x, _camera_pos.y, -size), // И направлена в начало координат
+            vec3f(0, 1, 0)  // "Голова" находится сверху
+        );
 
         // Итоговая матрица ModelViewProjection, которая является результатом перемножения наших трех матриц
         mvp_matrix = projection * view * model;
     }
 
-    public void setMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
+    public void setCameraSize(double size)
     {
-        {
-            const xw = (max_space.x - min_space.x);
-            const yw = (max_space.y - min_space.y);
+        this.size = size;
 
-            size = (xw > yw) ? xw/2 : yw/2;
+        updateMatrices();
+    }
+
+    public void setCameraPosition(ref const(vec3f) position)
+    {
+        _camera_pos = position;
+
+        updateMatrices();
+    }
+
+    public void processMouseWheel(ref const(SDL_Event) event)
+    {
+        if(event.wheel.y > 0)
+        {
+            size *= 1.1;
+            updateMatrices();
+        }
+        else if(event.wheel.y < 0)
+        {
+            size *= 0.9;
+            updateMatrices();
+        }
+    }
+
+    public void processMouseUp(ref const(SDL_Event) event)
+    {
+        switch(event.button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                leftButton = 0;
+            break;
+            case SDL_BUTTON_RIGHT:
+                rightButton = 0;
+                _camera_moving = false;
+            break;
+            case SDL_BUTTON_MIDDLE:
+                middleButton = 0;
+            break;
+            default:
+        }
+    }
+
+    public void processMouseDown(ref const(SDL_Event) event)
+    {
+        switch(event.button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                leftButton = 1;
+            break;
+            case SDL_BUTTON_RIGHT:
+                rightButton = 1;
+                _camera_moving = true;
+            break;
+            case SDL_BUTTON_MIDDLE:
+                middleButton = 1;
+            break;
+            default:
+        }
+    }
+
+    public void processMouseMotion(ref const(SDL_Event) event)
+    {
+        auto new_mouse_x = event.motion.x;
+        auto new_mouse_y = height - event.motion.y;
+        
+        if(_camera_moving)
+        {
+            double factor_x = void, factor_y = void;
+            const aspect_ratio = width/cast(double)height;
+            if(width > height) 
+            {
+                factor_x = 2 * size / cast(double) width * aspect_ratio;
+                factor_y = 2 * size / cast(double) height;
+            }
+            else
+            {
+                factor_x = 2 * size / cast(double) width;
+                factor_y = 2 * size / cast(double) height * aspect_ratio;
+            }
+            auto new_pos = vec3f(
+                _camera_pos.x + (mouse_x - new_mouse_x)*factor_x, 
+                _camera_pos.y + (mouse_y - new_mouse_y)*factor_y,
+                0,
+            );
+            setCameraPosition(new_pos);
         }
 
-        camera_x = 0;
-        camera_y = 0;
+        mouse_x = new_mouse_x;
+        mouse_y = new_mouse_y;
 
-        updateMatrices(max_space, min_space);
+        leftButton   = (event.motion.state & SDL_BUTTON_LMASK);
+        rightButton  = (event.motion.state & SDL_BUTTON_RMASK);
+        middleButton = (event.motion.state & SDL_BUTTON_MMASK);
     }
 
     public void processImguiEvent(ref const(SDL_Event) event)
@@ -360,45 +444,16 @@ protected:
 
     public void onMouseMotion(ref const(SDL_Event) event)
     {
-        mouse_x = event.motion.x;
-        mouse_y = height - event.motion.y;
 
-        leftButton   = (event.motion.state & SDL_BUTTON_LMASK);
-        rightButton  = (event.motion.state & SDL_BUTTON_RMASK);
-        middleButton = (event.motion.state & SDL_BUTTON_MMASK);
     }
 
     public void onMouseUp(ref const(SDL_Event) event)
     {
-        switch(event.button.button)
-        {
-            case SDL_BUTTON_LEFT:
-                leftButton = 0;
-            break;
-            case SDL_BUTTON_RIGHT:
-                rightButton = 0;
-            break;
-            case SDL_BUTTON_MIDDLE:
-                middleButton = 0;
-            break;
-            default:
-        }
+
     }
 
     public void onMouseDown(ref const(SDL_Event) event)
     {
-        switch(event.button.button)
-        {
-            case SDL_BUTTON_LEFT:
-                leftButton = 1;
-            break;
-            case SDL_BUTTON_RIGHT:
-                rightButton = 1;
-            break;
-            case SDL_BUTTON_MIDDLE:
-                middleButton = 1;
-            break;
-            default:
-        }
+
     }
 }
