@@ -222,7 +222,8 @@ class BaseViewer
                     break;
                     case SDL_MOUSEMOTION:     onMouseMotion(event);
                     break;
-                    case SDL_MOUSEWHEEL:      onMouseWheel(event);
+                    case SDL_MOUSEWHEEL:      processMouseWheel(event);
+                                              onMouseWheel(event);
                     break;
                     default:
                 }
@@ -329,6 +330,20 @@ protected:
         camera_y = position.y;
 
         updateMatrices();
+    }
+
+    public void processMouseWheel(ref const(SDL_Event) event)
+    {
+        if(event.wheel.y > 0)
+        {
+            size *= 1.1;
+            updateMatrices();
+        }
+        else if(event.wheel.y < 0)
+        {
+            size *= 0.9;
+            updateMatrices();
+        }
     }
 
     public void processImguiEvent(ref const(SDL_Event) event)
