@@ -279,7 +279,7 @@ protected:
 
     // Определяет нужно выделять экстраполированные донесения
     bool highlight_predicted;
-    float camera_x = 0, camera_y = 0;
+    vec3f _camera_pos;
 
     float size;
     mat4f projection = void, view = void, mvp_matrix = void, model = mat4f.identity;
@@ -308,8 +308,8 @@ protected:
 
         // Матрица камеры
         view = mat4f.lookAt(
-            vec3f(camera_x, camera_y, +size), // Камера находится в мировых координатах
-            vec3f(camera_x, camera_y, -size), // И направлена в начало координат
+            vec3f(_camera_pos.x, _camera_pos.y, +size), // Камера находится в мировых координатах
+            vec3f(_camera_pos.x, _camera_pos.y, -size), // И направлена в начало координат
             vec3f(0, 1, 0)  // "Голова" находится сверху
         );
 
@@ -326,8 +326,7 @@ protected:
 
     public void setCameraPosition(ref const(vec3f) position)
     {
-        camera_x = position.x;
-        camera_y = position.y;
+        _camera_pos = position;
 
         updateMatrices();
     }
