@@ -216,11 +216,14 @@ class BaseViewer
                     break;
                     case SDL_KEYUP:           onKeyUp(event);
                     break;
-                    case SDL_MOUSEBUTTONDOWN: onMouseDown(event);
+                    case SDL_MOUSEBUTTONDOWN: processMouseDown(event);
+                                              onMouseDown(event);
                     break;
-                    case SDL_MOUSEBUTTONUP:   onMouseUp(event);
+                    case SDL_MOUSEBUTTONUP:   processMouseUp(event);
+                                              onMouseUp(event);
                     break;
-                    case SDL_MOUSEMOTION:     onMouseMotion(event);
+                    case SDL_MOUSEMOTION:     processMouseMotion(event);
+                                              onMouseMotion(event);
                     break;
                     case SDL_MOUSEWHEEL:      processMouseWheel(event);
                                               onMouseWheel(event);
@@ -294,6 +297,7 @@ protected:
 
     ImGuiIO* _imgui_io;
     bool _invalidated;
+    bool _camera_moving;
 
     abstract void updateGlData();
 
@@ -345,6 +349,77 @@ protected:
         }
     }
 
+    public void processMouseUp(ref const(SDL_Event) event)
+    {
+        switch(event.button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                leftButton = 0;
+            break;
+            case SDL_BUTTON_RIGHT:
+                rightButton = 0;
+                _camera_moving = false;
+            break;
+            case SDL_BUTTON_MIDDLE:
+                middleButton = 0;
+            break;
+            default:
+        }
+    }
+
+    public void processMouseDown(ref const(SDL_Event) event)
+    {
+        switch(event.button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                leftButton = 1;
+            break;
+            case SDL_BUTTON_RIGHT:
+                rightButton = 1;
+                _camera_moving = true;
+            break;
+            case SDL_BUTTON_MIDDLE:
+                middleButton = 1;
+            break;
+            default:
+        }
+    }
+
+    public void processMouseMotion(ref const(SDL_Event) event)
+    {
+        auto new_mouse_x = event.motion.x;
+        auto new_mouse_y = height - event.motion.y;
+        
+        if(_camera_moving)
+        {
+            double factor_x = void, factor_y = void;
+            const aspect_ratio = width/cast(double)height;
+            if(width > height) 
+            {
+                factor_x = 2 * size / cast(double) width * aspect_ratio;
+                factor_y = 2 * size / cast(double) height;
+            }
+            else
+            {
+                factor_x = 2 * size / cast(double) width;
+                factor_y = 2 * size / cast(double) height * aspect_ratio;
+            }
+            auto new_pos = vec3f(
+                _camera_pos.x + (mouse_x - new_mouse_x)*factor_x, 
+                _camera_pos.y + (mouse_y - new_mouse_y)*factor_y,
+                0,
+            );
+            setCameraPosition(new_pos);
+        }
+
+        mouse_x = new_mouse_x;
+        mouse_y = new_mouse_y;
+
+        leftButton   = (event.motion.state & SDL_BUTTON_LMASK);
+        rightButton  = (event.motion.state & SDL_BUTTON_RMASK);
+        middleButton = (event.motion.state & SDL_BUTTON_MMASK);
+    }
+
     public void processImguiEvent(ref const(SDL_Event) event)
     {
         import imgui_helpers: processEvent;
@@ -369,45 +444,16 @@ protected:
 
     public void onMouseMotion(ref const(SDL_Event) event)
     {
-        mouse_x = event.motion.x;
-        mouse_y = height - event.motion.y;
 
-        leftButton   = (event.motion.state & SDL_BUTTON_LMASK);
-        rightButton  = (event.motion.state & SDL_BUTTON_RMASK);
-        middleButton = (event.motion.state & SDL_BUTTON_MMASK);
     }
 
     public void onMouseUp(ref const(SDL_Event) event)
     {
-        switch(event.button.button)
-        {
-            case SDL_BUTTON_LEFT:
-                leftButton = 0;
-            break;
-            case SDL_BUTTON_RIGHT:
-                rightButton = 0;
-            break;
-            case SDL_BUTTON_MIDDLE:
-                middleButton = 0;
-            break;
-            default:
-        }
+
     }
 
     public void onMouseDown(ref const(SDL_Event) event)
     {
-        switch(event.button.button)
-        {
-            case SDL_BUTTON_LEFT:
-                leftButton = 1;
-            break;
-            case SDL_BUTTON_RIGHT:
-                rightButton = 1;
-            break;
-            case SDL_BUTTON_MIDDLE:
-                middleButton = 1;
-            break;
-            default:
-        }
+
     }
 }
