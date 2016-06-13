@@ -296,7 +296,7 @@ protected:
 
     abstract void updateGlData();
 
-    void updateMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
+    protected void updateMatrices()
     {
         auto aspect_ratio= width/cast(double)height;
 
@@ -305,35 +305,30 @@ protected:
         else
             projection = mat4f.orthographic(-size*aspect_ratio,+size*aspect_ratio,-size, +size, -size, +size);
 
-        {
-            auto camera_x = this.camera_x + (max_space.x + min_space.x)/2.;
-            auto camera_y = this.camera_y + (max_space.y + min_space.y)/2.;
-
-            // Матрица камеры
-            view = mat4f.lookAt(
-                vec3f(camera_x, camera_y, +size), // Камера находится в мировых координатах
-                vec3f(camera_x, camera_y, -size), // И направлена в начало координат
-                vec3f(0, 1, 0)  // "Голова" находится сверху
-            );
-        }
+        // Матрица камеры
+        view = mat4f.lookAt(
+            vec3f(camera_x, camera_y, +size), // Камера находится в мировых координатах
+            vec3f(camera_x, camera_y, -size), // И направлена в начало координат
+            vec3f(0, 1, 0)  // "Голова" находится сверху
+        );
 
         // Итоговая матрица ModelViewProjection, которая является результатом перемножения наших трех матриц
         mvp_matrix = projection * view * model;
     }
 
-    public void setMatrices(ref const(vec3f) max_space, ref const(vec3f) min_space)
+    public void setCameraSize(double size)
     {
-        {
-            const xw = (max_space.x - min_space.x);
-            const yw = (max_space.y - min_space.y);
+        this.size = size;
 
-            size = (xw > yw) ? xw/2 : yw/2;
-        }
+        updateMatrices();
+    }
 
-        camera_x = 0;
-        camera_y = 0;
+    public void setCameraPosition(ref const(vec3f) position)
+    {
+        camera_x = position.x;
+        camera_y = position.y;
 
-        updateMatrices(max_space, min_space);
+        updateMatrices();
     }
 
     public void processImguiEvent(ref const(SDL_Event) event)
