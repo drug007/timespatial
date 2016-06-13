@@ -25,7 +25,7 @@
 				},
 				{
 					"name": "Run",
-					"shell_cmd": "start cmd /c \"bin\\demoapp & pause\""
+					"shell_cmd": "dub run --config=demo --build=release"
 				}
 			]
 		}
