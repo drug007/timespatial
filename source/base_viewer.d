@@ -24,7 +24,7 @@ class GLProvider
         assert(vertices.length);
         freeResources();
 
-        _indices     = iota(0, vertices.length).map!"cast(uint)a".array;
+        _indices = iota(0, vertices.length).map!"cast(uint)a".array;
 
         _vbo = new GLBuffer(gl, GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices);
         _ibo = new GLBuffer(gl, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, _indices);
@@ -143,13 +143,48 @@ class BaseViewer
             }
             #endif
 
+            #if GEOMETRY_SHADER
+
+            layout (points) in;
+            layout (triangle_strip, max_vertices = 3) out;
+            out vec4 color2;
+
+            void main ()
+            {
+                const float PI = 3.1415926535897932384626433832795;
+
+                float h = 0.03;
+                float c = h*tan(PI/6);
+                float b = h*sin(PI/3) - c;
+
+                color2 = vec4(1.0);
+
+                for ( int i = 0; i < gl_in.length (); i++ )
+                {
+                    gl_Position = gl_in [i].gl_Position;
+                    gl_Position.y = gl_Position.y + c;
+                    EmitVertex ();
+                    gl_Position = gl_in [i].gl_Position;
+                    gl_Position.x += -h/2;
+                    gl_Position.y += -b;
+                    EmitVertex ();
+                    gl_Position = gl_in [i].gl_Position;
+                    gl_Position.x += +h/2;
+                    gl_Position.y += -b;
+                    EmitVertex ();
+                    
+                    EndPrimitive ();
+                }
+            }
+            #endif
+
             #if FRAGMENT_SHADER
-            in vec4 fragment;
+            in vec4 color2;
             out vec4 color_out;
 
             void main()
             {
-                color_out = fragment;
+                color_out = color2;
             }
             #endif
         };

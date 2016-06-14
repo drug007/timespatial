@@ -230,7 +230,7 @@ class TimeSpatial
             r.vertex_provider = null;
 	        foreach(ref path; r.dataset.path)
 	        {
-	        	auto s  = VertexSlice(VertexSlice.Kind.LineStrip, vertices.length, 0);
+	        	auto s  = VertexSlice(VertexSlice.Kind.Points, vertices.length, 0);
 	            auto s2 = VertexSlice(VertexSlice.Kind.Triangles, vertices.length*3, 0);
 	            auto filtered_points = path.point.filter!(a => a.timestamp > min && a.timestamp <= max);
                 auto color = sourceToColor(r.dataset.no);
@@ -249,8 +249,8 @@ class TimeSpatial
 
                 if(vertices.length)
                     r.vertex_provider ~= new VertexProvider(vertices, slices, _box.min, _box.max);
-                if(vertices2.length)
-                   r.vertex_provider  ~= new VertexProvider(vertices2, slices2, _box.min, _box.max);
+                //if(vertices2.length)
+                //   r.vertex_provider  ~= new VertexProvider(vertices2, slices2, _box.min, _box.max);
 	        }
 	    }
     }
