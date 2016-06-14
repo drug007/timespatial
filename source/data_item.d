@@ -16,9 +16,16 @@ auto timeToStringz(long timestamp)
 
 auto timeToString(long timestamp)
 {
+    import std.algorithm: min;
     import std.datetime: SysTime;
+    import std.string: lastIndexOf;
 
-    return timestamp.SysTime.toUTC.toISOExtString[$-9..$];
+    auto str = timestamp.SysTime.toUTC.toISOExtString;
+    auto idx = lastIndexOf(str, ".");
+    if(idx == -1)
+        return str;
+    
+    return str[0..min(idx + 3, $)];
 }
 
 abstract class BaseDataItem
