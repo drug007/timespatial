@@ -72,12 +72,12 @@ int main(string[] args)
         import gfm.math: vec3f;
         vec3f pos;
         
-        pos.x = (max_value.x - min_value.x)/2.;
-        pos.y = (max_value.y - min_value.y)/2.;
+        pos.x = (max_value.x + min_value.x)/2.;
+        pos.y = (max_value.y + min_value.y)/2.;
         gui.setCameraPosition(pos);
 
         import std.algorithm: max;
-        auto size = max(pos.x, pos.y);
+        auto size = max(max_value.x - min_value.x, max_value.y - min_value.y)/2.;
         gui.setCameraSize(size);
     }
     gui.run();
