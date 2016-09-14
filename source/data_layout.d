@@ -71,7 +71,7 @@ class DataLayout : IDataLayout
 		add!T(value, header);
 	}
 
-	auto add(T)(ref const(T) value, string header) if(is(T==struct))
+	auto add(T)(ref const(T) value, string header)
 	{
 		_info ~= DataItemGroup(
 			new DataItem!(T)(value, header),
@@ -79,19 +79,19 @@ class DataLayout : IDataLayout
 		);
 	}
 
-	auto add(T)(const(T) value, string header) if(is(T==struct))
+	auto add(T)(const(T) value, string header)
 	{
 		add!T(value, header);
 	}
 
-	auto add(T)(ref const(T) value) if(is(T==struct))
+	auto add(T)(ref const(T) value)
 	{
 	    import std.array: back;
 
 		_info.back.child ~= new DataItem!T(value);
 	}
 
-	auto add(T)(const(T) value) if(is(T==struct))
+	auto add(T)(const(T) value)
 	{
 		add!T(value);
 	}

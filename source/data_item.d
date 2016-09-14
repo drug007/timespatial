@@ -41,7 +41,7 @@ public:
     }
 }
 
-class DataItem(TT) : BaseDataItem if(is(TT == struct))
+class DataItem(TT) : BaseDataItem
 {
     @disable
     this();
@@ -51,20 +51,55 @@ class DataItem(TT) : BaseDataItem if(is(TT == struct))
     const(T)* ptr;
     string header;
 
+    mixin(build!T);
+
     this(ref const(T) value, string header = "")
     {
         ptr = &value;
         this.header = header;
+
+        mixin(init!T);
     }
 
     override bool draw()
     {
         if(header.length == 0)
             header = T.stringof;
-        auto r = igTreeNodePtr(cast(void*)ptr, header.ptr, null);
-        if(r)
+
+        static if(isBasicType!T)
         {
-            foreach(count, E; FieldNameTuple!T)
+            auto txt = (*ptr).text;
+            igText(txt.toStringz);
+            return false;
+        }
+        else static if(isSomeString!T)
+        {
+            igText((*ptr).toStringz);
+            return false;
+        }
+        else static if(is(T == struct) || isArray!T)
+        {
+            auto r = igTreeNodePtr(cast(void*)ptr, header.ptr, null);
+            if(r)
+            {
+                foreach(ref e; di)
+                {
+                    e.draw();
+                }
+
+                igTreePop();
+            }
+            return r;
+        }
+        else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
+    }
+
+    static auto build(T)()
+    {
+        static if(is(T == struct))
+        {
+            size_t counter;
+            foreach(E; FieldNameTuple!T)
             {
                 mixin("enum s = __traits(getProtection, T." ~ E ~ ");");
                 static if(s == "public")
@@ -76,76 +111,78 @@ class DataItem(TT) : BaseDataItem if(is(TT == struct))
                             alias Type = Unqual!(typeof(T." ~ E ~ "));
                     ");
                     
-                    static if(is(Type == struct))
+                    static if(is(Type == struct)  ||
+                                isBasicType!Type  || 
+                                isSomeString!Type ||
+                                isArray!Type)
                     {
-                        mixin("
-                            auto local_info = scoped!(DataItem!Type)(ptr." ~ E ~ ");
-                            local_info.draw();
-                        ");
-                    }
-                    else static if(isBasicType!Type)
-                    {
-                        static if(E == "timestamp")
-                            mixin("auto txt = \"" ~ E ~ ": \" ~ ptr." ~ E ~ ".timeToString;");
-                        else
-                            mixin("auto txt = \"" ~ E ~ ": \" ~ ptr." ~ E ~ ".text;");
-                            
-                        igText(txt.toStringz);
-                    }
-                    else static if(isSomeString!Type)
-                    {
-                        mixin("auto txt = \"" ~ E ~ ": \" ~ ptr." ~ E ~ ";");
-                            
-                        igText(txt.toStringz);
-                    }
-                    else static if(isArray!Type)
-                    {
-                        import std.utf: validate, UTFException;
-
-                        mixin("
-                        	if(igTreeNodePtr(cast(void*)ptr, \"" ~ E ~ "\".toStringz, null))
-                        	{
-                                foreach(size_t i, e; ptr." ~ E ~ ")
-	                            {
-                                    import std.range: ElementType;
-                                    alias ElType = Unqual!(ElementType!Type);
-                                    static if(is(ElType == struct))
-                                    {
-                                        import std.format: sformat;
-                                        char[1024] header;
-                                        sformat(header, \"%s[%d]\\0\", ElType.stringof, i);
-                                        auto local_info = scoped!(DataItem!ElType)(e, cast(string) header[]);
-                                        local_info.draw();
-                                    }
-                                    else
-                                    {
-    	                                auto txt = e.text;
-    	                                try
-    	                                {
-    	                                
-    	                                    validate(txt);
-    	                                    igText(txt.toStringz);
-    	                                }
-    	                                catch(UTFException e)
-    	                                {
-    	                                    igText(\"" ~ E ~ ": non utf text\");
-    	                                }
-                                    }
-	                            }
-	                            igTreePop();
-	                        }
-                        ");
-                    }
-                    else static if(is(Type == string))
-                    {
-                        mixin("auto txt = \"" ~ E ~ ": \" ~ ptr." ~ E ~ ";");
-                        igText(txt.toStringz);
+                        counter++;
                     }
                     else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
                 }
             }
-            igTreePop();
+
+            return "BaseDataItem[" ~ counter.text ~ "] di;";
         }
-        return r;
+        else static if(
+            isBasicType!T  || 
+            isSomeString!T ||
+            isArray!T)
+        {
+            return "BaseDataItem[] di;";
+        }
+        else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
+    }
+
+    static auto init(T)()
+    {
+        static if(is(T == struct))
+        {
+            string code = "";
+            
+            foreach(counter, E; FieldNameTuple!T)
+            {
+                mixin("enum s = __traits(getProtection, T." ~ E ~ ");");
+                static if(s == "public")
+                {
+                    mixin("
+                        static if(isPointer!(typeof(T." ~ E ~ ")))
+                            alias Type = Unqual!(PointerTarget!(typeof(T." ~ E ~ ")));
+                        else
+                            alias Type = Unqual!(typeof(T." ~ E ~ "));
+                    ");
+                    
+                    static if(is(T == struct)  ||
+                                isBasicType!T  || 
+                                isSomeString!T ||
+                                isArray!T)
+                    {
+                        code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ E ~ "))(value." ~ E ~ ");\n";
+                    }
+                    else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
+                }
+            }
+
+            return code;
+        }
+        else static if(isBasicType!T)
+        {
+            return "";
+        }
+        else static if(isSomeString!T)
+        {
+            return "";
+        }
+        else static if(isArray!T)
+        {
+            string code = "
+            di.length = value.length;
+            alias Type = typeof(value[0]);
+            foreach(i; 0..di.length)
+                di[i] = new DataItem!(Type)(value[i]);
+            ";
+            return code;
+        }
+        else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
     }
 }
