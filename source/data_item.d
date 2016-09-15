@@ -41,6 +41,25 @@ public:
     }
 }
 
+template isFieldPublic(AggregateType, alias string FieldName)
+{
+    mixin("enum s = __traits(getProtection, AggregateType." ~ FieldName ~ ");");
+    enum isFieldPublic = (s == "public") ? true : false;
+}
+
+/// return type of field
+/// if field type is pointer it's pointer target type
+/// else it's field type itself
+mixin template defineType(AggregateType, alias string FieldName)
+{
+    mixin("
+        static if(isPointer!(typeof(AggregateType." ~ FieldName ~ ")))
+            alias Type = Unqual!(PointerTarget!(typeof(AggregateType." ~ FieldName ~ ")));
+        else
+            alias Type = Unqual!(typeof(AggregateType." ~ FieldName ~ "));
+    ");
+}
+
 class DataItem(TT) : BaseDataItem
 {
     @disable
@@ -99,17 +118,11 @@ class DataItem(TT) : BaseDataItem
         static if(is(T == struct))
         {
             size_t counter;
-            foreach(E; FieldNameTuple!T)
+            foreach(FieldName; FieldNameTuple!T)
             {
-                mixin("enum s = __traits(getProtection, T." ~ E ~ ");");
-                static if(s == "public")
+                static if(isFieldPublic!(T, FieldName))
                 {
-                    mixin("
-                        static if(isPointer!(typeof(T." ~ E ~ ")))
-                            alias Type = Unqual!(PointerTarget!(typeof(T." ~ E ~ ")));
-                        else
-                            alias Type = Unqual!(typeof(T." ~ E ~ "));
-                    ");
+                    mixin defineType!(T, FieldName);
                     
                     static if(is(Type == struct)  ||
                                 isBasicType!Type  || 
@@ -140,26 +153,20 @@ class DataItem(TT) : BaseDataItem
         {
             string code = "";
             
-            foreach(counter, E; FieldNameTuple!T)
+            foreach(counter, FieldName; FieldNameTuple!T)
             {
-                mixin("enum s = __traits(getProtection, T." ~ E ~ ");");
-                static if(s == "public")
+                static if(isFieldPublic!(T, FieldName))
                 {
-                    mixin("
-                        static if(isPointer!(typeof(T." ~ E ~ ")))
-                            alias Type = Unqual!(PointerTarget!(typeof(T." ~ E ~ ")));
-                        else
-                            alias Type = Unqual!(typeof(T." ~ E ~ "));
-                    ");
+                    mixin defineType!(T, FieldName);
                     
-                    static if(is(T == struct)  ||
-                                isBasicType!T  || 
-                                isSomeString!T ||
-                                isArray!T)
+                    static if(is(Type == struct)  ||
+                                isBasicType!Type  || 
+                                isSomeString!Type ||
+                                isArray!Type)
                     {
-                        code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ E ~ "))(value." ~ E ~ ");\n";
+                        code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "))(value." ~ FieldName ~ ");\n";
                     }
-                    else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
+                    else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
                 }
             }
 
