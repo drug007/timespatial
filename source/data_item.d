@@ -60,7 +60,9 @@ mixin template defineType(AggregateType, alias string FieldName)
     ");
 }
 
-class DataItem(TT) : BaseDataItem
+enum Kind : uint { Regular, Timestamp, Disabled, }
+
+class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 {
     @disable
     this();
@@ -70,47 +72,67 @@ class DataItem(TT) : BaseDataItem
     const(T)* ptr;
     string header;
 
-    mixin(build!T);
+    static if(kind != Kind.Disabled)
+    {
+        mixin(build!T);
+    }
 
     this(ref const(T) value, string header = "")
     {
         ptr = &value;
         this.header = header;
 
-        mixin(init!T);
+        static if(kind != Kind.Disabled)
+        {
+            mixin(init!T);
+        }
     }
 
     override bool draw()
     {
-        if(header.length == 0)
-            header = T.stringof;
+        static if(kind != Kind.Disabled)
+        {
+            if(header.length == 0)
+                header = T.stringof;
 
-        static if(isBasicType!T)
-        {
-            auto txt = (*ptr).text;
-            igText(txt.toStringz);
-            return false;
-        }
-        else static if(isSomeString!T)
-        {
-            igText((*ptr).toStringz);
-            return false;
-        }
-        else static if(is(T == struct) || isArray!T)
-        {
-            auto r = igTreeNodePtr(cast(void*)ptr, header.ptr, null);
-            if(r)
+            static if(isBasicType!T)
             {
-                foreach(ref e; di)
+                static if(kind == Kind.Timestamp)
                 {
-                    e.draw();
+                    auto txt = (*ptr).timeToStringz;
                 }
-
-                igTreePop();
+                else
+                {
+                    auto txt = (*ptr).text.toStringz;
+                }
+                igText(txt);
+                return false;
             }
-            return r;
+            else static if(isSomeString!T)
+            {
+                igText((*ptr).toStringz);
+                return false;
+            }
+            else static if(is(T == struct) || isArray!T)
+            {
+                auto r = igTreeNodePtr(cast(void*)ptr, header.ptr, null);
+                if(r)
+                {
+                    foreach(ref e; di)
+                    {
+                        e.draw();
+                    }
+
+                    igTreePop();
+                }
+                return r;
+            }
+            else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
         }
-        else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
+        else
+        {
+            return false;
+        }
     }
 
     static auto build(T)()
@@ -164,7 +186,20 @@ class DataItem(TT) : BaseDataItem
                                 isSomeString!Type ||
                                 isArray!Type)
                     {
-                        code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "))(value." ~ FieldName ~ ");\n";
+                        import std.traits: hasUDA;
+                        static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
+                        {
+                            code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Disabled)(value." ~ FieldName ~ ");\n";
+                        }
+                        else
+                        static if(hasUDA!(mixin("T." ~ FieldName), "Timestamp"))
+                        {
+                            code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Timestamp)(value." ~ FieldName ~ ");\n";
+                        }
+                        else
+                        {
+                            code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "))(value." ~ FieldName ~ ");\n";
+                        }
                     }
                     else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
                 }

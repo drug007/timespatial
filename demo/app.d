@@ -14,6 +14,7 @@ struct Foo
 {
     Bar[] bar;
     string text;
+    @("Timestamp")
     size_t l;
 }
 

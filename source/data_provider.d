@@ -143,13 +143,16 @@ struct Data
 
     Id id;
     double x, y, z;
+    @("Timestamp")
     long timestamp;
     State state;
 }
 
 struct Point
 {
+    @("Disabled")
     vec3f xyz;
+    @("Timestamp")
     long timestamp;
     Data.State state;
 }
