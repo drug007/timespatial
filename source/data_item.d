@@ -47,19 +47,6 @@ template isFieldPublic(AggregateType, alias string FieldName)
     enum isFieldPublic = (s == "public") ? true : false;
 }
 
-/// return type of field
-/// if field type is pointer it's pointer target type
-/// else it's field type itself
-mixin template defineType(AggregateType, alias string FieldName)
-{
-    mixin("
-        static if(isPointer!(typeof(AggregateType." ~ FieldName ~ ")))
-            alias Type = Unqual!(PointerTarget!(typeof(AggregateType." ~ FieldName ~ ")));
-        else
-            alias Type = Unqual!(typeof(AggregateType." ~ FieldName ~ "));
-    ");
-}
-
 enum Kind : uint { Regular, Timestamp, Disabled, }
 
 class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
@@ -74,7 +61,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 
     static if(kind != Kind.Disabled)
     {
-        mixin(build!T);
+        mixin build!T;
     }
 
     this(ref const(T) value, string header = "")
@@ -84,7 +71,8 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 
         static if(kind != Kind.Disabled)
         {
-            mixin(init!T);
+            mixin defineInitFunction!T;
+            initFunction();
         }
     }
 
@@ -120,6 +108,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                 {
                     foreach(ref e; di)
                     {
+                        assert(e);
                         e.draw();
                     }
 
@@ -135,95 +124,95 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
         }
     }
 
-    static auto build(T)()
+    mixin template build(T)
     {
         static if(is(T == struct))
         {
-            size_t counter;
-            foreach(FieldName; FieldNameTuple!T)
-            {
-                static if(isFieldPublic!(T, FieldName))
-                {
-                    mixin defineType!(T, FieldName);
-                    
-                    static if(is(Type == struct)  ||
-                                isBasicType!Type  || 
-                                isSomeString!Type ||
-                                isArray!Type)
-                    {
-                        counter++;
-                    }
-                    else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
-                }
-            }
-
-            return "BaseDataItem[" ~ counter.text ~ "] di;";
+            mixin("BaseDataItem[" ~ (FieldNameTuple!T).length.text ~ "] di;");
         }
-        else static if(
-            isBasicType!T  || 
-            isSomeString!T ||
-            isArray!T)
+        else static if(isBasicType!T  || isSomeString!T)
         {
-            return "BaseDataItem[] di;";
+            mixin("BaseDataItem[] di;");
+        }        
+        else static if(isArray!T)
+        {
+            mixin("BaseDataItem[] di;");
         }
         else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
     }
 
-    static auto init(T)()
+    mixin template defineInitFunction(T)
     {
         static if(is(T == struct))
         {
-            string code = "";
-            
-            foreach(counter, FieldName; FieldNameTuple!T)
+            mixin template generateInitializationCode(Args...)
             {
-                static if(isFieldPublic!(T, FieldName))
+                void initFunction()
                 {
-                    mixin defineType!(T, FieldName);
-                    
-                    static if(is(Type == struct)  ||
-                                isBasicType!Type  || 
-                                isSomeString!Type ||
-                                isArray!Type)
+                    foreach(idx, FieldName; Args)
                     {
-                        import std.traits: hasUDA;
-                        static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
+                        static if(isFieldPublic!(T, FieldName))
                         {
-                            code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Disabled)(value." ~ FieldName ~ ");\n";
-                        }
-                        else
-                        static if(hasUDA!(mixin("T." ~ FieldName), "Timestamp"))
-                        {
-                            code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Timestamp)(value." ~ FieldName ~ ");\n";
-                        }
-                        else
-                        {
-                            code ~= "di[" ~ counter.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "))(value." ~ FieldName ~ ");\n";
+                            /// return type of field
+                            /// if field type is pointer it's pointer target type
+                            /// else it's field type itself
+                            mixin("
+                                static if(isPointer!(typeof(T." ~ FieldName ~ ")))
+                                    alias Type = Unqual!(PointerTarget!(typeof(T." ~ FieldName ~ ")));
+                                else
+                                    alias Type = Unqual!(typeof(T." ~ FieldName ~ "));
+                            ");
+                            
+                            static if(is(Type == struct)  ||
+                                        isBasicType!Type  || 
+                                        isSomeString!Type ||
+                                        isArray!Type)
+                            {
+                                import std.traits: hasUDA;
+                                static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
+                                {
+                                    mixin("di[" ~ idx.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Disabled)(value." ~ FieldName ~ ");");
+                                }
+                                else static if(hasUDA!(mixin("T." ~ FieldName), "Timestamp"))
+                                {
+                                    mixin("di[" ~ idx.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Timestamp)(value." ~ FieldName ~ ");");
+                                }
+                                else static if(!isBasicType!T  && !isSomeString!T)
+                                {
+                                    mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ");");
+                                }
+                            }
+                            else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
                         }
                     }
-                    else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
                 }
             }
 
-            return code;
+            mixin generateInitializationCode!(FieldNameTuple!T);
         }
         else static if(isBasicType!T)
         {
-            return "";
+            // do nothing
+            void initFunction()
+            {
+            }
         }
         else static if(isSomeString!T)
         {
-            return "";
+            // do nothing
+            void initFunction()
+            {
+            }
         }
         else static if(isArray!T)
         {
-            string code = "
-            di.length = value.length;
-            alias Type = typeof(value[0]);
-            foreach(i; 0..di.length)
-                di[i] = new DataItem!(Type)(value[i]);
-            ";
-            return code;
+            void initFunction()
+            {
+                di.length = value.length;
+                alias Type = typeof(value[0]);
+                foreach(i; 0..di.length)
+                    di[i] = new DataItem!(Type)(value[i]);
+            }
         }
         else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
     }
