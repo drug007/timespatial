@@ -4,7 +4,7 @@ import std.algorithm: map;
 
 import gfm.math: vec3f, vec4f, box3f;
 
-import data_item: DataItem;
+import data_item: DataItem, Attr;
 import vertex_provider: VertexProvider;
 
 struct TimestampSlider
@@ -148,9 +148,16 @@ struct Data
     State state;
 }
 
+auto displayVec3f(ref const(vec3f) v)
+{
+    import std.conv: text;
+
+    return v.x.text ~ ", " ~ v.y.text ~ ", " ~ v.z.text;
+}
+
 struct Point
 {
-    @("Disabled")
+    @Attr!displayVec3f
     vec3f xyz;
     @("Timestamp")
     long timestamp;

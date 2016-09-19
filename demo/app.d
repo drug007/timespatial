@@ -3,6 +3,7 @@ import test_viewer: TestViewer;
 import data_provider: DataProvider, TimeSpatial;
 import data_layout: IDataLayout, DataLayout, TimeSpatialLayout;
 import test_data: testData;
+import data_item: Attr;
 
 struct Bar
 {
@@ -18,17 +19,33 @@ struct Foo
     size_t l;
 }
 
+struct Boo
+{
+    int i1;
+    string s2;
+    float f3;
+}
+
 struct FooBar
 {
     Foo foo;
     Foo[] foo_array;
     string str;
     int i;
+    @(Attr!F)
+    Boo boo;
 }
 
 Bar bar;
 Foo foo;
 FooBar foo_bar;
+
+Bar converted_bar = Bar(567, "Boo converted to Bar");
+
+auto F(ref const(Boo) boo)
+{
+    return boo.f3;
+}
 
 
 auto makeDataLayout(string title)

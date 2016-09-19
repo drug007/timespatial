@@ -3,8 +3,9 @@ module data_item;
 import std.conv: text;
 import std.string: toStringz;
 import std.typecons: scoped;
-import std.traits: FieldNameTuple, isArray, isPointer, isBasicType, isSomeString, Unqual; 
-
+import std.traits: FieldNameTuple, isArray, isPointer, isBasicType, isSomeString, 
+    Unqual, hasUDA, getUDAs, ReturnType;
+                        
 import derelict.imgui.imgui: igTreeNodePtr, igText, igIndent, igUnindent, igTreePop;
 
 auto timeToStringz(long timestamp)
@@ -47,7 +48,23 @@ template isFieldPublic(AggregateType, alias string FieldName)
     enum isFieldPublic = (s == "public") ? true : false;
 }
 
-enum Kind : uint { Regular, Timestamp, Disabled, }
+// Определяет способ вывода на экран
+// по умолчанию
+// как время
+// не выводить
+// преобразовать в другой тип
+enum Kind : uint { Regular, Timestamp, Disabled, Converted}
+
+struct Attr(alias F)
+{
+    alias func = F;
+}
+
+auto makeDataItem(U, alias func)(U u)
+{
+    alias R = ReturnType!func;
+    return new DataItem!(R, kind.Converted)(u.func);
+}
 
 class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 {
@@ -59,6 +76,11 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
     const(T)* ptr;
     string header;
 
+    static if(kind == Kind.Converted)
+    {
+        const(T) the_copy;
+    }
+
     static if(kind != Kind.Disabled)
     {
         mixin build!T;
@@ -66,7 +88,16 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 
     this(ref const(T) value, string header = "")
     {
-        ptr = &value;
+
+        static if(kind == Kind.Converted)
+        {
+            the_copy = value;
+            ptr = &the_copy;
+        }
+        else
+        {
+            ptr = &value;
+        }
         this.header = header;
 
         static if(kind != Kind.Disabled)
@@ -168,14 +199,26 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                         isSomeString!Type ||
                                         isArray!Type)
                             {
-                                import std.traits: hasUDA;
-                                static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
+                                import std.traits: TemplateOf, ReturnType;
+                                import std.typetuple: TypeTuple;
+                                
+                                alias ATTR = TypeTuple!(__traits(getAttributes, mixin("T." ~ FieldName)));
+                                static if(ATTR.length && __traits(compiles, __traits(isSame, TemplateOf!(ATTR[0]), Attr))) // TODO Attr ожидается только первым аргументом
                                 {
-                                    mixin("di[" ~ idx.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Disabled)(value." ~ FieldName ~ ");");
+                                    static if(__traits(isSame, TemplateOf!(ATTR[0]), Attr))
+                                    {
+                                        alias FieldType = ReturnType!(ATTR[0].func);
+                                        auto converted_value = ATTR[0].func(mixin("value." ~ FieldName));
+                                        di[idx] = new DataItem!(FieldType, Kind.Converted)(converted_value);
+                                    }
+                                }
+                                else static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
+                                {
+                                    mixin("di[idx] = new DataItem!(Type, Kind.Disabled)(value." ~ FieldName ~ ");");
                                 }
                                 else static if(hasUDA!(mixin("T." ~ FieldName), "Timestamp"))
                                 {
-                                    mixin("di[" ~ idx.text ~ "] = new DataItem!(typeof(value." ~ FieldName ~ "), Kind.Timestamp)(value." ~ FieldName ~ ");");
+                                    mixin("di[idx] = new DataItem!(Type, Kind.Timestamp)(value." ~ FieldName ~ ");");
                                 }
                                 else static if(!isBasicType!T  && !isSomeString!T)
                                 {
