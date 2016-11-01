@@ -111,10 +111,35 @@ class Storage
         q.reset();
     }
 
-    //~ Value[] getValue(BoundingBox bbox)
-    //~ {
-        
-    //~ }
+    Value[] getValues(BoundingBox bbox)
+    {
+        alias q = getValuesStatement;
+
+        q.bind(":dim1_min", bbox.dim1.min);
+        q.bind(":dim1_max", bbox.dim1.max);
+        q.bind(":dim2_min", bbox.dim2.min);
+        q.bind(":dim2_max", bbox.dim2.max);
+        q.bind(":dim3_min", bbox.dim3.min);
+        q.bind(":dim3_max", bbox.dim3.max);
+        q.bind(":dim4_min", bbox.dim4.min);
+        q.bind(":dim4_max", bbox.dim4.max);
+
+        auto answer = q.execute;
+
+        Value[] ret;
+
+        foreach(row; answer)
+        {
+            Value v;
+            v.id = row["id"].as!long;
+
+            ret ~= v;
+        }
+
+        q.reset();
+
+        return ret;
+    }
 }
 
 struct DimensionPair
@@ -157,4 +182,6 @@ unittest
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
+
+    assert(s.getValues(t.bbox).length == 1);
 }
