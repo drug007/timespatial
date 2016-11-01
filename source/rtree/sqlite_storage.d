@@ -24,7 +24,9 @@ class Storage
 {
     private const string filePath;
     private Database db;
-    private Statement addValueStatement;
+    private Statement
+        addValueStatement,
+        getValuesStatement;
 
     this(in string filePath)
     {
@@ -59,33 +61,24 @@ class Storage
             )
         ");
 
-        //~ getValuesStatement = db.prepare("
-            //~ SELECT
-                //~ id,
-                //~ dim1_min,
-                //~ dim1_max,
-                //~ dim2_min,
-                //~ dim2_max,
-                //~ dim3_min,
-                //~ dim3_max,
-                //~ dim4_min,
-                //~ dim4_max
-            //~ FROM "~tableName~"
-            //~ WHERE
-            //~ )
-            //~ VALUES
-            //~ (
-                //~ :id,
-                //~ :dim1_min,
-                //~ :dim1_max,
-                //~ :dim2_min,
-                //~ :dim2_max,
-                //~ :dim3_min,
-                //~ :dim3_max,
-                //~ :dim4_min,
-                //~ :dim4_max
-            //~ )
-        //~ ");
+        getValuesStatement = db.prepare("
+            SELECT
+                id,
+                dim1_min,
+                dim1_max,
+                dim2_min,
+                dim2_max,
+                dim3_min,
+                dim3_max,
+                dim4_min,
+                dim4_max
+            FROM "~tableName~"
+            WHERE
+                dim1_min >= :dim1_min AND dim1_max <= :dim1_max AND
+                dim2_min >= :dim2_min AND dim2_max <= :dim2_max AND
+                dim3_min >= :dim3_min AND dim3_max <= :dim3_max AND
+                dim4_min >= :dim4_min AND dim4_max <= :dim4_max
+        ");
     }
 
     ~this()
