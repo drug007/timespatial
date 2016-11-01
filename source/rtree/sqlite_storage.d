@@ -3,10 +3,10 @@ module rtree.sqlite_storage;
 import d2sqlite3;
 import std.file: remove;
 
-private enum tableName = "spatial";
+private enum spatialIndexTable = "spatial";
 
 private enum sqlCreateSchema =
-`CREATE VIRTUAL TABLE IF NOT EXISTS `~tableName~` USING rtree
+`CREATE VIRTUAL TABLE IF NOT EXISTS `~spatialIndexTable~` USING rtree
 (
     id NOT NULL,
     dim1_min NOT NULL,
@@ -35,7 +35,7 @@ class Storage
         db.run(sqlCreateSchema);
 
         addValueStatement = db.prepare("
-            INSERT INTO "~tableName~"
+            INSERT INTO "~spatialIndexTable~"
             (
                 id,
                 dim1_min,
@@ -72,7 +72,7 @@ class Storage
                 dim3_max,
                 dim4_min,
                 dim4_max
-            FROM "~tableName~"
+            FROM "~spatialIndexTable~"
             WHERE
                 dim1_min >= :dim1_min AND dim1_max <= :dim1_max AND
                 dim2_min >= :dim2_min AND dim2_max <= :dim2_max AND
@@ -87,9 +87,9 @@ class Storage
         remove(filePath);
     }
 
-    private bool tableIsEmpty(string tableName)
+    private bool tableIsEmpty(string spatialIndexTable)
     {
-        return db.execute("SELECT * FROM "~tableName~" LIMIT 1").empty;
+        return db.execute("SELECT * FROM "~spatialIndexTable~" LIMIT 1").empty;
     }
 
     void addValue(Value v)
@@ -169,7 +169,7 @@ unittest
 
     auto s = new Storage(tempDir ~ "/__unittest.db"); // FIXME: что сделать с юниксовым слэшем чтобы тест и в виндах работал?
 
-    assert(s.tableIsEmpty(tableName));
+    assert(s.tableIsEmpty(spatialIndexTable));
 
     Value t;
     t.id = 123;
