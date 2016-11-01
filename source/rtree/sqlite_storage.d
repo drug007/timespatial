@@ -275,5 +275,6 @@ unittest
 
     auto r = s.getValues(t.bbox);
     assert(r.length == 1);
+    assert(r[0].id == t.id);
     assert(r[0].bbox == t.bbox);
 }
