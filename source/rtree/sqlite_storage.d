@@ -117,7 +117,7 @@ class Storage
     }
 
     /// Возвращает самый большой ID. Используется при вычислении следующего ID.
-    ulong getMaxID()
+    long getMaxID()
     {
         auto res = db.execute("SELECT id FROM "~payloadsTable~" ORDER BY id DESC LIMIT 1");
 
