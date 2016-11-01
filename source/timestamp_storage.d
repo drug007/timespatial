@@ -99,8 +99,7 @@ unittest
     import std.range: iota;
     import std.array: array;
 
-    import data_provider: TimestampSlider;
-    auto s = TimestampSlider(1.iota(10L).array);
+    auto s = TimestampStorage(1.iota(10L).array);
 
     assert(s.current == 1);
     s.movePrev();
