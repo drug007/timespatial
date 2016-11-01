@@ -4,6 +4,7 @@ import d2sqlite3;
 import std.file: remove;
 
 private enum spatialIndexTable = "spatial";
+private enum payloadsTable = "payloads";
 
 private enum sqlCreateSchema =
 `CREATE VIRTUAL TABLE IF NOT EXISTS `~spatialIndexTable~` USING rtree
@@ -18,15 +19,21 @@ private enum sqlCreateSchema =
     dim4_min NOT NULL,
     dim4_max NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS `~payloadsTable~`
+(
+    id INTEGER NOT NULL PRIMARY KEY,
+    payload BLOB
+)
 `;
 
 class Storage
 {
     private const string filePath;
     private Database db;
-    private Statement
-        addValueStatement,
-        getValuesStatement;
+    private Statement addValueToIndexStatement;
+    private Statement addValueToPayloadsStatement;
+    private Statement getValuesStatement;
 
     this(in string filePath)
     {
@@ -34,7 +41,7 @@ class Storage
         db = Database(filePath);
         db.run(sqlCreateSchema);
 
-        addValueStatement = db.prepare("
+        addValueToIndexStatement = db.prepare("
             INSERT INTO "~spatialIndexTable~"
             (
                 id,
@@ -58,6 +65,19 @@ class Storage
                 :dim3_max,
                 :dim4_min,
                 :dim4_max
+            )
+        ");
+
+        addValueToPayloadsStatement = db.prepare("
+            INSERT INTO "~payloadsTable~"
+            (
+                id,
+                payload
+            )
+            VALUES
+            (
+                :id,
+                :payload
             )
         ");
 
@@ -94,21 +114,36 @@ class Storage
 
     void addValue(Value v)
     {
-        alias q = addValueStatement;
+        // Adding to index
+        {
+            alias q = addValueToIndexStatement;
 
-        q.bind(":id", v.id);
-        q.bind(":dim1_min", v.bbox.dim1.min);
-        q.bind(":dim1_max", v.bbox.dim1.max);
-        q.bind(":dim2_min", v.bbox.dim2.min);
-        q.bind(":dim2_max", v.bbox.dim2.max);
-        q.bind(":dim3_min", v.bbox.dim3.min);
-        q.bind(":dim3_max", v.bbox.dim3.max);
-        q.bind(":dim4_min", v.bbox.dim4.min);
-        q.bind(":dim4_max", v.bbox.dim4.max);
+            q.bind(":id", v.id);
+            q.bind(":dim1_min", v.bbox.dim1.min);
+            q.bind(":dim1_max", v.bbox.dim1.max);
+            q.bind(":dim2_min", v.bbox.dim2.min);
+            q.bind(":dim2_max", v.bbox.dim2.max);
+            q.bind(":dim3_min", v.bbox.dim3.min);
+            q.bind(":dim3_max", v.bbox.dim3.max);
+            q.bind(":dim4_min", v.bbox.dim4.min);
+            q.bind(":dim4_max", v.bbox.dim4.max);
 
-        q.execute;
-        assert(db.changes() == 1);
-        q.reset();
+            q.execute;
+            assert(db.changes() == 1);
+            q.reset();
+        }
+
+        // Adding payload
+        {
+            alias q = addValueToPayloadsStatement;
+
+            q.bind(":id", v.id);
+            //q.bind(":payload", v.payload); // FIXME
+
+            q.execute;
+            assert(db.changes() == 1);
+            q.reset();
+        }
     }
 
     Value[] getValues(BoundingBox bbox)
@@ -161,6 +196,11 @@ struct Value
     long id;
     BoundingBox bbox;
     ubyte[] payload;
+
+    this(this) pure
+    {
+        payload = payload.dup;
+    }
 }
 
 unittest
