@@ -120,7 +120,7 @@ class Storage
     ulong getMaxID()
     {
         auto res = db.execute("SELECT id FROM "~payloadsTable~" ORDER BY id DESC LIMIT 1");
-        
+
         if(res.empty)
             return 0;
         else
@@ -227,7 +227,7 @@ unittest
 {
     import std.file: tempDir;
 
-    auto s = new Storage(tempDir ~ "/__unittest.db"); // FIXME: что сделать с юниксовым слэшем чтобы тест и в виндах работал?
+    auto s = new Storage(tempDir ~ "/__unittest_sqlite.db"); // FIXME: что сделать с юниксовым слэшем чтобы тест и в виндах работал?
 
     assert(s.tableIsEmpty(spatialIndexTable));
 
