@@ -6,6 +6,7 @@ import gfm.math: vec3f, box3f;
 class RTree
 {
     private Storage storage;
+    private long idCounter;
 
     this(string fileName)
     {
@@ -13,13 +14,16 @@ class RTree
         // с помощью пакетов типа xdgpaths или standardpaths
 
         storage = new Storage(fileName);
+        idCounter = storage.getMaxID;
     }
 
     /// Сохраняет точку (вершину) в хранилище
     void addPoint(Point point)
     {
         Value v;
-        v.id = point.id,
+
+        idCounter++;
+        v.id = idCounter,
 
         // При хранении точек R*Tree BBox имеет размер 1 точка,
         // поэтому min и max совпадают
@@ -59,7 +63,6 @@ class RTree
 
         foreach(i, f; found)
         {
-            ret[i].id = f.id;
             ret[i].payload = f.payload;
 
             // для точек в RTree можно брать координаты любого угла их BBox
@@ -75,7 +78,6 @@ class RTree
 
 struct Point
 {
-    long id; /// Уникальный в рамках всей системы идентификатор
     vec3f coords;
     float time;
     ubyte[] payload;
@@ -86,7 +88,6 @@ unittest
     auto s = new RTree("__unittest_rtree.db");
 
     Point p1;
-    p1.id = 100;
     p1.coords = vec3f(1,2,3);
     p1.time = 4;
     p1.payload = [0xDE, 0xAD, 0xBE, 0xEF];
