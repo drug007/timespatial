@@ -1,5 +1,7 @@
 module rtree.sqlite_storage;
 
+package:
+
 import d2sqlite3;
 import std.file: remove;
 
@@ -114,8 +116,31 @@ class Storage
         return db.execute("SELECT * FROM "~spatialIndexTable~" LIMIT 1").empty;
     }
 
+    /// Возвращает самый большой ID. Используется при вычислении следующего ID.
+    ulong getMaxID()
+    {
+        auto res = db.execute("SELECT id FROM "~payloadsTable~" ORDER BY id DESC LIMIT 1");
+        
+        if(res.empty)
+            return 0;
+        else
+            return res.front.peek!long(0);
+    }
+
     void addValue(in Value v)
     {
+        // Adding payload
+        {
+            alias q = addValueToPayloadsStatement;
+
+            q.bind(":id", v.id);
+            //q.bind(":payload", v.payload); // FIXME
+
+            q.execute;
+            assert(db.changes() == 1);
+            q.reset();
+        }
+
         // Adding to index
         {
             alias q = addValueToIndexStatement;
@@ -129,18 +154,6 @@ class Storage
             q.bind(":dim3_max", v.bbox.dim3.max);
             q.bind(":dim4_min", v.bbox.dim4.min);
             q.bind(":dim4_max", v.bbox.dim4.max);
-
-            q.execute;
-            assert(db.changes() == 1);
-            q.reset();
-        }
-
-        // Adding payload
-        {
-            alias q = addValueToPayloadsStatement;
-
-            q.bind(":id", v.id);
-            //q.bind(":payload", v.payload); // FIXME
 
             q.execute;
             assert(db.changes() == 1);
@@ -231,6 +244,8 @@ unittest
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
+
+    assert(s.getMaxID() == 123);
 
     BoundingBox searchBox;
     searchBox.dim1.min = 0;
