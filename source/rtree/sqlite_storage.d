@@ -9,14 +9,14 @@ private enum sqlCreateSchema =
 `CREATE VIRTUAL TABLE IF NOT EXISTS `~tableName~` USING rtree
 (
     id NOT NULL,
-    dim1_0 NOT NULL,
-    dim1_1 NOT NULL,
-    dim2_0 NOT NULL,
-    dim2_1 NOT NULL,
-    dim3_0 NOT NULL,
-    dim3_1 NOT NULL,
-    dim4_0 NOT NULL,
-    dim4_1 NOT NULL
+    dim1_min NOT NULL,
+    dim1_max NOT NULL,
+    dim2_min NOT NULL,
+    dim2_max NOT NULL,
+    dim3_min NOT NULL,
+    dim3_max NOT NULL,
+    dim4_min NOT NULL,
+    dim4_max NOT NULL
 );
 `;
 
@@ -36,28 +36,56 @@ class Storage
             INSERT INTO "~tableName~"
             (
                 id,
-                dim1_0,
-                dim1_1,
-                dim2_0,
-                dim2_1,
-                dim3_0,
-                dim3_1,
-                dim4_0,
-                dim4_1
+                dim1_min,
+                dim1_max,
+                dim2_min,
+                dim2_max,
+                dim3_min,
+                dim3_max,
+                dim4_min,
+                dim4_max
             )
             VALUES
             (
                 :id,
-                :dim1_0,
-                :dim1_1,
-                :dim2_0,
-                :dim2_1,
-                :dim3_0,
-                :dim3_1,
-                :dim4_0,
-                :dim4_1
+                :dim1_min,
+                :dim1_max,
+                :dim2_min,
+                :dim2_max,
+                :dim3_min,
+                :dim3_max,
+                :dim4_min,
+                :dim4_max
             )
         ");
+
+        //~ getValuesStatement = db.prepare("
+            //~ SELECT
+                //~ id,
+                //~ dim1_min,
+                //~ dim1_max,
+                //~ dim2_min,
+                //~ dim2_max,
+                //~ dim3_min,
+                //~ dim3_max,
+                //~ dim4_min,
+                //~ dim4_max
+            //~ FROM "~tableName~"
+            //~ WHERE
+            //~ )
+            //~ VALUES
+            //~ (
+                //~ :id,
+                //~ :dim1_min,
+                //~ :dim1_max,
+                //~ :dim2_min,
+                //~ :dim2_max,
+                //~ :dim3_min,
+                //~ :dim3_max,
+                //~ :dim4_min,
+                //~ :dim4_max
+            //~ )
+        //~ ");
     }
 
     ~this()
@@ -76,27 +104,30 @@ class Storage
         alias q = addValueStatement;
 
         q.bind(":id", v.id);
-        q.bind(":dim1_0", v.bbox.dim1.p0);
-        q.bind(":dim1_1", v.bbox.dim1.p1);
-        q.bind(":dim2_0", v.bbox.dim2.p0);
-        q.bind(":dim2_1", v.bbox.dim2.p1);
-        q.bind(":dim3_0", v.bbox.dim3.p0);
-        q.bind(":dim3_1", v.bbox.dim3.p1);
-        q.bind(":dim4_0", v.bbox.dim4.p0);
-        q.bind(":dim4_1", v.bbox.dim4.p1);
+        q.bind(":dim1_min", v.bbox.dim1.min);
+        q.bind(":dim1_max", v.bbox.dim1.max);
+        q.bind(":dim2_min", v.bbox.dim2.min);
+        q.bind(":dim2_max", v.bbox.dim2.max);
+        q.bind(":dim3_min", v.bbox.dim3.min);
+        q.bind(":dim3_max", v.bbox.dim3.max);
+        q.bind(":dim4_min", v.bbox.dim4.min);
+        q.bind(":dim4_max", v.bbox.dim4.max);
 
         q.execute;
         assert(db.changes() == 1);
         q.reset();
     }
 
-    //Value getValue(
+    //~ Value[] getValue(BoundingBox bbox)
+    //~ {
+        
+    //~ }
 }
 
 struct DimensionPair
 {
-    float p0;
-    float p1;
+    float min;
+    float max;
 }
 
 struct BoundingBox
@@ -124,12 +155,12 @@ unittest
 
     Value t;
     t.id = 123;
-    t.bbox.dim1.p0 = 1;
-    t.bbox.dim1.p1 = 2;
-    t.bbox.dim2.p0 = 1;
-    t.bbox.dim2.p1 = 2;
-    t.bbox.dim3.p0 = 1;
-    t.bbox.dim3.p1 = 2;
+    t.bbox.dim1.min = 1;
+    t.bbox.dim1.max = 2;
+    t.bbox.dim2.min = 1;
+    t.bbox.dim2.max = 2;
+    t.bbox.dim3.min = 1;
+    t.bbox.dim3.max = 2;
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
