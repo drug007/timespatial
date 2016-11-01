@@ -76,19 +76,21 @@ class Storage
         alias q = addValueStatement;
 
         q.bind(":id", v.id);
-        q.bind(":dim1_0", v.dim1.p0);
-        q.bind(":dim1_1", v.dim1.p1);
-        q.bind(":dim2_0", v.dim2.p0);
-        q.bind(":dim2_1", v.dim2.p1);
-        q.bind(":dim3_0", v.dim3.p0);
-        q.bind(":dim3_1", v.dim3.p1);
-        q.bind(":dim4_0", v.dim4.p0);
-        q.bind(":dim4_1", v.dim4.p1);
+        q.bind(":dim1_0", v.bbox.dim1.p0);
+        q.bind(":dim1_1", v.bbox.dim1.p1);
+        q.bind(":dim2_0", v.bbox.dim2.p0);
+        q.bind(":dim2_1", v.bbox.dim2.p1);
+        q.bind(":dim3_0", v.bbox.dim3.p0);
+        q.bind(":dim3_1", v.bbox.dim3.p1);
+        q.bind(":dim4_0", v.bbox.dim4.p0);
+        q.bind(":dim4_1", v.bbox.dim4.p1);
 
         q.execute;
         assert(db.changes() == 1);
         q.reset();
     }
+
+    //Value getValue(
 }
 
 struct DimensionPair
@@ -97,13 +99,18 @@ struct DimensionPair
     float p1;
 }
 
-struct Value
+struct BoundingBox
 {
-    long id;
     DimensionPair dim1;
     DimensionPair dim2;
     DimensionPair dim3;
     DimensionPair dim4;
+}
+
+struct Value
+{
+    long id;
+    BoundingBox bbox;
     ubyte[] payload;
 }
 
@@ -117,12 +124,12 @@ unittest
 
     Value t;
     t.id = 123;
-    t.dim1.p0 = 1;
-    t.dim1.p1 = 2;
-    t.dim2.p0 = 1;
-    t.dim2.p1 = 2;
-    t.dim3.p0 = 1;
-    t.dim3.p1 = 2;
+    t.bbox.dim1.p0 = 1;
+    t.bbox.dim1.p1 = 2;
+    t.bbox.dim2.p0 = 1;
+    t.bbox.dim2.p1 = 2;
+    t.bbox.dim3.p0 = 1;
+    t.bbox.dim3.p1 = 2;
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
