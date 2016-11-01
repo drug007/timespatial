@@ -6,6 +6,7 @@ import std.exception: enforce;
 import std.file: thisExePath;
 import std.path: dirName, buildPath;
 import std.range: iota;
+import std.typecons: tuple, Tuple;
 
 import std.experimental.logger: Logger, NullLogger;
 
@@ -96,7 +97,6 @@ class BaseViewer
         this.height = height;
 
         // create a logger
-        //_log = new ConsoleLogger();
         _null_logger = new NullLogger();
 
         // load dynamic libraries
@@ -157,7 +157,6 @@ class BaseViewer
         program = new GLProgram(_gl, program_source);
 
         imguiInit(window);
-        _invalidated = false;
     }
 
     public void close()
@@ -166,8 +165,10 @@ class BaseViewer
 
         shutdown();
 
-        foreach(gp; _glprovider)
-            gp.freeResources();
+        foreach(rd; _rdata)
+            if(rd.g)
+                rd.g.freeResources();
+
         program.destroy();
 
         _gl.destroy();
@@ -175,26 +176,29 @@ class BaseViewer
         _sdl2.destroy();
     }
 
-    public auto setVertexProvider(VertexProvider[] vertex_provider)
+    auto setVertexProvider(VertexProvider[] vp)
     {
-        import std.range: lockstep;
+        foreach(e; vp)
+            setVertexProvider(e);
+    }
 
-        _vertex_provider = vertex_provider;
-
-        if(_vertex_provider.length > _glprovider.length)
-            _glprovider.length = _vertex_provider.length;
-
-        foreach(ref vp, ref gp; lockstep(_vertex_provider, _glprovider))
+    auto setVertexProvider(VertexProvider vp)
+    {
+        if(auto ptr = vp.no in _rdata)
         {
-            if(gp is null)
-                gp = new GLProvider(_gl, program, vp.vertices());
-            else
-                gp._vbo.setData(vp.vertices());
-
-            gp._indices = iota(0, vp.vertices.length).map!"cast(uint)a".array;
-            gp._ibo.setData(gp._indices);
+            ptr.v = vp;
+            ptr.g.freeResources();
+            ptr.g = new GLProvider(_gl, program, vp.vertices()); // TODO возможно нет смысле пересоздавать GLProvider
         }
-        _current_glprovider = _glprovider[0.._vertex_provider.length];
+        else
+        {
+            _rdata[vp.no] = tuple(vp, new GLProvider(_gl, program, vp.vertices()));
+        }
+    }
+
+    auto getVertexProvider(uint no)
+    {
+        return _rdata[no].v;
     }
 
     auto run()
@@ -239,9 +243,6 @@ class BaseViewer
 
             draw();
 
-            if(_invalidated)
-                updateGlData();
-
             program.uniform("mvp_matrix").set(mvp_matrix);
             program.use();
             drawObjects();
@@ -255,12 +256,9 @@ class BaseViewer
 
     void drawObjects()
     {
-        import std.range: lockstep;
-
-        foreach(vp, gp; lockstep(_vertex_provider, _current_glprovider))
+        foreach(rd; _rdata)
         {
-            assert(vp !is null);
-            gp.drawVertices(vp.currSlices);
+            rd.g.drawVertices(rd.v.currSlices);
         }
     }
 
@@ -272,6 +270,11 @@ class BaseViewer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
+    auto genVertexProviderHandle()
+    {
+        return _vp_handle++;
+    }
+
 protected:
     SDL2Window window;
     int width;
@@ -280,26 +283,22 @@ protected:
     int mouse_x, mouse_y;
     int leftButton, rightButton, middleButton;
 
-    // Определяет нужно выделять экстраполированные донесения
-    bool highlight_predicted;
+    //// Определяет нужно выделять экстраполированные донесения
+    //bool highlight_predicted;
     vec3f _camera_pos;
 
     float size;
     mat4f projection = void, view = void, mvp_matrix = void, model = mat4f.identity;
-    Logger _log;
     NullLogger _null_logger;
 
     OpenGL _gl;
     SDL2 _sdl2;
     GLProgram program;
-    VertexProvider[] _vertex_provider;
-    GLProvider[]     _glprovider, _current_glprovider;
 
     ImGuiIO* _imgui_io;
-    bool _invalidated;
     bool _camera_moving;
-
-    abstract void updateGlData();
+    uint _vp_handle; // текущий handle для VertexProvider
+    Tuple!(VertexProvider, "v", GLProvider, "g")[uint] _rdata; // rendering data
 
     protected void updateMatrices()
     {

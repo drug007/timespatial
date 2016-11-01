@@ -63,6 +63,7 @@ struct VertexSlice
 
 class VertexProvider
 {
+    uint no;
 	auto vertices()
 	{
 		return _vertices;
@@ -73,10 +74,15 @@ class VertexProvider
 		return _slices;
 	}
 
-	auto currSlices()
+	@property currSlices()
 	{
 		return _curr_slices;
 	}
+
+    @property currSlices(VertexSlice[] vs)
+    {
+        _curr_slices = vs;
+    }
 
 	/// allow rendering of only n last elements
 	auto setElementCount(long n)
@@ -94,29 +100,17 @@ class VertexProvider
         }
 	}
 
-    auto minimal() const
-    {
-        return _min;
-    }
-
-    auto maximum() const
-    {
-        return _max;
-    }
-
-	this(Vertex[] vertices, VertexSlice[] slices, vec3f minimal, vec3f maximum)
+	this(uint no, Vertex[] vertices, VertexSlice[] slices)
 	{
         assert(vertices.length);
         assert(slices.length);
+        this.no      = no;
 		_vertices    = vertices;
 		_slices      = slices; 
 		_curr_slices = slices.dup;
-        _min         = minimal;
-        _max         = maximum;
 	}
 
 private:
 	VertexSlice[] _slices, _curr_slices;
 	Vertex[]      _vertices;
-    vec3f         _min, _max;
 }
