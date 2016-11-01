@@ -91,8 +91,10 @@ class Storage
                 dim3_min,
                 dim3_max,
                 dim4_min,
-                dim4_max
+                dim4_max,
+                payload
             FROM "~spatialIndexTable~"
+            JOIN "~payloadsTable~" USING(id)
             WHERE
                 dim1_min >= :dim1_min AND dim1_max <= :dim1_max AND
                 dim2_min >= :dim2_min AND dim2_max <= :dim2_max AND
@@ -167,6 +169,16 @@ class Storage
         {
             Value v;
             v.id = row["id"].as!long;
+            v.payload = row["payload"].as!(ubyte[]);
+
+            v.bbox.dim1.min = row["dim1_min"].as!float;
+            v.bbox.dim1.max = row["dim1_max"].as!float;
+            v.bbox.dim2.min = row["dim2_min"].as!float;
+            v.bbox.dim2.max = row["dim2_max"].as!float;
+            v.bbox.dim3.min = row["dim3_min"].as!float;
+            v.bbox.dim3.max = row["dim3_max"].as!float;
+            v.bbox.dim4.min = row["dim4_min"].as!float;
+            v.bbox.dim4.max = row["dim4_max"].as!float;
 
             ret ~= v;
         }
@@ -219,9 +231,23 @@ unittest
     t.bbox.dim2.max = 2;
     t.bbox.dim3.min = 1;
     t.bbox.dim3.max = 2;
+    t.bbox.dim4.min = 1;
+    t.bbox.dim4.max = 2;
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
 
-    assert(s.getValues(t.bbox).length == 1);
+    BoundingBox searchBox;
+    searchBox.dim1.min = 0;
+    searchBox.dim1.max = 3;
+    searchBox.dim2.min = 0;
+    searchBox.dim2.max = 3;
+    searchBox.dim3.min = 0;
+    searchBox.dim3.max = 3;
+    searchBox.dim4.min = 0;
+    searchBox.dim4.max = 3;
+
+    auto r = s.getValues(t.bbox);
+    assert(r.length == 1);
+    assert(r[0].bbox == t.bbox);
 }
