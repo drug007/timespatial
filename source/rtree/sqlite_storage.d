@@ -23,7 +23,7 @@ private enum sqlCreateSchema =
 CREATE TABLE IF NOT EXISTS `~payloadsTable~`
 (
     id INTEGER NOT NULL PRIMARY KEY,
-    payload BLOB
+    payload BLOB -- FIXME: add NOT NULL
 )
 `;
 
@@ -114,7 +114,7 @@ class Storage
         return db.execute("SELECT * FROM "~spatialIndexTable~" LIMIT 1").empty;
     }
 
-    void addValue(Value v)
+    void addValue(in Value v)
     {
         // Adding to index
         {
@@ -208,11 +208,6 @@ struct Value
     long id;
     BoundingBox bbox;
     ubyte[] payload;
-
-    this(this) pure
-    {
-        payload = payload.dup;
-    }
 }
 
 unittest
