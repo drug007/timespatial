@@ -245,7 +245,23 @@ unittest
 
     s.addValue(t);
 
-    assert(s.getMaxID() == 123);
+    {
+        Value t1;
+        t1.id = 256;
+        t1.bbox.dim1.min = 10;
+        t1.bbox.dim1.max = 20;
+        t1.bbox.dim2.min = 10;
+        t1.bbox.dim2.max = 20;
+        t1.bbox.dim3.min = 10;
+        t1.bbox.dim3.max = 20;
+        t1.bbox.dim4.min = 10;
+        t1.bbox.dim4.max = 20;
+        t1.payload = [0xDE, 0xAD, 0xBE, 0xEF];
+
+        s.addValue(t1);
+    }
+
+    assert(s.getMaxID() == 256);
 
     BoundingBox searchBox;
     searchBox.dim1.min = 0;
