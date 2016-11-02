@@ -19,7 +19,7 @@ class RTree
 
     ~this()
     {
-        delete storage;
+        destroy(storage);
     }
 
     /// Сохраняет точку (вершину) в хранилище
