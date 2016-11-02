@@ -48,7 +48,7 @@ class RTree
         storage.addValue(v);
     }
 
-    /// Находит все точки, которые лежат внутри и на заданных координатах
+    /// Находит все точки, которые лежат внутри и на границах bounding box
     Point[] searchPoints(in BoundingBox searchBox)
     {
         auto found = storage.getValues(searchBox);
