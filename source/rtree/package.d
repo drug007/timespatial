@@ -32,16 +32,16 @@ class RTree
 
         // При хранении точек R*Tree BBox имеет размер 1 точка,
         // поэтому min и max совпадают
-        v.bbox.dim1.min = point.coords.x;
-        v.bbox.dim1.max = point.coords.x;
-        v.bbox.dim2.min = point.coords.y;
-        v.bbox.dim2.max = point.coords.y;
-        v.bbox.dim3.min = point.coords.z;
-        v.bbox.dim3.max = point.coords.z;
+        v.bbox.spatial.min.x = point.coords.x;
+        v.bbox.spatial.max.x = point.coords.x;
+        v.bbox.spatial.min.y = point.coords.y;
+        v.bbox.spatial.max.y = point.coords.y;
+        v.bbox.spatial.min.z = point.coords.z;
+        v.bbox.spatial.max.z = point.coords.z;
 
         // Та же ситуация и для точек во времени
-        v.bbox.dim4.min = point.time;
-        v.bbox.dim4.max = point.time;
+        v.bbox.startTime = point.time;
+        v.bbox.endTime = point.time;
 
         v.payload = point.payload;
 
@@ -49,18 +49,8 @@ class RTree
     }
 
     /// Находит все точки, которые лежат внутри и на заданных координатах
-    Point[] searchPoints(box3f bbox, float startTime, float endTime)
+    Point[] searchPoints(in BoundingBox searchBox)
     {
-        BoundingBox searchBox;
-        searchBox.dim1.min = bbox.min.x;
-        searchBox.dim1.max = bbox.max.x;
-        searchBox.dim2.min = bbox.min.y;
-        searchBox.dim2.max = bbox.max.y;
-        searchBox.dim3.min = bbox.min.z;
-        searchBox.dim3.max = bbox.max.z;
-        searchBox.dim4.min = startTime;
-        searchBox.dim4.max = endTime;
-
         auto found = storage.getValues(searchBox);
 
         Point[] ret;
@@ -71,10 +61,8 @@ class RTree
             ret[i].payload = f.payload;
 
             // для точек в RTree можно брать координаты любого угла их BBox
-            ret[i].coords.x = f.bbox.dim1.min;
-            ret[i].coords.y = f.bbox.dim2.min;
-            ret[i].coords.z = f.bbox.dim3.min;
-            ret[i].time = f.bbox.dim4.min;
+            ret[i].coords = f.bbox.spatial.min;
+            ret[i].time = f.bbox.startTime; // для времени это тоже справедливо
         }
 
         return ret;
@@ -84,7 +72,7 @@ class RTree
 struct Point
 {
     vec3f coords;
-    float time;
+    long time;
     ubyte[] payload;
 }
 
