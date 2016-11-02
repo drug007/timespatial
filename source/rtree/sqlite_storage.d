@@ -13,14 +13,14 @@ private enum sqlCreateSchema =
 `CREATE VIRTUAL TABLE IF NOT EXISTS `~spatialIndexTable~` USING rtree
 (
     id NOT NULL,
-    dim1_min NOT NULL,
-    dim1_max NOT NULL,
-    dim2_min NOT NULL,
-    dim2_max NOT NULL,
-    dim3_min NOT NULL,
-    dim3_max NOT NULL,
-    dim4_min NOT NULL,
-    dim4_max NOT NULL
+    min_x NOT NULL,
+    max_x NOT NULL,
+    min_y NOT NULL,
+    max_y NOT NULL,
+    min_z NOT NULL,
+    max_z NOT NULL,
+    start_time NOT NULL,
+    end_time NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS `~payloadsTable~`
@@ -48,26 +48,26 @@ class Storage
             INSERT INTO "~spatialIndexTable~"
             (
                 id,
-                dim1_min,
-                dim1_max,
-                dim2_min,
-                dim2_max,
-                dim3_min,
-                dim3_max,
-                dim4_min,
-                dim4_max
+                min_x,
+                max_x,
+                min_y,
+                max_y,
+                min_z,
+                max_z,
+                start_time,
+                end_time
             )
             VALUES
             (
                 :id,
-                :dim1_min,
-                :dim1_max,
-                :dim2_min,
-                :dim2_max,
-                :dim3_min,
-                :dim3_max,
-                :dim4_min,
-                :dim4_max
+                :min_x,
+                :max_x,
+                :min_y,
+                :max_y,
+                :min_z,
+                :max_z,
+                :start_time,
+                :end_time
             )
         ");
 
@@ -83,22 +83,22 @@ class Storage
         getValuesStatement = db.prepare("
             SELECT
                 id,
-                dim1_min,
-                dim1_max,
-                dim2_min,
-                dim2_max,
-                dim3_min,
-                dim3_max,
-                dim4_min,
-                dim4_max,
+                min_x,
+                max_x,
+                min_y,
+                max_y,
+                min_z,
+                max_z,
+                start_time,
+                end_time,
                 payload
             FROM "~spatialIndexTable~"
             JOIN "~payloadsTable~" USING(id)
             WHERE
-                dim1_min >= :dim1_min AND dim1_max <= :dim1_max AND
-                dim2_min >= :dim2_min AND dim2_max <= :dim2_max AND
-                dim3_min >= :dim3_min AND dim3_max <= :dim3_max AND
-                dim4_min >= :dim4_min AND dim4_max <= :dim4_max
+                min_x >= :min_x AND max_x <= :max_x AND
+                min_y >= :min_y AND max_y <= :max_y AND
+                min_z >= :min_z AND max_z <= :max_z AND
+                start_time >= :start_time AND end_time <= :end_time
         ");
     }
 
@@ -141,14 +141,14 @@ class Storage
             alias q = addValueToIndexStatement;
 
             q.bind(":id", v.id);
-            q.bind(":dim1_min", v.bbox.spatial.min.x);
-            q.bind(":dim1_max", v.bbox.spatial.max.x);
-            q.bind(":dim2_min", v.bbox.spatial.min.y);
-            q.bind(":dim2_max", v.bbox.spatial.max.y);
-            q.bind(":dim3_min", v.bbox.spatial.min.z);
-            q.bind(":dim3_max", v.bbox.spatial.max.z);
-            q.bind(":dim4_min", v.bbox.startTime);
-            q.bind(":dim4_max", v.bbox.endTime);
+            q.bind(":min_x", v.bbox.spatial.min.x);
+            q.bind(":max_x", v.bbox.spatial.max.x);
+            q.bind(":min_y", v.bbox.spatial.min.y);
+            q.bind(":max_y", v.bbox.spatial.max.y);
+            q.bind(":min_z", v.bbox.spatial.min.z);
+            q.bind(":max_z", v.bbox.spatial.max.z);
+            q.bind(":start_time", v.bbox.startTime);
+            q.bind(":end_time", v.bbox.endTime);
 
             q.execute;
             assert(db.changes() == 1);
@@ -160,14 +160,14 @@ class Storage
     {
         alias q = getValuesStatement;
 
-        q.bind(":dim1_min", bbox.spatial.min.x);
-        q.bind(":dim1_max", bbox.spatial.max.x);
-        q.bind(":dim2_min", bbox.spatial.min.y);
-        q.bind(":dim2_max", bbox.spatial.max.y);
-        q.bind(":dim3_min", bbox.spatial.min.z);
-        q.bind(":dim3_max", bbox.spatial.max.z);
-        q.bind(":dim4_min", bbox.startTime);
-        q.bind(":dim4_max", bbox.endTime);
+        q.bind(":min_x", bbox.spatial.min.x);
+        q.bind(":max_x", bbox.spatial.max.x);
+        q.bind(":min_y", bbox.spatial.min.y);
+        q.bind(":max_y", bbox.spatial.max.y);
+        q.bind(":min_z", bbox.spatial.min.z);
+        q.bind(":max_z", bbox.spatial.max.z);
+        q.bind(":start_time", bbox.startTime);
+        q.bind(":end_time", bbox.endTime);
 
         auto answer = q.execute;
 
@@ -179,14 +179,14 @@ class Storage
             v.id = row["id"].as!long;
             v.payload = row["payload"].as!(ubyte[]);
 
-            v.bbox.spatial.min.x = row["dim1_min"].as!float;
-            v.bbox.spatial.max.x = row["dim1_max"].as!float;
-            v.bbox.spatial.min.y = row["dim2_min"].as!float;
-            v.bbox.spatial.max.y = row["dim2_max"].as!float;
-            v.bbox.spatial.min.z = row["dim3_min"].as!float;
-            v.bbox.spatial.max.z = row["dim3_max"].as!float;
-            v.bbox.startTime = row["dim4_min"].as!float;
-            v.bbox.endTime = row["dim4_max"].as!float;
+            v.bbox.spatial.min.x = row["min_x"].as!float;
+            v.bbox.spatial.max.x = row["max_x"].as!float;
+            v.bbox.spatial.min.y = row["min_y"].as!float;
+            v.bbox.spatial.max.y = row["max_y"].as!float;
+            v.bbox.spatial.min.z = row["min_z"].as!float;
+            v.bbox.spatial.max.z = row["max_z"].as!float;
+            v.bbox.startTime = row["start_time"].as!float;
+            v.bbox.endTime = row["end_time"].as!float;
 
             ret ~= v;
         }
