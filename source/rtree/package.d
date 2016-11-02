@@ -30,7 +30,7 @@ class RTree
         idCounter++;
         v.id = idCounter,
 
-        // При хранении точек R*Tree BBox имеет размер 1 точка,
+        // При хранении точек BBox имеет размер 1 точка,
         // поэтому min и max совпадают
         v.bbox.spatial.min.x = point.coords.x;
         v.bbox.spatial.max.x = point.coords.x;
