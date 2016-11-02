@@ -62,7 +62,9 @@ class RTree
 
             // для точек в RTree можно брать координаты любого угла их BBox
             ret[i].coords = f.bbox.spatial.min;
-            ret[i].time = f.bbox.startTime; // для времени это тоже справедливо
+
+            // для времени это тоже справедливо
+            ret[i].time = f.bbox.startTime;
         }
 
         return ret;
@@ -72,7 +74,7 @@ class RTree
 struct Point
 {
     vec3f coords;
-    long time;
+    float time;
     ubyte[] payload;
 }
 
@@ -87,9 +89,15 @@ unittest
 
     s.addPoint(p1);
 
-    auto points = s.searchPoints(box3f(vec3f(0, 0, 0), vec3f(9, 9, 9)), 0, 9);
+    BoundingBox searchBox;
+    searchBox.spatial.min = vec3f(0, 0, 0);
+    searchBox.spatial.max = vec3f(9, 9, 9);
+    searchBox.startTime = 0;
+    searchBox.endTime = 9;
+
+    auto points = s.searchPoints(searchBox);
     assert(points.length == 1);
     assert(points[0] == p1);
 
-    delete s;
+    destroy(s);
 }

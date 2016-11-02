@@ -200,8 +200,8 @@ class Storage
 struct BoundingBox
 {
     box3f spatial;
-    long startTime;
-    long endTime;
+    float startTime;
+    float endTime;
 }
 
 struct Value
@@ -266,5 +266,5 @@ unittest
     assert(r[0].id == t.id);
     assert(r[0].bbox == t.bbox);
 
-    delete s;
+    destroy(s);
 }
