@@ -244,7 +244,7 @@ unittest
         t1.bbox.spatial.max.z = 20;
         t1.bbox.startTime = 10;
         t1.bbox.endTime = 20;
-        t1.payload = [0xDE, 0xAD, 0xBE, 0xEF];
+        t1.payload = [0x11, 0x22, 0x33, 0x44];
 
         s.addValue(t1);
     }
@@ -265,6 +265,7 @@ unittest
     assert(r.length == 1);
     assert(r[0].id == t.id);
     assert(r[0].bbox == t.bbox);
+    assert(r[0].payload == t.payload);
 
     destroy(s);
 }
