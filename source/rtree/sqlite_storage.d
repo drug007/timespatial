@@ -76,11 +76,7 @@ class Storage
                 id,
                 payload
             )
-            VALUES
-            (
-                :id,
-                :payload
-            )
+            VALUES (?, ?)
         ");
 
         getValuesStatement = db.prepare("
@@ -133,9 +129,8 @@ class Storage
         {
             alias q = addValueToPayloadsStatement;
 
-            q.bind(":id", v.id);
-            //q.bind(":payload", v.payload); // FIXME
-
+            q.bindAll(v.id);
+            //~ q.bindAll(v.id, v.payload); // FIXME
             q.execute;
             assert(db.changes() == 1);
             q.reset();
