@@ -17,6 +17,11 @@ class RTree
         idCounter = storage.getMaxID;
     }
 
+    ~this()
+    {
+        delete storage;
+    }
+
     /// Сохраняет точку (вершину) в хранилище
     void addPoint(Point point)
     {
@@ -96,5 +101,7 @@ unittest
 
     auto points = s.searchPoints(box3f(vec3f(0, 0, 0), vec3f(9, 9, 9)), 0, 9);
     assert(points.length == 1);
-    //assert(points[0] == p1); // FIXME: need to fix payload storage
+    assert(points[0] == p1);
+
+    delete s;
 }

@@ -25,7 +25,7 @@ private enum sqlCreateSchema =
 CREATE TABLE IF NOT EXISTS `~payloadsTable~`
 (
     id INTEGER NOT NULL PRIMARY KEY,
-    payload BLOB -- FIXME: add NOT NULL
+    payload BLOB NOT NULL
 )
 `;
 
@@ -129,8 +129,7 @@ class Storage
         {
             alias q = addValueToPayloadsStatement;
 
-            q.bindAll(v.id);
-            //~ q.bindAll(v.id, v.payload); // FIXME
+            q.bindAll(v.id, v.payload);
             q.execute;
             assert(db.changes() == 1);
             q.reset();
@@ -272,4 +271,6 @@ unittest
     assert(r.length == 1);
     assert(r[0].id == t.id);
     assert(r[0].bbox == t.bbox);
+
+    delete s;
 }
