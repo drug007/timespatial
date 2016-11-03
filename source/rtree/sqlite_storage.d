@@ -5,7 +5,6 @@ package:
 import d2sqlite3;
 import std.file: remove;
 import gfm.math: box3f;
-import std.typecons: Tuple;
 
 private enum spatialIndexTable = "spatial";
 private enum payloadsTable = "payloads";
@@ -220,14 +219,10 @@ class Storage
 }
 
 /// Раскладывает значение long в два float
-private Tuple!(float, float) long2floats(long i) pure
+private void long2floats(long i, out float f1, out float f2) pure
 {
-    Tuple!(float, float) ret;
-
-    ret[0] = *cast(float*) &i;
-    ret[1] = *((cast(float*) &i) + 1);
-
-    return ret;
+    f1 = *cast(float*) &i;
+    f2 = *((cast(float*) &i) + 1);
 }
 
 /// Собирает два значения float в long
@@ -246,10 +241,11 @@ private long floats2long(float f1, float f2) pure
 
 unittest
 {
-    long i = long.max;
+    long i = long.max - 2;
+    float f1, f2;
 
-    auto floats = long2floats(i);
-    auto resultLong = floats2long(floats[0], floats[1]);
+    long2floats(i, f1, f2);
+    auto resultLong = floats2long(f1, f2);
 
     assert(i == resultLong);
 }
@@ -269,14 +265,19 @@ struct BoundingBox
     /// Заполняет ограничивающий временной интервал
     void setTimeInterval(long startTime, long endTime)
     {
-        auto startFloats = long2floats(startTime);
-        auto endFloats = long2floats(endTime);
+        float startFloat0;
+        float startFloat1;
+        float endFloat0;
+        float endFloat1;
 
-        timePart0.startTime = startFloats[0];
-        timePart1.startTime = startFloats[1];
+        long2floats(startTime, startFloat0, startFloat1);
+        long2floats(endTime, endFloat0, endFloat1);
 
-        timePart0.endTime = endFloats[0];
-        timePart1.endTime = endFloats[1];
+        timePart0.startTime = startFloat0;
+        timePart1.startTime = startFloat1;
+
+        timePart0.endTime = endFloat0;
+        timePart1.endTime = endFloat1;
     }
 
     long startTime() const @property
