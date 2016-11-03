@@ -87,7 +87,7 @@ unittest
         {
             foreach(x; -5..5)
             {
-                foreach(time; 0..10)
+                foreach(time; -5..5)
                 {
                     Point p;
                     p.coords = vec3f(x, y, z);
@@ -103,11 +103,17 @@ unittest
     BoundingBox searchBox;
     searchBox.spatial.min = vec3f(-2, -2, -2);
     searchBox.spatial.max = vec3f(2, 2, 2);
-    searchBox.setTimeInterval(3, 5);
+    searchBox.setTimeInterval(-2, 2);
 
     auto points = s.searchPoints(searchBox);
 
-    assert(points.length == 5 * 5 * 5 * 3);
+    import std.stdio;
+    foreach(p; points)
+        writeln(p);
+
+    writeln("total=", points.length);
+
+    assert(points.length == 5 * 5 * 5 * 5);
     assert(points[100].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 
     destroy(s);

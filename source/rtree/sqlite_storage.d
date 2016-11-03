@@ -301,6 +301,25 @@ struct BoundingBox
     }
 }
 
+unittest
+{
+    BoundingBox b;
+
+    b.setTimeInterval(-2, 2);
+
+    import std.stdio;
+    writeln(b.timePart0.startTime);
+    writeln(b.timePart1.startTime);
+    writeln(b.timePart0.endTime);
+    writeln(b.timePart1.endTime);
+
+    assert(b.timePart0.startTime == -2 || b.timePart1.startTime == -2); // because endiannes is unknown
+    assert(b.timePart0.endTime == 2 || b.timePart1.endTime == 2); // ditto
+
+    assert(b.startTime == -2);
+    assert(b.endTime == 2);
+}
+
 struct Value
 {
     long id;
