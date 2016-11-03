@@ -5,6 +5,7 @@ package:
 import d2sqlite3;
 import std.file: remove;
 import gfm.math: box3f;
+import std.typecons: Tuple;
 
 private enum spatialIndexTable = "spatial";
 private enum payloadsTable = "payloads";
@@ -195,6 +196,41 @@ class Storage
 
         return ret;
     }
+}
+
+/// Раскладывает значение long на два float
+private Tuple!(float, float) long2floats(long i) pure
+{
+    Tuple!(float, float) ret;
+
+    ret[0] = *cast(float*) &i;
+    ret[1] = *((cast(float*) &i) + 1);
+
+    return ret;
+}
+
+/// Собирает два значения float в long
+private long floats2long(float f1, float f2) pure
+{
+    long ret;
+
+    float* r1 = cast(float*) &ret;
+    float* r2 = (cast(float*) &ret) + 1;
+
+    *r1 = f1;
+    *r2 = f2;
+
+    return ret;
+}
+
+unittest
+{
+    long i = long.max;
+
+    auto floats = long2floats(i);
+    auto resultLong = floats2long(floats[0], floats[1]);
+
+    assert(i == resultLong);
 }
 
 struct BoundingBox
