@@ -103,12 +103,12 @@ unittest
     BoundingBox searchBox;
     searchBox.spatial.min = vec3f(-2.5, -2.5, -2.5);
     searchBox.spatial.max = vec3f(2.5, 2.5, 2.5);
-    searchBox.setTimeInterval(0, 10);
+    searchBox.setTimeInterval(3, 5);
 
     auto points = s.searchPoints(searchBox);
 
-    assert(points.length == 5 * 5 * 5 * 10);
-    assert(points[500].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
+    assert(points.length == 5 * 5 * 5 * 3);
+    assert(points[100].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 
     destroy(s);
 }
