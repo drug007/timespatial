@@ -219,7 +219,7 @@ class Storage
     }
 }
 
-/// Раскладывает значение long на два float
+/// Раскладывает значение long в два float
 private Tuple!(float, float) long2floats(long i) pure
 {
     Tuple!(float, float) ret;
