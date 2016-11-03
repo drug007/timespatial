@@ -40,8 +40,7 @@ class RTree
         v.bbox.spatial.max.z = point.coords.z;
 
         // Та же ситуация и для точек во времени
-        v.bbox.startTime = point.time;
-        v.bbox.endTime = point.time;
+        v.bbox.setTimeInterval(point.time, point.time);
 
         v.payload = point.payload;
 
@@ -74,7 +73,7 @@ class RTree
 struct Point
 {
     vec3f coords;
-    float time;
+    long time;
     ubyte[] payload;
 }
 
@@ -92,8 +91,7 @@ unittest
     BoundingBox searchBox;
     searchBox.spatial.min = vec3f(0, 0, 0);
     searchBox.spatial.max = vec3f(9, 9, 9);
-    searchBox.startTime = 0;
-    searchBox.endTime = 9;
+    searchBox.setTimeInterval(0, 9);
 
     auto points = s.searchPoints(searchBox);
     assert(points.length == 1);
