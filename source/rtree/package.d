@@ -107,9 +107,6 @@ unittest
 
     auto points = s.searchPoints(searchBox);
 
-    foreach(p; points)
-        writeln(p);
-
     assert(points.length == 5 * 5 * 5 * 10);
     assert(points[500].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 

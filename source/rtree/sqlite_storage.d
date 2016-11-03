@@ -239,13 +239,25 @@ private long floats2long(float f1, float f2) pure
 
 unittest
 {
-    long i = long.max - 2;
-    float f1, f2;
+    {
+        long i = long.max - 2;
+        float f1, f2;
 
-    long2floats(i, f1, f2);
-    auto resultLong = floats2long(f1, f2);
+        long2floats(i, f1, f2);
+        auto resultLong = floats2long(f1, f2);
 
-    assert(i == resultLong);
+        assert(i == resultLong);
+    }
+
+    {
+        long i = long.min;
+        float f1, f2;
+
+        long2floats(i, f1, f2);
+        auto resultLong = floats2long(f1, f2);
+
+        assert(i == resultLong);
+    }
 }
 
 struct TimeInterval
