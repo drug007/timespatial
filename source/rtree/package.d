@@ -101,8 +101,8 @@ unittest
     }
 
     BoundingBox searchBox;
-    searchBox.spatial.min = vec3f(-2.5, -2.5, -2.5);
-    searchBox.spatial.max = vec3f(2.5, 2.5, 2.5);
+    searchBox.spatial.min = vec3f(-2, -2, -2);
+    searchBox.spatial.max = vec3f(2, 2, 2);
     searchBox.setTimeInterval(3, 5);
 
     auto points = s.searchPoints(searchBox);
