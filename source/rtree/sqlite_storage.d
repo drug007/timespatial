@@ -3,7 +3,6 @@ module rtree.sqlite_storage;
 package:
 
 import d2sqlite3;
-import std.file: remove;
 import gfm.math: box3f;
 
 private enum spatialIndexTable = "spatial";
@@ -120,7 +119,6 @@ class Storage
     ~this()
     {
         db.close;
-        remove(filePath);
     }
 
     private bool tableIsEmpty(string spatialIndexTable)
@@ -302,7 +300,7 @@ unittest
 {
     import std.file: tempDir;
 
-    auto s = new Storage(tempDir ~ "/__unittest_sqlite.db"); // FIXME: что сделать с юниксовым слэшем чтобы тест и в виндах работал?
+    auto s = new Storage(":memory:");
 
     assert(s.tableIsEmpty(spatialIndexTable));
 

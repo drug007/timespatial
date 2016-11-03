@@ -79,23 +79,39 @@ struct Point
 
 unittest
 {
-    auto s = new RTree("__unittest_rtree.db");
+    auto s = new RTree(":memory:");
 
-    Point p1;
-    p1.coords = vec3f(1,2,3);
-    p1.time = 4;
-    p1.payload = [0xDE, 0xAD, 0xBE, 0xEF];
+    foreach(z; -5..5)
+    {
+        foreach(y; -5..5)
+        {
+            foreach(x; -5..5)
+            {
+                foreach(time; 0..10)
+                {
+                    Point p;
+                    p.coords = vec3f(x, y, z);
+                    p.time = time;
+                    p.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
-    s.addPoint(p1);
+                    s.addPoint(p);
+                }
+            }
+        }
+    }
 
     BoundingBox searchBox;
-    searchBox.spatial.min = vec3f(0, 0, 0);
-    searchBox.spatial.max = vec3f(9, 9, 9);
-    searchBox.setTimeInterval(0, 9);
+    searchBox.spatial.min = vec3f(-2.5, -2.5, -2.5);
+    searchBox.spatial.max = vec3f(2.5, 2.5, 2.5);
+    searchBox.setTimeInterval(0, 10);
 
     auto points = s.searchPoints(searchBox);
-    assert(points.length == 1);
-    assert(points[0] == p1);
+
+    foreach(p; points)
+        writeln(p);
+
+    assert(points.length == 5 * 5 * 5 * 10);
+    assert(points[500].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 
     destroy(s);
 }
