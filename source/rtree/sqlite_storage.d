@@ -20,14 +20,7 @@ private enum sqlCreateSchema =
     max_y NOT NULL,
 
     min_z NOT NULL,
-    max_z NOT NULL,
-
-    -- Время хранится в двух координатах потому что нам оно
-    -- нужно 64-битное, а sqlite хранит координаты 32-битными
-    start_time_part_0 NOT NULL,
-    end_time_part_0 NOT NULL,
-    start_time_part_1 NOT NULL,
-    end_time_part_1 NOT NULL
+    max_z NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS `~payloadsTable~`
@@ -60,11 +53,7 @@ class Storage
                 min_y,
                 max_y,
                 min_z,
-                max_z,
-                start_time_part_0,
-                end_time_part_0,
-                start_time_part_1,
-                end_time_part_1
+                max_z
             )
             VALUES
             (
@@ -74,11 +63,7 @@ class Storage
                 :min_y,
                 :max_y,
                 :min_z,
-                :max_z,
-                :start_time_part_0,
-                :end_time_part_0,
-                :start_time_part_1,
-                :end_time_part_1
+                :max_z
             )
         ");
 
@@ -100,19 +85,13 @@ class Storage
                 max_y,
                 min_z,
                 max_z,
-                start_time_part_0,
-                end_time_part_0,
-                start_time_part_1,
-                end_time_part_1,
                 payload
             FROM "~spatialIndexTable~"
             JOIN "~payloadsTable~" USING(id)
             WHERE
                 min_x >= :min_x AND max_x <= :max_x AND
                 min_y >= :min_y AND max_y <= :max_y AND
-                min_z >= :min_z AND max_z <= :max_z AND
-                start_time_part_0 >= :start_time_part_0 AND end_time_part_0 <= :end_time_part_0 AND
-                start_time_part_1 >= :start_time_part_1 AND end_time_part_1 <= :end_time_part_1
+                min_z >= :min_z AND max_z <= :max_z
         ");
     }
 
@@ -160,10 +139,6 @@ class Storage
             q.bind(":max_y", v.bbox.spatial.max.y);
             q.bind(":min_z", v.bbox.spatial.min.z);
             q.bind(":max_z", v.bbox.spatial.max.z);
-            q.bind(":start_time_part_0", v.bbox.timePart0.startTime);
-            q.bind(":start_time_part_1", v.bbox.timePart1.startTime);
-            q.bind(":end_time_part_0", v.bbox.timePart0.endTime);
-            q.bind(":end_time_part_1", v.bbox.timePart1.endTime);
 
             q.execute;
             assert(db.changes() == 1);
@@ -181,10 +156,6 @@ class Storage
         q.bind(":max_y", bbox.spatial.max.y);
         q.bind(":min_z", bbox.spatial.min.z);
         q.bind(":max_z", bbox.spatial.max.z);
-        q.bind(":start_time_part_0", bbox.timePart0.startTime);
-        q.bind(":start_time_part_1", bbox.timePart1.startTime);
-        q.bind(":end_time_part_0", bbox.timePart0.endTime);
-        q.bind(":end_time_part_1", bbox.timePart1.endTime);
 
         auto answer = q.execute;
 
@@ -202,10 +173,6 @@ class Storage
             v.bbox.spatial.max.y = row["max_y"].as!float;
             v.bbox.spatial.min.z = row["min_z"].as!float;
             v.bbox.spatial.max.z = row["max_z"].as!float;
-            v.bbox.timePart0.startTime = row["start_time_part_0"].as!float;
-            v.bbox.timePart1.startTime = row["start_time_part_1"].as!float;
-            v.bbox.timePart0.endTime = row["end_time_part_0"].as!float;
-            v.bbox.timePart1.endTime = row["end_time_part_1"].as!float;
 
             ret ~= v;
         }
@@ -269,55 +236,6 @@ struct TimeInterval
 struct BoundingBox
 {
     box3f spatial;
-    private TimeInterval timePart0;
-    private TimeInterval timePart1;
-
-    /// Заполняет ограничивающий временной интервал
-    void setTimeInterval(long startTime, long endTime)
-    {
-        float startFloat0;
-        float startFloat1;
-        float endFloat0;
-        float endFloat1;
-
-        long2floats(startTime, startFloat0, startFloat1);
-        long2floats(endTime, endFloat0, endFloat1);
-
-        timePart0.startTime = startFloat0;
-        timePart1.startTime = startFloat1;
-
-        timePart0.endTime = endFloat0;
-        timePart1.endTime = endFloat1;
-    }
-
-    long startTime() const @property
-    {
-        return floats2long(timePart0.startTime, timePart1.startTime);
-    }
-
-    long endTime() const @property
-    {
-        return floats2long(timePart0.endTime, timePart1.endTime);
-    }
-}
-
-unittest
-{
-    BoundingBox b;
-
-    b.setTimeInterval(-2, 2);
-
-    import std.stdio;
-    writeln(b.timePart0.startTime);
-    writeln(b.timePart1.startTime);
-    writeln(b.timePart0.endTime);
-    writeln(b.timePart1.endTime);
-
-    assert(b.timePart0.startTime == -2 || b.timePart1.startTime == -2); // because endiannes is unknown
-    assert(b.timePart0.endTime == 2 || b.timePart1.endTime == 2); // ditto
-
-    assert(b.startTime == -2);
-    assert(b.endTime == 2);
 }
 
 struct Value
@@ -329,8 +247,6 @@ struct Value
 
 unittest
 {
-    import std.file: tempDir;
-
     auto s = new Storage(":memory:");
 
     assert(s.tableIsEmpty(spatialIndexTable));
@@ -343,7 +259,6 @@ unittest
     t.bbox.spatial.max.y = 2;
     t.bbox.spatial.min.z = 1;
     t.bbox.spatial.max.z = 2;
-    t.bbox.setTimeInterval(1, 2);
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
@@ -357,7 +272,6 @@ unittest
         t1.bbox.spatial.max.y = 20;
         t1.bbox.spatial.min.z = 10;
         t1.bbox.spatial.max.z = 20;
-        t1.bbox.setTimeInterval(10, 20);
         t1.payload = [0x11, 0x22, 0x33, 0x44];
 
         s.addValue(t1);
@@ -372,7 +286,6 @@ unittest
     searchBox.spatial.max.y = 3;
     searchBox.spatial.min.z = 0;
     searchBox.spatial.max.z = 3;
-    searchBox.setTimeInterval(0, 3);
 
     auto r = s.getValues(t.bbox);
     assert(r.length == 1);

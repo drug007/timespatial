@@ -39,9 +39,6 @@ class RTree
         v.bbox.spatial.min.z = point.coords.z;
         v.bbox.spatial.max.z = point.coords.z;
 
-        // Та же ситуация и для точек во времени
-        v.bbox.setTimeInterval(point.time, point.time);
-
         v.payload = point.payload;
 
         storage.addValue(v);
@@ -61,9 +58,6 @@ class RTree
 
             // для точек в RTree можно брать координаты любого угла их BBox
             ret[i].coords = f.bbox.spatial.min;
-
-            // для времени это тоже справедливо
-            ret[i].time = f.bbox.startTime;
         }
 
         return ret;
@@ -73,7 +67,6 @@ class RTree
 struct Point
 {
     vec3f coords;
-    long time;
     ubyte[] payload;
 }
 
@@ -87,15 +80,11 @@ unittest
         {
             foreach(x; -5..5)
             {
-                foreach(time; -5..5)
-                {
-                    Point p;
-                    p.coords = vec3f(x, y, z);
-                    p.time = time;
-                    p.payload = [0xDE, 0xAD, 0xBE, 0xEF];
+                Point p;
+                p.coords = vec3f(x, y, z);
+                p.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
-                    s.addPoint(p);
-                }
+                s.addPoint(p);
             }
         }
     }
@@ -103,17 +92,10 @@ unittest
     BoundingBox searchBox;
     searchBox.spatial.min = vec3f(-2, -2, -2);
     searchBox.spatial.max = vec3f(2, 2, 2);
-    searchBox.setTimeInterval(-2, 2);
 
     auto points = s.searchPoints(searchBox);
 
-    import std.stdio;
-    foreach(p; points)
-        writeln(p);
-
-    writeln("total=", points.length);
-
-    assert(points.length == 5 * 5 * 5 * 5);
+    assert(points.length == 5 * 5 * 5);
     assert(points[100].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 
     destroy(s);
