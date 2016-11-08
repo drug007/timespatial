@@ -73,6 +73,15 @@ class RTree
 
         return ret;
     }
+
+    /// ditto
+    Point[] searchPoints(in box3f searchBox)
+    {
+        BoundingBox bb;
+        bb.spatial = searchBox;
+
+        return searchPoints(bb);
+    }
 }
 
 struct Payload
@@ -156,8 +165,8 @@ unittest
         s.addPoint(e.id, vec3f(e.x, e.y, e.z));
     }
 
-    //~ auto box = box3f(vec3f(,,), vec3f(,,)); // формируем ограничивающий прямоугольник
-    //~ auto points = s.searchPoints(box);
+    auto box = box3f(vec3f(1, 2, 3), vec3f(4, 5, 6)); // формируем ограничивающий прямоугольник
+    auto points = s.searchPoints(box);
     //~ assert(points.length == some_value); // проверяем, что количество точек правильное
     //~ import std.algorithm: equal;
     //~ assert(equal(points.map!"a.id ", [id1, id2, ... idN]); // проверяем, что возвращены правильные идентификаторы
