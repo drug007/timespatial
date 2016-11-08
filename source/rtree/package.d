@@ -2,6 +2,7 @@ module rtree;
 
 import rtree.sqlite_storage;
 import gfm.math: vec3f, box3f;
+import data_provider: Id;
 
 class RTree
 {
@@ -23,11 +24,11 @@ class RTree
     }
 
     /// Сохраняет точку (вершину) в хранилище
-    void addPoint(vec3f coords)
+    void addPoint(Id externalId, vec3f coords)
     {
         Point p;
         p.coords = coords;
-        p.payload = [0];
+        p.externalId = externalId;
 
         addPoint(p);
     }
@@ -49,7 +50,7 @@ class RTree
         v.bbox.spatial.min.z = point.coords.z;
         v.bbox.spatial.max.z = point.coords.z;
 
-        v.payload = point.payload;
+        v.payload = point.payload.toBlob;
 
         storage.addValue(v);
     }
@@ -64,7 +65,7 @@ class RTree
 
         foreach(i, f; found)
         {
-            ret[i].payload = f.payload;
+            ret[i].payload.fromBlob(f.payload);
 
             // для точек в RTree можно брать координаты любого угла их BBox
             ret[i].coords = f.bbox.spatial.min;
@@ -74,10 +75,39 @@ class RTree
     }
 }
 
+struct Payload
+{
+    Id externalId;
+
+    auto toBlob() const pure
+    {
+        ubyte[Payload.sizeof] ret;
+
+        Payload* payload = cast(Payload*) &ret;
+        *payload = this;
+
+        return ret;
+    }
+
+    void fromBlob(ubyte[Payload.sizeof] blob)
+    {
+        this = *cast(Payload*) &blob;
+    }
+
+    void fromBlob(ubyte[] blob)
+    {
+        assert(blob.length == Payload.sizeof);
+
+        fromBlob(blob[0..Payload.sizeof]);
+    }
+}
+
 struct Point
 {
     vec3f coords;
-    ubyte[] payload;
+    Payload payload;
+
+    alias payload this;
 }
 
 unittest
@@ -92,7 +122,8 @@ unittest
             {
                 Point p;
                 p.coords = vec3f(x, y, z);
-                p.payload = [0xDE, 0xAD, 0xBE, 0xEF];
+                p.externalId.source = x;
+                p.externalId.no = y;
 
                 s.addPoint(p);
             }
@@ -106,7 +137,6 @@ unittest
     auto points = s.searchPoints(searchBox);
 
     assert(points.length == 5 * 5 * 5);
-    assert(points[100].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 
     destroy(s);
 }
@@ -122,5 +152,15 @@ unittest
     import test_data; // в папке source лежит файл с тестовыми данными
 
     foreach(id, e; testData)
-        s.addPoint(vec3f(e.x, e.y, e.z));
+    {
+        s.addPoint(e.id, vec3f(e.x, e.y, e.z));
+    }
+
+    //~ auto box = box3f(vec3f(,,), vec3f(,,)); // формируем ограничивающий прямоугольник
+    //~ auto points = s.searchPoints(box);
+    //~ assert(points.length == some_value); // проверяем, что количество точек правильное
+    //~ import std.algorithm: equal;
+    //~ assert(equal(points.map!"a.id ", [id1, id2, ... idN]); // проверяем, что возвращены правильные идентификаторы
+
+    destroy(s);
 }
