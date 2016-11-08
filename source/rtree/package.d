@@ -23,6 +23,16 @@ class RTree
     }
 
     /// Сохраняет точку (вершину) в хранилище
+    void addPoint(vec3f coords)
+    {
+        Point p;
+        p.coords = coords;
+        p.payload = [0];
+
+        addPoint(p);
+    }
+
+    /// ditto
     void addPoint(Point point)
     {
         Value v;
@@ -99,4 +109,18 @@ unittest
     assert(points[100].payload == [0xDE, 0xAD, 0xBE, 0xEF]);
 
     destroy(s);
+}
+
+unittest
+{
+    // тест на реальных данных похож на интеграционный, но так как мы
+    // точно знаем где лежат всё что нужно для теста заранее, то он
+    // оформлен как unittest
+
+    auto s = new RTree(":memory:");
+
+    import test_data; // в папке source лежит файл с тестовыми данными
+
+    foreach(id, e; testData)
+        s.addPoint(vec3f(e.x, e.y, e.z));
 }
