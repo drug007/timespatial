@@ -3,6 +3,7 @@ module default_viewer;
 import std.conv: text;
 
 import gfm.math: box3f, vec3f, vec2f;
+import gfm.sdl2;
 
 import base_viewer: BaseViewer;
 import data_item: timeToStringz;
@@ -127,6 +128,7 @@ class DefaultViewer : BaseViewer
 
     /// Находит ближайшую точку по координатам в окне
     /// Если такой точки нет то возвращает null
+    /// Возвращённое значение обслуживается GC
     Point* pickPoint(in vec2f screenCoords)
     {
         enum radius = 100.0f;
@@ -153,6 +155,15 @@ class DefaultViewer : BaseViewer
         return nearest;
     }
 
+    override public void onMouseDown(ref const(SDL_Event) event)
+    {
+        super.onMouseDown(event);
+        auto point = pickPoint(vec2f(mouse_x, mouse_y));
+
+        if(point !is null)
+            pickedPoint = (*point).toString;
+    }
+
     void delegate() onMaxPointChange;
     void delegate() onCurrentTimestampChange;
 
@@ -161,6 +172,7 @@ class DefaultViewer : BaseViewer
     {
         import gfm.opengl;  
         import derelict.imgui.imgui;
+        import std.string: toStringz;
 
         {
             igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
@@ -194,6 +206,9 @@ class DefaultViewer : BaseViewer
                 igText("Max time");
                 igSameLine();
                 igText(timeByIndex(max).timeToStringz);
+
+                igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
+                igText("Picked point %s", pickedPoint.toStringz);
             }
             igEnd();
         }
@@ -210,6 +225,7 @@ class DefaultViewer : BaseViewer
     }
 
     RTree pointsRtree;
+    string pickedPoint;
 
 public:
     import data_layout: IDataLayout;
@@ -221,4 +237,11 @@ public:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
+}
+
+private string toString(in Point p)
+{
+    import std.conv: to;
+
+    return "id="~p.externalId.to!string~" x="~p.coords.x.to!string~" y="~p.coords.y.to!string;
 }
