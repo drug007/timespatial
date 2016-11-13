@@ -9,6 +9,8 @@ import data_item: timeToStringz;
 import timestamp_storage: TimestampStorage;
 import data_provider: DataObject, IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
+import rtree;
+import data_provider: Data;
 
 class DefaultViewer : BaseViewer
 {
@@ -50,6 +52,8 @@ class DefaultViewer : BaseViewer
                 e.setMaxCount(max_point_counts);
             }
         };
+
+        pointsRtree = new RTree(":memory:");
     }
 
     void centerCamera()
@@ -66,6 +70,11 @@ class DefaultViewer : BaseViewer
         pos = box.max - box.min;
         auto size = max(pos.x, pos.y)/2.;
         setCameraSize(size);
+    }
+
+    ~this()
+    {
+        destroy(pointsRtree);
     }
 
     void addData(DataObject[uint][uint] data_objects)
@@ -97,6 +106,13 @@ class DefaultViewer : BaseViewer
                 dl.add!DataObject(e2, e2.no.text ~ "\0");
         }
         onCurrentTimestampChange();
+    }
+
+    /// Добавляет данные в RTree
+    private void addDataToRTree(Data[] data)
+    {
+        foreach(id, e; data)
+            pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
     }
 
     void delegate() onMaxPointChange;
@@ -154,6 +170,8 @@ class DefaultViewer : BaseViewer
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
+
+    RTree pointsRtree;
 
 public:
     import data_layout: IDataLayout;
