@@ -120,8 +120,12 @@ class DefaultViewer : BaseViewer
     /// Для упрощения подразумевается что вид на точки направлен строго сверху
     private Point[] pickPoints(in vec2f screenCoords, float radius)
     {
-        vec3f expander = vec3f(radius, radius, radius);
+        vec3f expander = vec3f(radius, radius, float.infinity);
         box3f searchBox = box3f(_camera_pos - expander, _camera_pos + expander);
+
+        pickedPointDescription ~= "Box min="~searchBox.min.toString;
+        pickedPointDescription ~= " max="~searchBox.max.toString;
+        pickedPointDescription ~= "\n";
 
         return pointsRtree.searchPoints(searchBox);
     }
@@ -131,10 +135,13 @@ class DefaultViewer : BaseViewer
     /// Возвращённое значение обслуживается GC
     Point* pickPoint(in vec2f screenCoords)
     {
-        enum radius = 100.0f;
+        enum radius = 10000.0f;
         auto found = pickPoints(screenCoords, radius);
 
         vec3f cameraRay = screenPoint2worldRay(screenCoords);
+
+        pickedPointDescription ~= "cameraRay="~cameraRay.toString;
+
         Point* nearest;
         real minDistance = real.infinity;
 
@@ -158,10 +165,14 @@ class DefaultViewer : BaseViewer
     override public void onMouseDown(ref const(SDL_Event) event)
     {
         super.onMouseDown(event);
+
+        pickedPointDescription = "";
         auto point = pickPoint(vec2f(mouse_x, mouse_y));
 
         if(point !is null)
-            pickedPoint = (*point).toString;
+        {
+            pickedPointDescription ~= (*point).toString;
+        }
     }
 
     void delegate() onMaxPointChange;
@@ -208,7 +219,7 @@ class DefaultViewer : BaseViewer
                 igText(timeByIndex(max).timeToStringz);
 
                 igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
-                igText("Picked point %s", pickedPoint.toStringz);
+                igText("Picked point %s", pickedPointDescription.toStringz);
             }
             igEnd();
         }
@@ -225,7 +236,7 @@ class DefaultViewer : BaseViewer
     }
 
     RTree pointsRtree;
-    string pickedPoint;
+    string pickedPointDescription;
 
 public:
     import data_layout: IDataLayout;
