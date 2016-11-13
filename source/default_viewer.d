@@ -109,7 +109,7 @@ class DefaultViewer : BaseViewer
     }
 
     /// Добавляет данные в RTree
-    private void addDataToRTree(Data[] data)
+    public void addDataToRTree(Data[] data) //FIXME: isn't need to be public
     {
         foreach(id, e; data)
             pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
