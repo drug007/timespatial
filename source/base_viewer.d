@@ -322,7 +322,7 @@ protected:
 
     /// Преобразование экранных координат в мировые.
     /// Возвращает луч из камеры в мировых координатах.
-    package vec3f screenPoint2worldRay(in vec2f screenCoords) pure
+    public vec3f screenPoint2worldRay(in vec2f screenCoords) pure const //FIXME: Isn't need to be public
     {
         vec3f normalized;
         normalized.x = (2.0f * screenCoords.x) / width - 1.0f;

@@ -2,7 +2,7 @@ module default_viewer;
 
 import std.conv: text;
 
-import gfm.math: box3f, vec3f;
+import gfm.math: box3f, vec3f, vec2f;
 
 import base_viewer: BaseViewer;
 import data_item: timeToStringz;
@@ -113,6 +113,44 @@ class DefaultViewer : BaseViewer
     {
         foreach(id, e; data)
             pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
+    }
+
+    /// Находит ближайшие в радиусе не менее radius точки по координатам в окне
+    /// Для упрощения подразумевается что вид на точки направлен строго сверху
+    private Point[] pickPoints(in vec2f screenCoords, float radius)
+    {
+        vec3f expander = vec3f(radius, radius, radius);
+        box3f searchBox = box3f(_camera_pos - expander, _camera_pos + expander);
+
+        return pointsRtree.searchPoints(searchBox);
+    }
+
+    /// Находит ближайшую точку по координатам в окне
+    /// Если такой точки нет то возвращает null
+    Point* pickPoint(in vec2f screenCoords)
+    {
+        enum radius = 100.0f;
+        auto found = pickPoints(screenCoords, radius);
+
+        vec3f cameraRay = screenPoint2worldRay(screenCoords);
+        Point* nearest;
+        real minDistance = real.infinity;
+
+        foreach(point; found)
+        {
+            auto camRelative = point.coords - _camera_pos;
+            auto distance = cameraRay.distanceTo(camRelative);
+
+            if(distance < minDistance) // найдена точка ближе?
+            {
+                if(nearest is null) nearest = new Point;
+
+                minDistance = distance;
+                *nearest = point;
+            }
+        }
+
+        return nearest;
     }
 
     void delegate() onMaxPointChange;
