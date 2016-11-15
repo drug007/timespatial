@@ -1,0 +1,13 @@
+language: d
+
+os:
+  - linux
+
+d:
+ - dmd # latest
+ - dmd-2.071.2
+ - dmd-2.071.1
+ - ldc-1.0.0
+
+script:
+  - dub test --compiler=${DC}
