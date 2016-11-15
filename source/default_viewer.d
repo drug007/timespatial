@@ -116,18 +116,27 @@ class DefaultViewer : BaseViewer
             pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
     }
 
-    /// Находит ближайшие в радиусе не менее radius точки по координатам в окне
-    /// Для упрощения подразумевается что вид на точки направлен строго сверху
-    private Point[] pickPoints(in vec2f screenCoords, float radius)
+    /// Конвертация экранной координаты в точку на поверхности Земли
+    private vec3f screenCoords2gndPoint(in vec2f screenCoords)
     {
-        vec3f expander = vec3f(radius, radius, float.infinity);
-        box3f searchBox = box3f(_camera_pos - expander, _camera_pos + expander);
+        import gfm.math.shapes;
 
-        pickedPointDescription ~= "Box min="~searchBox.min.toString;
-        pickedPointDescription ~= " max="~searchBox.max.toString;
-        pickedPointDescription ~= "\n";
+        triangle3f ground = triangle3f(vec3f(0, 0, 0), vec3f(1, 0, 0), vec3f(0, 1, 0));
+        ray3f pickRay;
 
-        return pointsRtree.searchPoints(searchBox);
+        pickRay.orig = _camera_pos;
+        pickRay.dir = screenPoint2worldRay(screenCoords);
+
+        float t, u, v;
+        pickRay.intersect(ground, t, u, v);
+
+        vec3f groundPoint = (1.0f - u - v) * ground.a + u * ground.b + v * ground.c;
+
+        //assert(groundPoint.z == 0); // z должен быть равен нулю
+
+        pickedPointDescription ~= "Ground point="~groundPoint.toString~"\n";
+
+        return groundPoint;
     }
 
     /// Находит ближайшую точку по координатам в окне
@@ -135,20 +144,33 @@ class DefaultViewer : BaseViewer
     /// Возвращённое значение обслуживается GC
     Point* pickPoint(in vec2f screenCoords)
     {
-        enum radius = 10000.0f;
-        auto found = pickPoints(screenCoords, radius);
+        box3f searchBox;
 
-        vec3f cameraRay = screenPoint2worldRay(screenCoords);
+        {
+            enum radius = 100; /// радиус поиска точек в пикселях
+            auto expander = vec2f(radius, radius);
 
-        pickedPointDescription ~= "cameraRay="~cameraRay.toString;
+            searchBox.min = screenCoords2gndPoint(screenCoords - expander);
+            searchBox.max = screenCoords2gndPoint(screenCoords + expander);
+
+            // установка возможных высот
+            searchBox.min.z = -20000.0f;
+            searchBox.max.z = 20000.0f;
+        }
+
+        pickedPointDescription ~= "Search box min="~searchBox.min.toString;
+        pickedPointDescription ~= " max="~searchBox.max.toString;
+        pickedPointDescription ~= "\n";
+
+        auto found =  pointsRtree.searchPoints(searchBox);
+        auto boxCenter = screenCoords2gndPoint(screenCoords);
 
         Point* nearest;
         real minDistance = real.infinity;
 
         foreach(point; found)
         {
-            auto camRelative = point.coords - _camera_pos;
-            auto distance = cameraRay.distanceTo(camRelative);
+            auto distance = boxCenter.distanceTo(point.coords);
 
             if(distance < minDistance) // найдена точка ближе?
             {
