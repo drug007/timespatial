@@ -9,6 +9,8 @@ import data_item: timeToStringz;
 import timestamp_storage: TimestampStorage;
 import data_provider: DataObject, IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
+import rtree;
+import data_provider: Data;
 
 class DefaultViewer : BaseViewer
 {
@@ -50,6 +52,8 @@ class DefaultViewer : BaseViewer
                 e.setMaxCount(max_point_counts);
             }
         };
+
+        pointsRtree = new RTree(":memory:");
     }
 
     void centerCamera()
@@ -66,6 +70,11 @@ class DefaultViewer : BaseViewer
         pos = box.max - box.min;
         auto size = max(pos.x, pos.y)/2.;
         setCameraSize(size);
+    }
+
+    ~this()
+    {
+        destroy(pointsRtree);
     }
 
     void addData(DataObject[uint][uint] data_objects)
@@ -97,6 +106,51 @@ class DefaultViewer : BaseViewer
                 dl.add!DataObject(e2, e2.no.text ~ "\0");
         }
         onCurrentTimestampChange();
+    }
+
+    /// Добавляет данные в RTree
+    public void addDataToRTree(Data[] data) //FIXME: isn't need to be public
+    {
+        foreach(id, e; data)
+            pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
+    }
+
+    /// Находит ближайшие в радиусе не менее radius точки по координатам в окне
+    /// Для упрощения подразумевается что вид на точки направлен строго сверху
+    private Point[] pickPoints(in vec2f screenCoords, float radius)
+    {
+        vec3f expander = vec3f(radius, radius, radius);
+        box3f searchBox = box3f(_camera_pos - expander, _camera_pos + expander);
+
+        return pointsRtree.searchPoints(searchBox);
+    }
+
+    /// Находит ближайшую точку по координатам в окне
+    /// Если такой точки нет то возвращает null
+    Point* pickPoint(in vec2f screenCoords)
+    {
+        enum radius = 100.0f;
+        auto found = pickPoints(screenCoords, radius);
+
+        vec3f cameraRay = screenPoint2worldRay(screenCoords);
+        Point* nearest;
+        real minDistance = real.infinity;
+
+        foreach(point; found)
+        {
+            auto camRelative = point.coords - _camera_pos;
+            auto distance = cameraRay.distanceTo(camRelative);
+
+            if(distance < minDistance) // найдена точка ближе?
+            {
+                if(nearest is null) nearest = new Point;
+
+                minDistance = distance;
+                *nearest = point;
+            }
+        }
+
+        return nearest;
     }
 
     /// Проекция оконной координаты в точку на плоскости z = 0
@@ -185,6 +239,8 @@ class DefaultViewer : BaseViewer
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
+
+    RTree pointsRtree;
 
 public:
     import data_layout: IDataLayout;
