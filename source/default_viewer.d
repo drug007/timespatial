@@ -121,7 +121,7 @@ class DefaultViewer : BaseViewer
     {
         import gfm.math.shapes;
 
-        triangle3f ground = triangle3f(vec3f(0, 0, 0), vec3f(1, 0, 0), vec3f(0, 1, 0));
+        triangle3f ground = triangle3f(vec3f(0, 0, 0), vec3f(10000000, 0, 0), vec3f(0, 10000000, 0));
 
         ray3f pickRay;
         pickRay.orig = _camera_pos;
@@ -131,7 +131,7 @@ class DefaultViewer : BaseViewer
         pickRay.intersect(ground, t, u, v);
 
         import std.conv: to;
-        pickedPointDescription ~= "points: "~t.to!string~u.to!string~v.to!string~"\n";
+        pickedPointDescription ~= "t="~t.to!string~" u="~u.to!string~" v="~v.to!string~"\n";
 
         vec3f groundPoint = (1.0f - u - v) * ground.a + u * ground.b + v * ground.c;
 
