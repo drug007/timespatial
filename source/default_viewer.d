@@ -150,8 +150,8 @@ class DefaultViewer : BaseViewer
             enum radius = 100; /// радиус поиска точек в пикселях
             auto expander = vec2f(radius, radius);
 
-            searchBox.min = screenCoords2gndPoint(screenCoords - expander);
-            searchBox.max = screenCoords2gndPoint(screenCoords + expander);
+            searchBox.min = projectWindowToPlane0(screenCoords - expander);
+            searchBox.max = projectWindowToPlane0(screenCoords + expander);
 
             // установка возможных высот
             searchBox.min.z = -20000.0f;
@@ -163,7 +163,7 @@ class DefaultViewer : BaseViewer
         pickedPointDescription ~= "\n";
 
         auto found =  pointsRtree.searchPoints(searchBox);
-        auto boxCenter = screenCoords2gndPoint(screenCoords);
+        auto boxCenter = projectWindowToPlane0(screenCoords);
 
         Point* nearest;
         real minDistance = real.infinity;
