@@ -401,7 +401,7 @@ protected:
             else
             {
                 factor_x = 2 * size / cast(double) width;
-                factor_y = 2 * size / cast(double) height * aspect_ratio;
+                factor_y = 2 * size / cast(double) height / aspect_ratio;
             }
             auto new_pos = vec3f(
                 _camera_pos.x + (mouse_x - new_mouse_x)*factor_x, 
