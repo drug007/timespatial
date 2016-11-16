@@ -1,9 +1,6 @@
 language: d
 
-sudo: required
-
-os:
-  - linux
+sudo: true
 
 d:
  #- dmd # latest
