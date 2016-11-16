@@ -2,7 +2,7 @@ module default_viewer;
 
 import std.conv: text;
 
-import gfm.math: box3f, vec3f;
+import gfm.math: box3f, vec3f, vec2f;
 
 import base_viewer: BaseViewer;
 import data_item: timeToStringz;
@@ -97,6 +97,37 @@ class DefaultViewer : BaseViewer
                 dl.add!DataObject(e2, e2.no.text ~ "\0");
         }
         onCurrentTimestampChange();
+    }
+
+    /// Проекция оконной координаты в точку на плоскости z = 0
+    private vec3f projectWindowToPlane0(in vec2f winCoords)
+    {
+        import gfm.math.shapes;
+
+        triangle3f ground = triangle3f(vec3f(-10, 0, 0), vec3f(10000000, 0, 0), vec3f(-10, 10000000, 0));
+
+        double x = void, y = void;
+        const aspect_ratio = width/cast(double)height;
+        if(width > height) 
+        {
+            auto factor_x = 2 * size / cast(double) width * aspect_ratio;
+            auto factor_y = 2 * size / cast(double) height;
+
+            x = winCoords.x * factor_x + _camera_pos.x - size * aspect_ratio;
+            y = winCoords.y * factor_y + _camera_pos.y - size;
+        }
+        else
+        {
+            auto factor_x = 2 * size / cast(double) width;
+            auto factor_y = 2 * size / cast(double) height * aspect_ratio;
+
+            x = winCoords.x * factor_x + _camera_pos.x - size;
+            y = winCoords.y * factor_y + _camera_pos.y - size * aspect_ratio;
+        }
+
+        auto projected = vec3f(x, y, 0.0f);
+        
+        return projected;
     }
 
     void delegate() onMaxPointChange;
