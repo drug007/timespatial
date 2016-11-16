@@ -1,6 +1,9 @@
 language: d
 
 sudo: true
+os:
+  - linux
+    dist: sid
 
 addons:
   apt:
