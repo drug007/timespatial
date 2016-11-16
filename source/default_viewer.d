@@ -138,6 +138,8 @@ class DefaultViewer : BaseViewer
         //assert(groundPoint.z == 0); // z должен быть равен нулю
 
         pickedPointDescription ~= "Ground point="~groundPoint.toString~"\n";
+        pickedPointDescription ~= "pickRay.orig="~pickRay.orig.toString~"\n";
+        pickedPointDescription ~= "pickRay.dir="~pickRay.dir.toString~"\n";
 
         return groundPoint;
     }
