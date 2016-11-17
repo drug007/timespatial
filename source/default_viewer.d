@@ -184,6 +184,11 @@ class DefaultViewer : BaseViewer
         return nearest;
     }
 
+    void addDataLayout(DataLayout dl)
+    {
+        data_layout ~= dl;
+    }
+
     /// Проекция оконной координаты в точку на плоскости z = 0
     private vec3f projectWindowToPlane0(in vec2f winCoords)
     {
