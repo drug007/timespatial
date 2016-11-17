@@ -110,9 +110,9 @@ class DefaultViewer : BaseViewer
     }
 
     /// Добавляет данные в RTree
-    public void addDataToRTree(Data[] data) //FIXME: isn't need to be public
+    public void addDataToRTree(R)(R data) //FIXME: isn't need to be public
     {
-        foreach(id, e; data)
+        foreach(e; data)
             pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
     }
 
@@ -191,16 +191,16 @@ class DefaultViewer : BaseViewer
         const aspect_ratio = width/cast(double)height;
         if(width > height) 
         {
-            auto factor_x = 2 * size / cast(double) width * aspect_ratio;
-            auto factor_y = 2 * size / cast(double) height;
+            auto factor_x = 2.0f * size / width * aspect_ratio;
+            auto factor_y = 2.0f * size / height;
 
             x = winCoords.x * factor_x + _camera_pos.x - size * aspect_ratio;
             y = winCoords.y * factor_y + _camera_pos.y - size;
         }
         else
         {
-            auto factor_x = 2 * size / cast(double) width;
-            auto factor_y = 2 * size / cast(double) height * aspect_ratio;
+            auto factor_x = 2.0f * size / width;
+            auto factor_y = 2.0f * size / height * aspect_ratio;
 
             x = winCoords.x * factor_x + _camera_pos.x - size;
             y = winCoords.y * factor_y + _camera_pos.y - size * aspect_ratio;
@@ -285,7 +285,7 @@ class DefaultViewer : BaseViewer
     RTree pointsRtree;
     string pickedPointDescription;
 
-public:
+protected:
     import data_layout: IDataLayout;
 
     bool show_settings;
