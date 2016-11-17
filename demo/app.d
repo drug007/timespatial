@@ -1,5 +1,4 @@
-import test_data: testData;
-import data_provider: prepareData;
+import tests: heterogeneousData, filterGraphicData, prepareData;
 
 int main(string[] args)
 {
@@ -16,8 +15,8 @@ int main(string[] args)
     import default_viewer: DefaultViewer;
     
     auto gui = new DefaultViewer(width, height, "Test gui");
-    gui.addData(testData.prepareData);
-    gui.addDataToRTree(testData);
+    gui.addData(heterogeneousData.filterGraphicData.prepareData);
+    gui.addDataToRTree(heterogeneousData.filterGraphicData);
     gui.centerCamera();
     gui.run();
     gui.close();

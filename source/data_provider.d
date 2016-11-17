@@ -227,53 +227,6 @@ auto makeRenderableData(R, D)(uint no, R r, D d)
     return new RenderableData!(R)(no, r, d);
 }
 
-auto prepareData(Data[] data)
-{
-    import data_provider: DataObject, DataElement;
-    import std.algorithm: filter, sort, map;
-    import std.array: array, back;
-    import std.math: isNaN;
-    import vertex_provider: Vertex, VertexSlice;
-
-    DataObject[uint][uint] idata;
-
-    foreach(e; data)
-    {
-        auto s = idata.get(e.id.source, null);
-
-        if((s is null) || (e.id.no !in s))
-        {
-            import gfm.math: box3f;
-            idata[e.id.source][e.id.no] = DataObject(
-                e.id.no, 
-                true, // visible
-                box3f(e.x, e.y, e.z, e.x, e.y, e.z), 
-                VertexSlice.Kind.LineStrip, 
-                [DataElement(0, e.x, e.y, e.z, 1.0, 0.0, 1.0, 1.0, e.timestamp)]);
-        }
-        else
-        {
-            s[e.id.no].elements ~= DataElement(0, e.x, e.y, e.z, 1.0, 0.0, 1.0, 1.0, e.timestamp);
-            import data_provider: updateBoundingBox;
-            import gfm.math: vec3f;
-            auto vec = vec3f(e.x, e.y, e.z);
-            updateBoundingBox(s[e.id.no].box, vec);
-        }
-    }
-
-    // присваиваем порядковые номера элементам
-    foreach(k; idata.keys)
-    {
-        foreach(v; idata[k].byValue)
-        {
-            foreach(uint i, ref e; v.elements)
-                e.no = i;
-        }
-    }
-
-    return idata;
-}
-
 auto sourceToColor(uint source)
 {
     auto colors = [
