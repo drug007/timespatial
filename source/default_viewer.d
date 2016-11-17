@@ -307,16 +307,17 @@ public:
         import data_provider: Id, Data;
         import std.random;
         import std.datetime;
+        import std.stdio: writeln;
+        import std.math: sqrt;
 
         auto s = new RTree(":memory:");
 
-        foreach(n; 0..5)
+        foreach(j; 1..6)
         {
-            foreach(i; 0..1_000)
-            {
-                import std.stdio;
-                writeln("n=", n, " i=", i);
+            enum pointsDelta = 100_000;
 
+            foreach(i; 0..pointsDelta)
+            {
                 auto e = Data(
                         Id( 1, 126),
                         uniform(float.min_normal, float.max),
@@ -328,16 +329,34 @@ public:
             }
 
             //ищем 100 случайных точек, замеряем по каждому поиску время
-            foreach(_t; 0..100)
+            enum n = 100;
+            long[n] timings; /// продолжительности поиска в наносекундах
+
+            foreach(i; 0..n)
             {
                 StopWatch sw;
 
                 sw.start();
                 auto pnt = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
-                long exec_ms = sw.peek().msecs;
+                sw.stop();
 
-                
+                timings[i] = sw.peek().nsecs;
             }
+
+            real average = 0; /// среднее значение
+            real d = 0; /// дисперсия
+
+            foreach(t; timings)
+            {
+                average += t;
+                d += t * t;
+            }
+
+            average /= n;
+            d = d / n - average * average;
+
+            //writeln("Search timings: ", timings);
+            writeln("Points ", j, "x", pointsDelta, ", variance=", d, ", standard deviation=", sqrt(d));
         }
 
         destroy(s);
