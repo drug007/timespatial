@@ -8,6 +8,8 @@ dependency "gfm:opengl" version="~>6.0.0"
 dependency "derelict-imgui" version="~>master" path="./DerelictImgui/"
 dependency "d2sqlite3" version="~>0.9.8"
 dependency "dstats" version="~>1.0.3"
+dependency "taggedalgebraic" version="~>0.10.4"
+dependency "emsi_containers" version="~>0.5.2"
 license "BSL-1.0"
 
 targetPath "bin"
