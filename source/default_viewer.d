@@ -301,6 +301,47 @@ public:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
+
+    void __performanceTest()
+    {
+        import data_provider: Id, Data;
+        import std.random;
+        import std.datetime;
+
+        auto s = new RTree(":memory:");
+
+        foreach(n; 0..5)
+        {
+            foreach(i; 0..1_000)
+            {
+                import std.stdio;
+                writeln("n=", n, " i=", i);
+
+                auto e = Data(
+                        Id( 1, 126),
+                        uniform(float.min_normal, float.max),
+                        uniform(float.min_normal, float.max),
+                        0, 110000000, Data.State.Middle
+                    );
+
+                s.addPoint(e.id, vec3f(e.x, e.y, e.z));
+            }
+
+            //ищем 100 случайных точек, замеряем по каждому поиску время
+            foreach(_t; 0..100)
+            {
+                StopWatch sw;
+
+                sw.start();
+                auto pnt = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
+                long exec_ms = sw.peek().msecs;
+
+                
+            }
+        }
+
+        destroy(s);
+    }
 }
 
 private string toString(in Point p)

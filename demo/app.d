@@ -16,6 +16,7 @@ int main(string[] args)
     import default_viewer: DefaultViewer;
     
     auto gui = new DefaultViewer(width, height, "Test gui");
+    gui.__performanceTest();
     gui.addData(testData.prepareData);
     gui.addDataToRTree(testData);
     gui.centerCamera();
