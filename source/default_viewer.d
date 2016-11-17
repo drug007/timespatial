@@ -328,6 +328,8 @@ public:
                 s.addPoint(e.id, vec3f(e.x, e.y, e.z));
             }
 
+            assert(s.storage.getMaxID > 100);
+
             //ищем 100 случайных точек, замеряем по каждому поиску время
             enum n = 100;
             MeanSD timings; /// продолжительности поиска в наносекундах
