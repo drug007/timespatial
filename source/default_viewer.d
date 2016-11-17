@@ -3,12 +3,15 @@ module default_viewer;
 import std.conv: text;
 
 import gfm.math: box3f, vec3f, vec2f;
+import gfm.sdl2;
 
 import base_viewer: BaseViewer;
 import data_item: timeToStringz;
 import timestamp_storage: TimestampStorage;
 import data_provider: DataObject, IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
+import rtree;
+import data_provider: Data;
 
 class DefaultViewer : BaseViewer
 {
@@ -50,6 +53,8 @@ class DefaultViewer : BaseViewer
                 e.setMaxCount(max_point_counts);
             }
         };
+
+        pointsRtree = new RTree(":memory:");
     }
 
     void centerCamera()
@@ -66,6 +71,11 @@ class DefaultViewer : BaseViewer
         pos = box.max - box.min;
         auto size = max(pos.x, pos.y)/2.;
         setCameraSize(size);
+    }
+
+    ~this()
+    {
+        destroy(pointsRtree);
     }
 
     void addData(DataObject[uint][uint] data_objects)
@@ -99,6 +109,81 @@ class DefaultViewer : BaseViewer
         onCurrentTimestampChange();
     }
 
+    /// Добавляет данные в RTree
+    public void addDataToRTree(Data[] data) //FIXME: isn't need to be public
+    {
+        foreach(id, e; data)
+            pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
+    }
+
+    /// Конвертация экранной координаты в точку на поверхности Земли
+    private vec3f screenCoords2gndPoint(in vec2f screenCoords)
+    {
+        import gfm.math.shapes;
+
+        triangle3f ground = triangle3f(vec3f(0, 0, 0), vec3f(1, 0, 0), vec3f(0, 1, 0));
+        ray3f pickRay;
+
+        pickRay.orig = _camera_pos;
+        pickRay.dir = screenPoint2worldRay(screenCoords);
+
+        float t, u, v;
+        pickRay.intersect(ground, t, u, v);
+
+        vec3f groundPoint = (1.0f - u - v) * ground.a + u * ground.b + v * ground.c;
+
+        //assert(groundPoint.z == 0); // z должен быть равен нулю
+
+        pickedPointDescription ~= "Ground point="~groundPoint.toString~"\n";
+
+        return groundPoint;
+    }
+
+    /// Находит ближайшую точку по координатам в окне
+    /// Если такой точки нет то возвращает null
+    /// Возвращённое значение обслуживается GC
+    Point* pickPoint(in vec2f screenCoords)
+    {
+        box3f searchBox;
+
+        {
+            enum radius = 100; /// радиус поиска точек в пикселях
+            auto expander = vec2f(radius, radius);
+
+            searchBox.min = projectWindowToPlane0(screenCoords - expander);
+            searchBox.max = projectWindowToPlane0(screenCoords + expander);
+
+            // установка возможных высот
+            searchBox.min.z = -20000.0f;
+            searchBox.max.z = 20000.0f;
+        }
+
+        pickedPointDescription ~= "Search box min="~searchBox.min.toString;
+        pickedPointDescription ~= " max="~searchBox.max.toString;
+        pickedPointDescription ~= "\n";
+
+        auto found =  pointsRtree.searchPoints(searchBox);
+        auto boxCenter = projectWindowToPlane0(screenCoords);
+
+        Point* nearest;
+        real minDistance = real.infinity;
+
+        foreach(point; found)
+        {
+            auto distance = boxCenter.distanceTo(point.coords);
+
+            if(distance < minDistance) // найдена точка ближе?
+            {
+                if(nearest is null) nearest = new Point;
+
+                minDistance = distance;
+                *nearest = point;
+            }
+        }
+
+        return nearest;
+    }
+
     /// Проекция оконной координаты в точку на плоскости z = 0
     private vec3f projectWindowToPlane0(in vec2f winCoords)
     {
@@ -130,6 +215,19 @@ class DefaultViewer : BaseViewer
         return projected;
     }
 
+    override public void onMouseDown(ref const(SDL_Event) event)
+    {
+        super.onMouseDown(event);
+
+        pickedPointDescription = "";
+        auto point = pickPoint(vec2f(mouse_x, mouse_y));
+
+        if(point !is null)
+        {
+            pickedPointDescription ~= (*point).toString;
+        }
+    }
+
     void delegate() onMaxPointChange;
     void delegate() onCurrentTimestampChange;
 
@@ -138,6 +236,7 @@ class DefaultViewer : BaseViewer
     {
         import gfm.opengl;  
         import derelict.imgui.imgui;
+        import std.string: toStringz;
 
         {
             igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
@@ -171,6 +270,9 @@ class DefaultViewer : BaseViewer
                 igText("Max time");
                 igSameLine();
                 igText(timeByIndex(max).timeToStringz);
+
+                igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
+                igText("Picked point %s", pickedPointDescription.toStringz);
             }
             igEnd();
         }
@@ -186,6 +288,9 @@ class DefaultViewer : BaseViewer
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
+    RTree pointsRtree;
+    string pickedPointDescription;
+
 public:
     import data_layout: IDataLayout;
 
@@ -196,4 +301,11 @@ public:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
+}
+
+private string toString(in Point p)
+{
+    import std.conv: to;
+
+    return "id="~p.externalId.to!string~" x="~p.coords.x.to!string~" y="~p.coords.y.to!string;
 }

@@ -10,7 +10,7 @@ import std.typecons: tuple, Tuple;
 
 import std.experimental.logger: Logger, NullLogger;
 
-import gfm.math: mat4f, vec3f, vec4f;
+import gfm.math: mat4f, vec2f, vec3f, vec4f;
 import gfm.opengl;
 import gfm.sdl2;
 
@@ -318,6 +318,25 @@ protected:
 
         // Итоговая матрица ModelViewProjection, которая является результатом перемножения наших трех матриц
         mvp_matrix = projection * view * model;
+    }
+
+    /// Преобразование экранных координат в мировые.
+    /// Возвращает луч из камеры в мировых координатах.
+    public vec3f screenPoint2worldRay(in vec2f screenCoords) pure const //FIXME: Isn't need to be public
+    {
+        vec3f normalized;
+        normalized.x = (2.0f * screenCoords.x) / width - 1.0f;
+        normalized.y = 1.0f - (2.0f * screenCoords.y) / height;
+
+        vec4f rayClip = vec4f(normalized.xy, -1.0, 1.0);
+
+        vec4f rayEye = projection.inverse * rayClip;
+        rayEye = vec4f(rayEye.xy, -1.0, 0.0);
+
+        vec3f rayWorld = (view.inverse * rayEye).xyz;
+        rayWorld.normalize;
+
+        return rayWorld;
     }
 
     public void setCameraSize(double size)

@@ -17,6 +17,7 @@ int main(string[] args)
     
     auto gui = new DefaultViewer(width, height, "Test gui");
     gui.addData(testData.prepareData);
+    gui.addDataToRTree(testData);
     gui.centerCamera();
     gui.run();
     gui.close();
