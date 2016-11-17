@@ -6,7 +6,11 @@ import data_provider: Id;
 
 class RTree
 {
-    private Storage storage;
+    debug
+        Storage storage;
+    else
+        private Storage storage;
+
     private long idCounter;
 
     this(string fileName)

@@ -187,10 +187,6 @@ class DefaultViewer : BaseViewer
     /// Проекция оконной координаты в точку на плоскости z = 0
     private vec3f projectWindowToPlane0(in vec2f winCoords)
     {
-        import gfm.math.shapes;
-
-        triangle3f ground = triangle3f(vec3f(-10, 0, 0), vec3f(10000000, 0, 0), vec3f(-10, 10000000, 0));
-
         double x = void, y = void;
         const aspect_ratio = width/cast(double)height;
         if(width > height) 
@@ -210,9 +206,7 @@ class DefaultViewer : BaseViewer
             y = winCoords.y * factor_y + _camera_pos.y - size * aspect_ratio;
         }
 
-        auto projected = vec3f(x, y, 0.0f);
-        
-        return projected;
+        return vec3f(x, y, 0.0f);
     }
 
     override public void onMouseDown(ref const(SDL_Event) event)
@@ -301,6 +295,91 @@ public:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
+
+    void __performanceTest()
+    {
+        import std.array: empty;
+        import std.random;
+        import std.datetime;
+        import std.stdio: writefln;
+
+        import dstats: MeanSD;
+
+        import data_provider: Id, Data;
+
+        setCameraSize(30_000);
+
+        const aspect_ratio = width/cast(double)height;
+        float w, h;
+        if(width < height)
+        {
+            w = size;
+            h = size * aspect_ratio;
+        }
+        else
+        {
+            h = size;
+            w = size * aspect_ratio;
+        }
+
+        box.min = vec3f(-w, -h, -w);
+        box.max = vec3f(+w, +h, +w);
+        centerCamera();
+        
+        foreach(j; 1..6)
+        {
+            enum pointsDelta = 100_000;
+
+            foreach(i; 0..pointsDelta)
+            {
+                auto e = Data(
+                        Id( 1, 126),
+                        uniform(-w, w),
+                        uniform(-h, h),
+                        0, 110000000, Data.State.Middle
+                    );
+
+                pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
+            }
+
+            assert(pointsRtree.storage.getMaxID >= pointsDelta);
+
+            //ищем 100 случайных точек, замеряем по каждому поиску время
+            enum n = 100;
+
+            /// продолжительности поиска в наносекундах
+            MeanSD timings_real, // для существующих точек
+                timings_fake,    // для не существующих точек
+                timings_all;     // для всех вместе
+
+            foreach(i; 0..n)
+            {
+                Point* pnt;
+
+                StopWatch sw;
+
+                sw.start();
+                pnt = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
+                sw.stop();
+
+                auto t = sw.peek().nsecs/1000_000.;
+                if(pnt !is null)
+                {
+                    timings_real.put(t);
+                }
+                else
+                {
+                    timings_fake.put(t);
+                }
+                timings_all.put(t);
+            }
+
+            writefln("Points amount: %s, times in ms", j*pointsDelta);
+            writefln("\tReal points: mean: %s, stdev: %s, count: %s", timings_real.mean, timings_real.stdev, timings_real.N);
+            writefln("\tFake points: mean: %s, stdev: %s, count: %s", timings_fake.mean, timings_fake.stdev, timings_fake.N);
+            writefln("\tAll points: mean: %s, stdev: %s, count: %s",  timings_all.mean,  timings_all.stdev, timings_all.N);
+        }
+    }
 }
 
 private string toString(in Point p)

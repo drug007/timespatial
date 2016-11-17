@@ -7,6 +7,7 @@ dependency "gfm:math" version="~>6.0.0"
 dependency "gfm:opengl" version="~>6.0.0"
 dependency "derelict-imgui" version="~>master" path="./DerelictImgui/"
 dependency "d2sqlite3" version="~>0.9.8"
+dependency "dstats" version="~>1.0.3"
 license "BSL-1.0"
 
 targetPath "bin"
