@@ -78,6 +78,9 @@ class DefaultViewer : BaseViewer
         destroy(pointsRtree);
     }
 
+    abstract DataObject[uint][uint] prepareData();
+    abstract void makeDataLayout();
+
     void addData(DataObject[uint][uint] data_objects)
     {
         import data_layout: Dummy;
