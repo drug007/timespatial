@@ -204,12 +204,13 @@ auto prepareData(R)(R data)
     }
 
     // присваиваем порядковые номера элементам
+    uint i;
     foreach(k; idata.keys)
     {
         foreach(v; idata[k].byValue)
         {
-            foreach(uint i, ref e; v.elements)
-                e.no = i;
+            foreach(ref e; v.elements)
+                e.no = i++;
         }
     }
 
@@ -295,18 +296,12 @@ unittest
     import std.algorithm: equal;
 
     foreach(e; heterogeneousData().filterGraphicData)
-        s.addPoint(e.value.id, vec3f(e.value.x, e.value.y, e.value.z));
+        s.addPoint(e.index, vec3f(e.value.x, e.value.y, e.value.z));
 
     auto box = box3f(vec3f(1000, 1000, -10), vec3f(20000, 20000, 10));
-    auto points = s.searchPoints(box);
+    auto point_id = s.searchPoints(box);
 
-    assert(points.length == 12);
-
-    auto mm = points.map!("a.externalId.no");
-	
-	import std.algorithm: sort, uniq;
-	import std.array: array;
-    assert(mm.array.sort().uniq.equal([1, 126]));
+    assert(point_id.equal([19, 15, 8, 67, 11, 69, 13, 71, 73, 17, 75, 77]));
 
     destroy(s);
 }

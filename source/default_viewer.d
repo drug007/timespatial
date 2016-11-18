@@ -107,7 +107,7 @@ class DefaultViewer : BaseViewer
             {
                 dl.add!DataObject(e2, e2.no.text ~ "\0");
                 foreach(e; e2.elements)
-                    pointsRtree.addPoint(Id(e2.no, e.no), vec3f(e.x, e.y, e.z));
+                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z));
             }
         }
         onCurrentTimestampChange();
@@ -139,7 +139,7 @@ class DefaultViewer : BaseViewer
     /// Находит ближайшую точку по координатам в окне
     /// Если такой точки нет то возвращает null
     /// Возвращённое значение обслуживается GC
-    Point* pickPoint(in vec2f screenCoords)
+    long[] pickPoint(in vec2f screenCoords)
     {
         box3f searchBox;
 
@@ -159,26 +159,7 @@ class DefaultViewer : BaseViewer
         pickedPointDescription ~= " max="~searchBox.max.toString;
         pickedPointDescription ~= "\n";
 
-        auto found =  pointsRtree.searchPoints(searchBox);
-        auto boxCenter = projectWindowToPlane0(screenCoords);
-
-        Point* nearest;
-        real minDistance = real.infinity;
-
-        foreach(point; found)
-        {
-            auto distance = boxCenter.distanceTo(point.coords);
-
-            if(distance < minDistance) // найдена точка ближе?
-            {
-                if(nearest is null) nearest = new Point;
-
-                minDistance = distance;
-                *nearest = point;
-            }
-        }
-
-        return nearest;
+        return pointsRtree.searchPoints(searchBox);
     }
 
     void addDataLayout(DataLayout dl)
@@ -213,15 +194,14 @@ class DefaultViewer : BaseViewer
 
     override public void onMouseDown(ref const(SDL_Event) event)
     {
+        import std.algorithm: each;
+
         super.onMouseDown(event);
 
         pickedPointDescription = "";
-        auto point = pickPoint(vec2f(mouse_x, mouse_y));
-
-        if(point !is null)
-        {
-            pickedPointDescription ~= (*point).toString;
-        }
+        
+        pickPoint(vec2f(mouse_x, mouse_y))
+            .each!(a=>pickedPointDescription ~= text(a, "\n"));
     }
 
     void delegate() onMaxPointChange;
@@ -341,10 +321,8 @@ protected:
                         0, 110000000, Data.State.Middle
                     );
 
-                pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
+                pointsRtree.addPoint(j*pointsDelta + i, vec3f(e.x, e.y, e.z));
             }
-
-            assert(pointsRtree.storage.getMaxID >= pointsDelta);
 
             //ищем 100 случайных точек, замеряем по каждому поиску время
             enum n = 100;
@@ -356,16 +334,15 @@ protected:
 
             foreach(i; 0..n)
             {
-                Point* pnt;
-
+                long[] point_id;
                 StopWatch sw;
 
                 sw.start();
-                pnt = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
+                point_id = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
                 sw.stop();
 
                 auto t = sw.peek().nsecs/1000_000.;
-                if(pnt !is null)
+                if(!point_id.empty)
                 {
                     timings_real.put(t);
                 }
@@ -382,11 +359,4 @@ protected:
             writefln("\tAll points: mean: %s, stdev: %s, count: %s",  timings_all.mean,  timings_all.stdev, timings_all.N);
         }
     }
-}
-
-private string toString(in Point p)
-{
-    import std.conv: to;
-
-    return "id="~p.externalId.to!string~" x="~p.coords.x.to!string~" y="~p.coords.y.to!string;
 }

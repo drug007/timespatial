@@ -6,12 +6,7 @@ import data_provider: Id;
 
 class RTree
 {
-    debug
-        Storage storage;
-    else
-        private Storage storage;
-
-    private long idCounter;
+    private Storage storage;
 
     this(string fileName)
     {
@@ -19,7 +14,6 @@ class RTree
         // с помощью пакетов типа xdgpaths или standardpaths
 
         storage = new Storage(fileName);
-        idCounter = storage.getMaxID;
     }
 
     ~this()
@@ -28,108 +22,50 @@ class RTree
     }
 
     /// Сохраняет точку (вершину) в хранилище
-    void addPoint(Id externalId, vec3f coords)
-    {
-        Point p;
-        p.coords = coords;
-        p.externalId = externalId;
-
-        addPoint(p);
-    }
-
-    /// ditto
-    void addPoint(Point point)
+    void addPoint(long id, vec3f coords)
     {
         Value v;
 
-        idCounter++;
-        v.id = idCounter,
+        v.id = id,
 
         // При хранении точек BBox имеет размер 1 точка,
         // поэтому min и max совпадают
-        v.bbox.min.x = point.coords.x;
-        v.bbox.max.x = point.coords.x;
-        v.bbox.min.y = point.coords.y;
-        v.bbox.max.y = point.coords.y;
-        v.bbox.min.z = point.coords.z;
-        v.bbox.max.z = point.coords.z;
+        v.bbox.min.x = coords.x;
+        v.bbox.max.x = coords.x;
+        v.bbox.min.y = coords.y;
+        v.bbox.max.y = coords.y;
+        v.bbox.min.z = coords.z;
+        v.bbox.max.z = coords.z;
 
-        v.payload = point.payload.toBlob;
+        v.payload = [0];
 
         storage.addValue(v);
     }
 
     /// Находит все точки, которые лежат внутри и на границах bounding box
-    Point[] searchPoints(in box3f searchBox)
+    long[] searchPoints(in box3f searchBox)
     {
-        auto found = storage.getValues(searchBox);
+        import std.algorithm: map;
+        import std.array: array;
 
-        Point[] ret;
-        ret.length = found.length;
-
-        foreach(i, f; found)
-        {
-            ret[i].payload.fromBlob(f.payload);
-
-            // для точек в RTree можно брать координаты любого угла их BBox
-            ret[i].coords = f.bbox.min;
-        }
-
-        return ret;
+        return storage.getValues(searchBox)
+            .map!(a=>a.id)
+            .array;
     }
-}
-
-struct Payload
-{
-    Id externalId;
-
-    auto toBlob() const pure
-    {
-        ubyte[Payload.sizeof] ret;
-
-        Payload* payload = cast(Payload*) &ret;
-        *payload = this;
-
-        return ret;
-    }
-
-    void fromBlob(ubyte[Payload.sizeof] blob)
-    {
-        this = *cast(Payload*) &blob;
-    }
-
-    void fromBlob(ubyte[] blob)
-    {
-        assert(blob.length == Payload.sizeof);
-
-        fromBlob(blob[0..Payload.sizeof]);
-    }
-}
-
-struct Point
-{
-    vec3f coords;
-    Payload payload;
-
-    alias payload this;
 }
 
 unittest
 {
     auto s = new RTree(":memory:");
 
+    size_t id;
     foreach(z; -5..5)
     {
         foreach(y; -5..5)
         {
             foreach(x; -5..5)
             {
-                Point p;
-                p.coords = vec3f(x, y, z);
-                p.externalId.source = x;
-                p.externalId.no = y;
-
-                s.addPoint(p);
+                s.addPoint(id++, vec3f(x, y, z));
             }
         }
     }
