@@ -13,9 +13,9 @@ import data_layout: IDataLayout, DataLayout;
 import rtree;
 import data_provider: Data;
 
-class DefaultViewer : BaseViewer
+class DefaultViewer(T) : BaseViewer
 {
-    this(int width, int height, string title)
+    this(int width, int height, string title, T hdata)
     {
         import imgui_helpers: igGetStyle;
 
@@ -56,6 +56,7 @@ class DefaultViewer : BaseViewer
 
         pointsRtree = new RTree(":memory:");
 
+        this.hdata = hdata;
         addData(prepareData);
         makeDataLayout();
     }
@@ -286,6 +287,7 @@ protected:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
+    T hdata;
 
     void __performanceTest()
     {

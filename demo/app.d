@@ -1,16 +1,13 @@
 import tests: heterogeneousData;
 import default_viewer: DefaultViewer;
 
-class GuiImpl(T) : DefaultViewer
+class GuiImpl(T) : DefaultViewer!T
 {
     import data_provider: DataObject, Data;
 
-    private T hdata;
-
     this(int width, int height, string title, T hdata)
     {
-        this.hdata = hdata;
-        super(width, height, title);
+        super(width, height, title, hdata);
     }
 
     auto filterGraphicData()
