@@ -49,7 +49,6 @@ int main(string[] args)
     gui.addData(heterogeneousData.filterGraphicData.prepareData);
     auto dl = makeDataLayout("Heterogeneous data", heterogeneousData);
     gui.addDataLayout(dl);
-    gui.addDataToRTree(heterogeneousData.filterGraphicData);
     gui.centerCamera();
     gui.run();
     gui.close();

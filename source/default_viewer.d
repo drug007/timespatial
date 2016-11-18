@@ -104,16 +104,13 @@ class DefaultViewer : BaseViewer
             dl.addGroup!Dummy(*dummy, k.text ~ "\0");
             import std.algorithm: sort;
             foreach(ref e2; dobj.sort!((a,b)=>a.no<b.no))
+            {
                 dl.add!DataObject(e2, e2.no.text ~ "\0");
+                foreach(e; e2.elements)
+                    pointsRtree.addPoint(Id(e2.no, e.no), vec3f(e.x, e.y, e.z));
+            }
         }
         onCurrentTimestampChange();
-    }
-
-    /// Добавляет данные в RTree
-    public void addDataToRTree(R)(R data) //FIXME: isn't need to be public
-    {
-        foreach(e; data)
-            pointsRtree.addPoint(e.id, vec3f(e.x, e.y, e.z));
     }
 
     /// Конвертация экранной координаты в точку на поверхности Земли
