@@ -195,7 +195,7 @@ class RenderableData(R) : IRenderableData
                 start = filtered.front.index;
             else
                 start = 0;
-            filtered = d.elements.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
+            filtered = d.elements.enumerate(1).find!((a,b)=>a.value.timestamp >= b)(max);
             if(!filtered.empty)
                 length = filtered.front.index - start;
             else
