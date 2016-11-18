@@ -151,7 +151,7 @@ class DefaultViewer(T) : BaseViewer
         box3f searchBox;
 
         {
-            enum radius = 100; /// радиус поиска точек в пикселях
+            const radius = width > height ? width/100 : height/100; /// радиус поиска точек в пикселях
             auto expander = vec2f(radius, radius);
 
             searchBox.min = projectWindowToPlane0(screenCoords - expander);
