@@ -180,7 +180,7 @@ class RenderableData(R) : IRenderableData
     {
         import std.algorithm: find;
         import std.array: back, empty, front;
-        import std.range: lockstep;
+        import std.range: enumerate, lockstep;
         import vertex_provider: VertexSlice;
 
         foreach(ref d, a; lockstep(data, aux))
@@ -189,20 +189,20 @@ class RenderableData(R) : IRenderableData
             // поэтому данные, попавшие во временное окно представляют собой также упорядоченную
             // последовательность без пропусков по сравнению с исходными данными
             //auto filtered = d.elements.filter!(a => a.timestamp > min && a.timestamp <= max);
-            auto filtered = d.elements.find!((a,b)=>a.timestamp >= b)(min);
+            auto filtered = d.elements.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(min);
             uint start, length;
             if(!filtered.empty)
-                start = filtered.front.no;
+                start = filtered.front.index;
             else
                 start = 0;
-            filtered = d.elements.find!((a,b)=>a.timestamp >= b)(max);
+            filtered = d.elements.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
             if(!filtered.empty)
-                length = filtered.front.no - start;
+                length = filtered.front.index - start;
             else
-                length = d.elements.back.no - start;
+                length = cast(uint) d.elements.length - start;
 
             auto s  = VertexSlice(VertexSlice.Kind.LineStrip, start, length);
-            a.vp.front.currSlices = [s];
+            a.vp.front.currSlices = [s]; // FIXME почему слайс приваивается только первому vertex provider'у?
         }
     }
 

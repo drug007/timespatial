@@ -107,11 +107,11 @@ class DefaultViewer : BaseViewer
             // data layout
             assert(dobj.length);
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            dl.addGroup!Dummy(*dummy, k.text ~ "\0");
+            dl.addGroup!Dummy(*dummy, text(k, "\0"));
             import std.algorithm: sort;
             foreach(ref e2; dobj.sort!((a,b)=>a.no<b.no))
             {
-                dl.add!DataObject(e2, e2.no.text ~ "\0");
+                dl.add!DataObject(e2, text(e2.no, "\0"));
                 foreach(e; e2.elements)
                     pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z));
             }
@@ -253,6 +253,7 @@ class DefaultViewer : BaseViewer
                 igSameLine();
                 igText(timeByIndex(max).timeToStringz);
 
+                igText("Box: (%f, %f)(%f, %f)", box.min.x, box.max.x, box.min.y, box.max.y);
                 igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
                 auto world = projectWindowToPlane0(vec2f(mouse_x, mouse_y));
                 igText("World coords x=%f y=%f", world.x, world.y);
