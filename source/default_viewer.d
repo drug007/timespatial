@@ -57,8 +57,9 @@ class DefaultViewer(T) : BaseViewer
         pointsRtree = new RTree(":memory:");
 
         this.hdata = hdata;
-        addData(prepareData);
-        makeDataLayout();
+        data_objects = prepareData(); // создаем графические данные во внутреннем формате
+        addData();                    // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
+        makeDataLayout();             // генерируем неграфические данные
     }
 
     void centerCamera()
@@ -85,7 +86,7 @@ class DefaultViewer(T) : BaseViewer
     abstract DataObject[uint][uint] prepareData();
     abstract void makeDataLayout();
 
-    void addData(DataObject[uint][uint] data_objects)
+    void addData()
     {
         import data_layout: Dummy;
 
@@ -151,7 +152,7 @@ class DefaultViewer(T) : BaseViewer
         box3f searchBox;
 
         {
-            const radius = width > height ? width/100 : height/100; /// радиус поиска точек в пикселях
+            const radius = width > height ? width/300 : height/300; /// радиус поиска точек в пикселях
             auto expander = vec2f(radius, radius);
 
             searchBox.min = projectWindowToPlane0(screenCoords - expander);
@@ -209,6 +210,17 @@ class DefaultViewer(T) : BaseViewer
         
         pickPoint(vec2f(mouse_x, mouse_y))
             .each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
+        auto point_id = pickPoint(vec2f(mouse_x, mouse_y));
+            //.each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
+        foreach(pid; point_id)
+        {
+            auto obj = hdata[pid].value;
+            import std.stdio, std.algorithm, std.range, std.typecons;
+            data_objects[obj.id.source][obj.id.no].elements.map!"a.timestamp".enumerate(0).assumeSorted!("a[1]<b[1]").equalRange(tuple(0L, obj.timestamp)).writeln;
+            writeln(obj);
+        }
+        import std.stdio;
+        writeln;
     }
 
     void delegate() onMaxPointChange;
@@ -288,6 +300,7 @@ protected:
     box3f box;
     IRenderableData[] renderable_data;
     T hdata;
+    DataObject[uint][uint] data_objects;
 
     void __performanceTest()
     {
