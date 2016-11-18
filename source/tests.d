@@ -16,6 +16,7 @@ struct Bar
 struct Foo
 {
 	uint[3] ui;
+	long timestamp;
 }
 
 union Base
@@ -33,16 +34,16 @@ auto heterogeneousData()
 	import std.range: enumerate;
 
 	return [
-	   HData(Bar("string #1", long.min, 10_000_000_000)),
+	   HData(Bar("string #1", long.min, 9000000)),
 	   HData(Data(Id( 1, 126), 3135.29,  668.659, 0, 10000000, Data.State.Begin)), 
 	   HData(Data(Id(12,  89), 2592.73,  29898.1, 0, 20000000, Data.State.Begin)), 
 	   HData(Data(Id( 1, 126),  4860.4, -85.6403, 0, 110000000, Data.State.Middle)), 
-	   HData(Bar("string #2", 0, 33_333_333_333)),
+	   HData(Bar("string #2", 0, 110005000)),
 	   HData(Data(Id(12,  89), 4718.28,  30201.3, 0, 120000000, Data.State.Middle)), 
 	   HData(Data(Id( 1, 126), 7485.96, -190.656, 0, 210000000, Data.State.Middle)), 
 	   HData(Data(Id(12,  89), 7217.78,  31579.6, 0, 220000000, Data.State.Middle)), 
 	   HData(Data(Id( 1, 126), 9361.67,   2587.7, 0, 310000000, Data.State.Middle)), 
-	   HData(Foo([666, 777, 1])),
+	   HData(Foo([666, 777, 1], 310200000)),
 	   HData(Data(Id(12,  89), 8803.98,  31867.5, 0, 320000000, Data.State.Middle)), 
 	   HData(Data(Id( 1, 126), 10817.4,  2053.81, 0, 410000000, Data.State.Middle)), 
 	   HData(Data(Id(12,  89), 10319.9,  32846.7, 0, 420000000, Data.State.Middle)), 
