@@ -47,12 +47,12 @@ class RTree
 
         // При хранении точек BBox имеет размер 1 точка,
         // поэтому min и max совпадают
-        v.bbox.spatial.min.x = point.coords.x;
-        v.bbox.spatial.max.x = point.coords.x;
-        v.bbox.spatial.min.y = point.coords.y;
-        v.bbox.spatial.max.y = point.coords.y;
-        v.bbox.spatial.min.z = point.coords.z;
-        v.bbox.spatial.max.z = point.coords.z;
+        v.bbox.min.x = point.coords.x;
+        v.bbox.max.x = point.coords.x;
+        v.bbox.min.y = point.coords.y;
+        v.bbox.max.y = point.coords.y;
+        v.bbox.min.z = point.coords.z;
+        v.bbox.max.z = point.coords.z;
 
         v.payload = point.payload.toBlob;
 
@@ -60,7 +60,7 @@ class RTree
     }
 
     /// Находит все точки, которые лежат внутри и на границах bounding box
-    Point[] searchPoints(in BoundingBox searchBox)
+    Point[] searchPoints(in box3f searchBox)
     {
         auto found = storage.getValues(searchBox);
 
@@ -72,19 +72,10 @@ class RTree
             ret[i].payload.fromBlob(f.payload);
 
             // для точек в RTree можно брать координаты любого угла их BBox
-            ret[i].coords = f.bbox.spatial.min;
+            ret[i].coords = f.bbox.min;
         }
 
         return ret;
-    }
-
-    /// ditto
-    Point[] searchPoints(in box3f searchBox)
-    {
-        BoundingBox bb;
-        bb.spatial = searchBox;
-
-        return searchPoints(bb);
     }
 }
 
@@ -143,9 +134,9 @@ unittest
         }
     }
 
-    BoundingBox searchBox;
-    searchBox.spatial.min = vec3f(-2, -2, -2);
-    searchBox.spatial.max = vec3f(2, 2, 2);
+    box3f searchBox;
+    searchBox.min = vec3f(-2, -2, -2);
+    searchBox.max = vec3f(2, 2, 2);
 
     auto points = s.searchPoints(searchBox);
 

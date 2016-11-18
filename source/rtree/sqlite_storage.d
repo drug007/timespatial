@@ -133,12 +133,12 @@ class Storage
             alias q = addValueToIndexStatement;
 
             q.bind(":id", v.id);
-            q.bind(":min_x", v.bbox.spatial.min.x);
-            q.bind(":max_x", v.bbox.spatial.max.x);
-            q.bind(":min_y", v.bbox.spatial.min.y);
-            q.bind(":max_y", v.bbox.spatial.max.y);
-            q.bind(":min_z", v.bbox.spatial.min.z);
-            q.bind(":max_z", v.bbox.spatial.max.z);
+            q.bind(":min_x", v.bbox.min.x);
+            q.bind(":max_x", v.bbox.max.x);
+            q.bind(":min_y", v.bbox.min.y);
+            q.bind(":max_y", v.bbox.max.y);
+            q.bind(":min_z", v.bbox.min.z);
+            q.bind(":max_z", v.bbox.max.z);
 
             q.execute;
             assert(db.changes() == 1);
@@ -146,16 +146,16 @@ class Storage
         }
     }
 
-    Value[] getValues(BoundingBox bbox)
+    Value[] getValues(ref const(box3f) bbox)
     {
         alias q = getValuesStatement;
 
-        q.bind(":min_x", bbox.spatial.min.x);
-        q.bind(":max_x", bbox.spatial.max.x);
-        q.bind(":min_y", bbox.spatial.min.y);
-        q.bind(":max_y", bbox.spatial.max.y);
-        q.bind(":min_z", bbox.spatial.min.z);
-        q.bind(":max_z", bbox.spatial.max.z);
+        q.bind(":min_x", bbox.min.x);
+        q.bind(":max_x", bbox.max.x);
+        q.bind(":min_y", bbox.min.y);
+        q.bind(":max_y", bbox.max.y);
+        q.bind(":min_z", bbox.min.z);
+        q.bind(":max_z", bbox.max.z);
 
         auto answer = q.execute;
 
@@ -167,12 +167,12 @@ class Storage
             v.id = row["id"].as!long;
             v.payload = row["payload"].as!(ubyte[]);
 
-            v.bbox.spatial.min.x = row["min_x"].as!float;
-            v.bbox.spatial.max.x = row["max_x"].as!float;
-            v.bbox.spatial.min.y = row["min_y"].as!float;
-            v.bbox.spatial.max.y = row["max_y"].as!float;
-            v.bbox.spatial.min.z = row["min_z"].as!float;
-            v.bbox.spatial.max.z = row["max_z"].as!float;
+            v.bbox.min.x = row["min_x"].as!float;
+            v.bbox.max.x = row["max_x"].as!float;
+            v.bbox.min.y = row["min_y"].as!float;
+            v.bbox.max.y = row["max_y"].as!float;
+            v.bbox.min.z = row["min_z"].as!float;
+            v.bbox.max.z = row["max_z"].as!float;
 
             ret ~= v;
         }
@@ -227,21 +227,10 @@ unittest
     }
 }
 
-struct TimeInterval
-{
-    float startTime;
-    float endTime;
-}
-
-struct BoundingBox
-{
-    box3f spatial;
-}
-
 struct Value
 {
     long id;
-    BoundingBox bbox;
+    box3f bbox;
     ubyte[] payload;
 }
 
@@ -253,12 +242,12 @@ unittest
 
     Value t;
     t.id = 123;
-    t.bbox.spatial.min.x = 1;
-    t.bbox.spatial.max.x = 2;
-    t.bbox.spatial.min.y = 1;
-    t.bbox.spatial.max.y = 2;
-    t.bbox.spatial.min.z = 1;
-    t.bbox.spatial.max.z = 2;
+    t.bbox.min.x = 1;
+    t.bbox.max.x = 2;
+    t.bbox.min.y = 1;
+    t.bbox.max.y = 2;
+    t.bbox.min.z = 1;
+    t.bbox.max.z = 2;
     t.payload = [0xDE, 0xAD, 0xBE, 0xEF];
 
     s.addValue(t);
@@ -266,12 +255,12 @@ unittest
     {
         Value t1;
         t1.id = 256;
-        t1.bbox.spatial.min.x = 10;
-        t1.bbox.spatial.max.x = 20;
-        t1.bbox.spatial.min.y = 10;
-        t1.bbox.spatial.max.y = 20;
-        t1.bbox.spatial.min.z = 10;
-        t1.bbox.spatial.max.z = 20;
+        t1.bbox.min.x = 10;
+        t1.bbox.max.x = 20;
+        t1.bbox.min.y = 10;
+        t1.bbox.max.y = 20;
+        t1.bbox.min.z = 10;
+        t1.bbox.max.z = 20;
         t1.payload = [0x11, 0x22, 0x33, 0x44];
 
         s.addValue(t1);
@@ -279,13 +268,13 @@ unittest
 
     assert(s.getMaxID() == 256);
 
-    BoundingBox searchBox;
-    searchBox.spatial.min.x = 0;
-    searchBox.spatial.max.x = 3;
-    searchBox.spatial.min.y = 0;
-    searchBox.spatial.max.y = 3;
-    searchBox.spatial.min.z = 0;
-    searchBox.spatial.max.z = 3;
+    box3f searchBox;
+    searchBox.min.x = 0;
+    searchBox.max.x = 3;
+    searchBox.min.y = 0;
+    searchBox.max.y = 3;
+    searchBox.min.z = 0;
+    searchBox.max.z = 3;
 
     auto r = s.getValues(t.bbox);
     assert(r.length == 1);
