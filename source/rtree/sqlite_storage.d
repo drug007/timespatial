@@ -183,50 +183,6 @@ class Storage
     }
 }
 
-/// Раскладывает значение long в два float
-private void long2floats(long i, out float f1, out float f2) pure
-{
-    f1 = *cast(float*) &i;
-    f2 = *((cast(float*) &i) + 1);
-}
-
-/// Собирает два значения float в long
-private long floats2long(float f1, float f2) pure
-{
-    long ret;
-
-    float* r1 = cast(float*) &ret;
-    float* r2 = (cast(float*) &ret) + 1;
-
-    *r1 = f1;
-    *r2 = f2;
-
-    return ret;
-}
-
-unittest
-{
-    {
-        long i = long.max - 2;
-        float f1, f2;
-
-        long2floats(i, f1, f2);
-        auto resultLong = floats2long(f1, f2);
-
-        assert(i == resultLong);
-    }
-
-    {
-        long i = long.min;
-        float f1, f2;
-
-        long2floats(i, f1, f2);
-        auto resultLong = floats2long(f1, f2);
-
-        assert(i == resultLong);
-    }
-}
-
 struct Value
 {
     long id;
