@@ -327,10 +327,8 @@ protected:
             //ищем 100 случайных точек, замеряем по каждому поиску время
             enum n = 100;
 
-            /// продолжительности поиска в наносекундах
-            MeanSD timings_real, // для существующих точек
-                timings_fake,    // для не существующих точек
-                timings_all;     // для всех вместе
+            /// длительность поиска в наносекундах
+            MeanSD timings;
 
             foreach(i; 0..n)
             {
@@ -342,21 +340,11 @@ protected:
                 sw.stop();
 
                 auto t = sw.peek().nsecs/1000_000.;
-                if(!point_id.empty)
-                {
-                    timings_real.put(t);
-                }
-                else
-                {
-                    timings_fake.put(t);
-                }
-                timings_all.put(t);
+                timings.put(t);
             }
 
             writefln("Points amount: %s, times in ms", j*pointsDelta);
-            writefln("\tReal points: mean: %s, stdev: %s, count: %s", timings_real.mean, timings_real.stdev, timings_real.N);
-            writefln("\tFake points: mean: %s, stdev: %s, count: %s", timings_fake.mean, timings_fake.stdev, timings_fake.N);
-            writefln("\tAll points: mean: %s, stdev: %s, count: %s",  timings_all.mean,  timings_all.stdev, timings_all.N);
+            writefln("\tmean: %s, stdev: %s, count: %s", timings.mean, timings.stdev, timings.N);
         }
     }
 }
