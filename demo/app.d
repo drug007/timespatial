@@ -9,12 +9,8 @@ class GuiImpl(T) : DefaultViewer
 
     this(int width, int height, string title, T hdata)
     {
-        super(width, height, title);
-
         this.hdata = hdata;
-
-        addData(prepareData);
-        makeDataLayout();
+        super(width, height, title);
     }
 
     auto filterGraphicData()

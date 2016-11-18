@@ -55,6 +55,9 @@ class DefaultViewer : BaseViewer
         };
 
         pointsRtree = new RTree(":memory:");
+
+        addData(prepareData);
+        makeDataLayout();
     }
 
     void centerCamera()
@@ -251,6 +254,8 @@ class DefaultViewer : BaseViewer
                 igText(timeByIndex(max).timeToStringz);
 
                 igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
+                auto world = projectWindowToPlane0(vec2f(mouse_x, mouse_y));
+                igText("World coords x=%f y=%f", world.x, world.y);
                 igText("Picked point %s", pickedPointDescription.toStringz);
             }
             igEnd();
