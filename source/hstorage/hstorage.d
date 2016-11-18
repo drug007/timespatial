@@ -33,6 +33,25 @@ string camelCaseToUnderscores(string sym)
 	return result;
 }
 
+mixin template generateBaseUnionBody(U...)
+{
+	// импорт добавлен чтобы обеспечить использование
+	// данного миксина из других модулей
+	import hstorage.hstorage: camelCaseToUnderscores;
+
+	mixin template impl(T...)
+	{
+		static if(T.length)
+		{
+			alias Type = T[0];
+			mixin("Type " ~ Type.stringof.camelCaseToUnderscores ~ "_;");
+			mixin impl!(T[1..$]);
+		}
+	}
+
+	mixin impl!(U);
+}
+
 struct HStorage(Types...)
 {
 	import std.experimental.allocator.mallocator: Mallocator;
@@ -43,22 +62,7 @@ struct HStorage(Types...)
 
 	static union Base
 	{
-		private mixin template makeBaseUnion(U...)
-		{
-			mixin template makeBaseUnionImpl(T...)
-			{
-				static if(T.length)
-				{
-					alias Type = T[0];
-					mixin("Type " ~ Type.stringof.camelCaseToUnderscores ~ "_;");
-					mixin makeBaseUnionImpl!(T[1..$]);
-				}
-			}
-
-			mixin makeBaseUnionImpl!(U);
-		}
-
-		mixin makeBaseUnion!(AliasSeq!(Void, Types));
+		mixin generateBaseUnionBody!(AliasSeq!(Void, Types));
 	}
 
 	alias Key = long;
