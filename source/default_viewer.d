@@ -208,7 +208,7 @@ class DefaultViewer(T) : BaseViewer
         pickedPointDescription = "";
         
         pickPoint(vec2f(mouse_x, mouse_y))
-            .each!(a=>pickedPointDescription ~= text(a, "\n"));
+            .each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
     }
 
     void delegate() onMaxPointChange;

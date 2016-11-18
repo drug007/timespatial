@@ -192,29 +192,18 @@ auto prepareData(R)(R data)
                 true, // visible
                 box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
                 VertexSlice.Kind.LineStrip, 
-                [DataElement(0, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp)]);
+                [DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp)]);
         }
         else
         {
-            s[e.value.id.no].elements ~= DataElement(0, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp);
+            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp);
             import data_provider: updateBoundingBox;
             import gfm.math: vec3f;
             auto vec = vec3f(e.value.x, e.value.y, e.value.z);
             updateBoundingBox(s[e.value.id.no].box, vec);
         }
     }
-
-    // присваиваем порядковые номера элементам
-    uint i;
-    foreach(k; idata.keys)
-    {
-        foreach(v; idata[k].byValue)
-        {
-            foreach(ref e; v.elements)
-                e.no = i++;
-        }
-    }
-
+    
     return idata;
 }
 
