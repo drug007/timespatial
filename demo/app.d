@@ -10,20 +10,20 @@ auto makeDataLayout(R)(string title, R hdata)
 
     foreach(ref e; hdata)
     {
-        alias Kind = typeof(e.kind);
-        final switch(e.kind)
+        alias Kind = typeof(e.value.kind);
+        final switch(e.value.kind)
         {
             case Kind._data:
                 auto header = "Data\0";
-                data_layout.addGroup!Data(e.get!Data, header);
+                data_layout.addGroup!Data(e.value.get!Data, header);
             break;
             case Kind._bar:
                 auto header = "-----------Bar\0";
-                data_layout.addGroup!Bar(e.get!Bar, header);
+                data_layout.addGroup!Bar(e.value.get!Bar, header);
             break;
             case Kind._foo:
                 auto header = "**************************Foo\0";
-                data_layout.addGroup!Foo(e.get!Foo, header);
+                data_layout.addGroup!Foo(e.value.get!Foo, header);
             break;
         }
     }

@@ -29,6 +29,9 @@ alias HData = TaggedAlgebraic!(Base);
 
 auto heterogeneousData()
 {
+	import std.array: array;
+	import std.range: enumerate;
+
 	return [
 	   HData(Bar("string #1", long.min, 10_000_000_000)),
 	   HData(Data(Id( 1, 126), 3135.29,  668.659, 0, 10000000, Data.State.Begin)), 
@@ -149,20 +152,21 @@ auto heterogeneousData()
 	   HData(Data(Id(29,   2), 56916.5,    31945, 0, 2720000000, Data.State.Middle)), 
 	   HData(Data(Id(29,   1), double.nan, double.nan, double.nan, 2810000000, Data.State.End)), 
 	   HData(Data(Id(29,   2), double.nan, double.nan, double.nan, 2820000000, Data.State.End))
-	];
+	].enumerate(0).array;
 }
 
 auto filterGraphicData(R)(R hdata)
 {
 	import std.algorithm: filter, map;
 	import std.array: front;
+	import std.typecons: tuple;
 	import taggedalgebraic: get;
 
 	return hdata.filter!((a) {
-		if(a.kind == typeof(heterogeneousData().front).Kind._data)
+		if(a.value.kind == typeof(heterogeneousData().front).value.Kind._data)
 			return true;
 		return false;
-	}).map!(a=>a.get!Data);
+	}).map!(a=>tuple!("index", "value")(a.index, a.value.get!Data));
 }
 
 auto prepareData(R)(R data)
@@ -177,25 +181,25 @@ auto prepareData(R)(R data)
 
     foreach(e; data)
     {
-        auto s = idata.get(e.id.source, null);
+        auto s = idata.get(e.value.id.source, null);
 
-        if((s is null) || (e.id.no !in s))
+        if((s is null) || (e.value.id.no !in s))
         {
             import gfm.math: box3f;
-            idata[e.id.source][e.id.no] = DataObject(
-                e.id.no, 
+            idata[e.value.id.source][e.value.id.no] = DataObject(
+                e.value.id.no, 
                 true, // visible
-                box3f(e.x, e.y, e.z, e.x, e.y, e.z), 
+                box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
                 VertexSlice.Kind.LineStrip, 
-                [DataElement(0, e.x, e.y, e.z, 1.0, 0.0, 1.0, 1.0, e.timestamp)]);
+                [DataElement(0, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp)]);
         }
         else
         {
-            s[e.id.no].elements ~= DataElement(0, e.x, e.y, e.z, 1.0, 0.0, 1.0, 1.0, e.timestamp);
+            s[e.value.id.no].elements ~= DataElement(0, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp);
             import data_provider: updateBoundingBox;
             import gfm.math: vec3f;
-            auto vec = vec3f(e.x, e.y, e.z);
-            updateBoundingBox(s[e.id.no].box, vec);
+            auto vec = vec3f(e.value.x, e.value.y, e.value.z);
+            updateBoundingBox(s[e.value.id.no].box, vec);
         }
     }
 
@@ -232,7 +236,7 @@ unittest
     auto hs = HStorage!Types();
 
     foreach(ref e; heterogeneousData().filterGraphicData)
-        hs.add(e);
+        hs.add(e.value);
     
     alias Index2 = IdIndex2!(typeof(hs.storage), typeof(hs).Key, Data);
     auto idx2 = Index2(hs.storage);
@@ -291,7 +295,7 @@ unittest
     import std.algorithm: equal;
 
     foreach(e; heterogeneousData().filterGraphicData)
-        s.addPoint(e.id, vec3f(e.x, e.y, e.z));
+        s.addPoint(e.value.id, vec3f(e.value.x, e.value.y, e.value.z));
 
     auto box = box3f(vec3f(1000, 1000, -10), vec3f(20000, 20000, 10));
     auto points = s.searchPoints(box);
