@@ -157,6 +157,8 @@ class BaseViewer
         program = new GLProgram(_gl, program_source);
 
         imguiInit(window);
+
+        running = true;
     }
 
     public void close()
@@ -204,9 +206,9 @@ class BaseViewer
     auto run()
     {
         import gfm.sdl2: SDL_GetTicks, SDL_QUIT, SDL_KEYDOWN, SDL_KEYDOWN, SDL_KEYUP, SDL_MOUSEBUTTONDOWN,
-            SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION, SDL_MOUSEWHEEL, SDLK_ESCAPE;
+            SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION, SDL_MOUSEWHEEL;
 
-        while(!_sdl2.keyboard.isPressed(SDLK_ESCAPE))
+        while(running)
         {
             SDL_Event event;
             while(_sdl2.pollEvent(&event))
@@ -299,6 +301,7 @@ protected:
     bool _camera_moving;
     uint _vp_handle; // текущий handle для VertexProvider
     Tuple!(VertexProvider, "v", GLProvider, "g")[uint] _rdata; // rendering data
+    bool running;
 
     protected void updateMatrices()
     {

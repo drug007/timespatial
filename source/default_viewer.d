@@ -60,6 +60,8 @@ class DefaultViewer(T) : BaseViewer
         data_objects = prepareData(); // создаем графические данные во внутреннем формате
         addData();                    // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
         makeDataLayout();             // генерируем неграфические данные
+
+        about_closing = false;
     }
 
     void centerCamera()
@@ -242,6 +244,21 @@ class DefaultViewer(T) : BaseViewer
                 auto world = projectWindowToPlane0(vec2f(mouse_x, mouse_y));
                 igText("World coords x=%f y=%f", world.x, world.y);
                 igText("Picked point %s", pickedPointDescription.toStringz);
+
+                if(about_closing)
+                {
+                    igOpenPopup("Question?\0".ptr);
+                }
+
+                if (igBeginPopupModal("Question?\0".ptr, null, ImGuiWindowFlags_AlwaysAutoResize))
+                {
+                    igText("Do you really want to exit?\0");
+
+                    if (igButton("OK", ImVec2(120, 40))) { igCloseCurrentPopup(); running = false; about_closing = false; }
+                    igSameLine();
+                    if (igButton("Cancel", ImVec2(120, 40))) { igCloseCurrentPopup(); about_closing = false; }
+                    igEndPopup();
+                }
             }
             igEnd();
         }
@@ -255,6 +272,12 @@ class DefaultViewer(T) : BaseViewer
         glViewport(0, 0, cast(int) ds.x, cast(int) ds.y);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
         glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    override void onKeyUp(ref const(SDL_Event) event)
+    {
+        if(event.key.keysym.sym == SDLK_ESCAPE)
+            about_closing = true;
     }
 
     RTree pointsRtree;
@@ -272,6 +295,7 @@ protected:
     IRenderableData[] renderable_data;
     T hdata;
     DataObject[uint][uint] data_objects;
+    bool about_closing;
 
     void __performanceTest()
     {
