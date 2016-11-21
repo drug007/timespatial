@@ -207,6 +207,26 @@ class DefaultViewer(T) : BaseViewer
         import std.string: toStringz;
 
         {
+            // Главное глобальное окно для перехвата пользовательского ввода вне других окон
+            // (т.е. весь пользовательских ввод, который не попал в другие окна, будет обработан
+            // данным окном)
+            igSetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
+            igSetNextWindowSize(ImVec2(width,height), ImGuiSetCond_FirstUseEver);
+            // Окно без заголовка, неизменяемое, неперемещаемое, без настроек и не выносится на передний 
+            // план если получает фокус ввода
+            auto flags = ImGuiWindowFlags_NoTitleBar 
+                | ImGuiWindowFlags_NoResize 
+                | ImGuiWindowFlags_NoMove
+                | ImGuiWindowFlags_NoSavedSettings
+                | ImGuiWindowFlags_NoBringToFrontOnFocus;
+			// делаем окно прозрачным как слеза младенца
+            igPushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0, 0.0, 0.0, 0.0));
+            igBegin("main", null, flags);
+            auto is_hovered = igIsWindowHovered();
+            auto is_rmb_clicked = igIsMouseClicked(1);
+            igEnd();
+            igPopStyleColor(1);
+
             igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
             igBegin("Settings", &show_settings);
             const old_value = max_point_counts;
@@ -257,6 +277,21 @@ class DefaultViewer(T) : BaseViewer
                     if (igButton("OK", ImVec2(120, 40))) { igCloseCurrentPopup(); running = false; about_closing = false; }
                     igSameLine();
                     if (igButton("Cancel", ImVec2(120, 40))) { igCloseCurrentPopup(); about_closing = false; }
+                    igEndPopup();
+                }
+
+                // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
+                // приводит к изменениями внешнего вида пользовательского интерфейса.
+                if (is_hovered && is_rmb_clicked)
+                {
+                    igOpenPopup("Popup\0".ptr);
+                }
+
+                if (igBeginPopup("Popup\0".ptr))
+                {
+                    igSelectable("line 1\0");
+                    igSelectable("line 2\0");
+                    igSelectable("line 3\0");
                     igEndPopup();
                 }
             }
