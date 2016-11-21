@@ -106,6 +106,8 @@ interface IRenderableData
     long[] getTimestamps();
     void setTimeWindow(long min, long max);
     void setMaxCount(long count);
+    Auxillary[] getAuxillary();
+    uint getNo();
 }
 
 /// Дополнительные данные, позволяют добавить к данным доп. информацию
@@ -219,6 +221,16 @@ class RenderableData(R) : IRenderableData
                         s.length = count;
                     }
         }
+    }
+
+    Auxillary[] getAuxillary()
+    {
+        return aux;
+    }
+
+    uint getNo()
+    {
+        return no;
     }
 }
 
