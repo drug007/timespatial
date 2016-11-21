@@ -139,8 +139,6 @@ class DefaultViewer(T) : BaseViewer
 
         //assert(groundPoint.z == 0); // z должен быть равен нулю
 
-        pickedPointDescription ~= "Ground point="~groundPoint.toString~"\n";
-
         return groundPoint;
     }
 
@@ -162,10 +160,6 @@ class DefaultViewer(T) : BaseViewer
             searchBox.min.z = -20000.0f;
             searchBox.max.z = 20000.0f;
         }
-
-        pickedPointDescription ~= "Search box min="~searchBox.min.toString;
-        pickedPointDescription ~= " max="~searchBox.max.toString;
-        pickedPointDescription ~= "\n";
 
         return pointsRtree.searchPoints(searchBox);
     }
@@ -198,29 +192,6 @@ class DefaultViewer(T) : BaseViewer
         }
 
         return vec3f(x, y, 0.0f);
-    }
-
-    override public void onMouseDown(ref const(SDL_Event) event)
-    {
-        import std.algorithm: each;
-
-        super.onMouseDown(event);
-
-        pickedPointDescription = "";
-        
-        pickPoint(vec2f(mouse_x, mouse_y))
-            .each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
-        auto point_id = pickPoint(vec2f(mouse_x, mouse_y));
-            //.each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
-        foreach(pid; point_id)
-        {
-            auto obj = hdata[pid].value;
-            import std.stdio, std.algorithm, std.range, std.typecons;
-            data_objects[obj.id.source][obj.id.no].elements.map!"a.timestamp".enumerate(0).assumeSorted!("a[1]<b[1]").equalRange(tuple(0L, obj.timestamp)).writeln;
-            writeln(obj);
-        }
-        import std.stdio;
-        writeln;
     }
 
     void delegate() onMaxPointChange;

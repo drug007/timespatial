@@ -3,6 +3,7 @@ import default_viewer: DefaultViewer;
 
 class GuiImpl(T) : DefaultViewer!T
 {
+    import gfm.sdl2: SDL_Event;
     import data_provider: DataObject, Data;
 
     this(int width, int height, string title, T hdata)
@@ -54,6 +55,20 @@ class GuiImpl(T) : DefaultViewer!T
         }
 
         addDataLayout(data_layout);
+    }
+
+    override public void onMouseDown(ref const(SDL_Event) event)
+    {
+        import std.algorithm: each;
+        import std.conv: text;
+        import gfm.math: vec2f;
+
+        super.onMouseDown(event);
+
+        pickedPointDescription = "";
+        
+        pickPoint(vec2f(mouse_x, mouse_y))
+            .each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
     }
 };
 
