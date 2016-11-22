@@ -222,7 +222,7 @@ class DefaultViewer(T) : BaseViewer
             igPushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0, 0.0, 0.0, 0.0));
             igBegin("main", null, flags);
             auto is_hovered = igIsWindowHovered();
-            auto is_rmb_clicked = igIsMouseClicked(1);
+            auto is_lmb_clicked = igIsMouseClicked(0);
             igEnd();
             igPopStyleColor(1);
 
@@ -278,18 +278,28 @@ class DefaultViewer(T) : BaseViewer
                     igEndPopup();
                 }
 
+                import std.algorithm: each, map;
+                import std.array: empty;
+                import std.container: Array;
+                import data_item: BaseDataItem, buildDataItemArray;
+                static Array!BaseDataItem ditem;
+
                 // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
                 // приводит к изменениями внешнего вида пользовательского интерфейса.
-                if (is_hovered && is_rmb_clicked)
+                if (is_hovered && is_lmb_clicked)
                 {
                     igOpenPopup("Popup\0".ptr);
+
+                    ditem.each!(a=>a.destroy);
+                    ditem.clear;
+                    auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
+                    ditem = buildDataItemArray(curr_id.map!(a=>&hdata[a].value));
                 }
 
-                if (igBeginPopup("Popup\0".ptr))
+                if (!ditem.empty && igBeginPopup("Popup\0".ptr))
                 {
-                    igSelectable("line 1\0");
-                    igSelectable("line 2\0");
-                    igSelectable("line 3\0");
+                    ditem.each!(a=>a.draw);
+                    
                     igEndPopup();
                 }
             }

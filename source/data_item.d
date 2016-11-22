@@ -1,5 +1,6 @@
 module data_item;
 
+import std.container: Array;
 import std.conv: text;
 import std.string: toStringz;
 import std.typecons: scoped;
@@ -259,4 +260,56 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
         }
         else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
     }
+}
+
+/// Для каждого элемента диапазона создает DataItem(T) соответствующего типа
+Array!BaseDataItem buildDataItemArray(R)(R range)
+{
+    import std.range: ElementType;
+    import std.traits: isInstanceOf, FieldTypeTuple, FieldNameTuple, isPointer, PointerTarget;
+
+    import taggedalgebraic: TaggedAlgebraic, get;
+
+    alias Element = ElementType!R;
+    alias Kind = Element.Kind;
+    alias Base = Element.Union;
+
+    static assert(isPointer!Element);
+    static assert(isInstanceOf!(TaggedAlgebraic, PointerTarget!Element));
+
+
+    Array!BaseDataItem result;
+    foreach(e; range)
+    {
+    	final switch(e.kind)
+        {
+            foreach(i, T; FieldTypeTuple!Base)
+            {
+                mixin("case Kind." ~ FieldNameTuple!Base[i] ~ ":");
+                    result ~= new DataItem!T((*e).get!T);
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+unittest
+{
+    import taggedalgebraic;
+
+    union Base
+    {
+        int i;
+        float f;
+    }
+
+    auto ta = [
+          new TaggedAlgebraic!Base(2.0)
+        , new TaggedAlgebraic!Base(1)
+    ];
+    auto di = buildDataItemArray(ta);
+
+    assert(di.length == ta.length);
 }
