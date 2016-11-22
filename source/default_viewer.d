@@ -3,7 +3,7 @@ module default_viewer;
 import std.conv: text;
 
 import gfm.math: box3f, vec3f, vec2f;
-import gfm.sdl2: SDL_Event, SDLK_ESCAPE;
+import gfm.sdl2: SDL_Event;
 
 import base_viewer: BaseViewer;
 import data_item: timeToStringz;
@@ -272,9 +272,20 @@ class DefaultViewer(T) : BaseViewer
                 {
                     igText("Do you really want to exit?\0");
 
-                    if (igButton("OK", ImVec2(120, 40))) { igCloseCurrentPopup(); running = false; about_closing = false; }
+                    if (igButton("OK", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Enter])
+                    {
+                        igCloseCurrentPopup(); 
+                        running = false; 
+                        about_closing = false;
+                        _imgui_io.KeysDown[ImGuiKey_Enter] = 0;
+                    }
                     igSameLine();
-                    if (igButton("Cancel", ImVec2(120, 40))) { igCloseCurrentPopup(); about_closing = false; }
+                    if (igButton("Cancel", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Escape])
+                    {
+                        igCloseCurrentPopup(); 
+                        about_closing = false;
+                        _imgui_io.KeysDown[ImGuiKey_Escape] = 0;
+                    }
                     igEndPopup();
                 }
 
@@ -319,8 +330,28 @@ class DefaultViewer(T) : BaseViewer
 
     override void onKeyUp(ref const(SDL_Event) event)
     {
+        import gfm.sdl2: SDLK_ESCAPE, SDLK_RETURN;
+        import derelict.imgui.types: ImGuiKey_Enter, ImGuiKey_Escape;
+
         if(event.key.keysym.sym == SDLK_ESCAPE)
+        {
+            {
+                // hack, it's used to imitate keyboard control of about closing box
+                // (cancel closing application if ESCAPE was pressed)
+                if(about_closing)
+                    _imgui_io.KeysDown[ImGuiKey_Escape] = 1;
+                else
+                    _imgui_io.KeysDown[ImGuiKey_Escape] = 0;
+            }
             about_closing = true;
+        }
+
+        {
+            // hack, it's used to imitate keyboard control of about closing box
+            // (closing application if ENTER was pressed)
+            if(event.key.keysym.sym == SDLK_RETURN)
+                _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
+        }
     }
 
     override bool aboutQuit()
