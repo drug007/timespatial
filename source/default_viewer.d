@@ -1,12 +1,13 @@
 module default_viewer;
 
 import std.conv: text;
+import std.container: Array;
 
 import gfm.math: box3f, vec3f, vec2f;
 import gfm.sdl2: SDL_Event;
 
 import base_viewer: BaseViewer;
-import data_item: timeToStringz;
+import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
 import data_provider: DataObject, IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
@@ -289,11 +290,8 @@ class DefaultViewer(T) : BaseViewer
                     igEndPopup();
                 }
 
-                import std.algorithm: each, map;
+                import std.algorithm: each;
                 import std.array: empty;
-                import std.container: Array;
-                import data_item: BaseDataItem, buildDataItemArray;
-                static Array!BaseDataItem ditem;
 
                 // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
                 // приводит к изменениями внешнего вида пользовательского интерфейса.
@@ -303,8 +301,7 @@ class DefaultViewer(T) : BaseViewer
 
                     ditem.each!(a=>a.destroy);
                     ditem.clear;
-                    auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
-                    ditem = buildDataItemArray(curr_id.map!(a=>&hdata[a].value));
+                    ditem = makePopupDataItems();
                 }
 
                 if (!ditem.empty && igBeginPopup("Popup\0".ptr))
@@ -326,6 +323,14 @@ class DefaultViewer(T) : BaseViewer
         glViewport(0, 0, cast(int) ds.x, cast(int) ds.y);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
         glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    Array!BaseDataItem makePopupDataItems()
+    {
+        import std.algorithm: map;
+
+        auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
+        return buildDataItemArray(curr_id.map!(a=>&hdata[a].value));
     }
 
     override void onKeyUp(ref const(SDL_Event) event)
@@ -375,6 +380,7 @@ protected:
     DataObject[uint][uint] data_objects;
     bool about_closing;
     RTree pointsRtree;
+    Array!BaseDataItem ditem;
 
     void __performanceTest()
     {
