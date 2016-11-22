@@ -217,7 +217,8 @@ class BaseViewer
 
                 switch(event.type)
                 {
-                    case SDL_QUIT:            return;
+                    case SDL_QUIT:            if(aboutQuit()) return;
+                    break;
                     case SDL_KEYDOWN:         onKeyDown(event);
                     break;
                     case SDL_KEYUP:           onKeyUp(event);
@@ -302,6 +303,11 @@ protected:
     uint _vp_handle; // текущий handle для VertexProvider
     Tuple!(VertexProvider, "v", GLProvider, "g")[uint] _rdata; // rendering data
     bool running;
+
+    bool aboutQuit()
+    {
+        return true;
+    }
 
     protected void updateMatrices()
     {

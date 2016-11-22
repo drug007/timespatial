@@ -3,7 +3,7 @@ module default_viewer;
 import std.conv: text;
 
 import gfm.math: box3f, vec3f, vec2f;
-import gfm.sdl2;
+import gfm.sdl2: SDL_Event, SDLK_ESCAPE;
 
 import base_viewer: BaseViewer;
 import data_item: timeToStringz;
@@ -321,6 +321,13 @@ class DefaultViewer(T) : BaseViewer
     {
         if(event.key.keysym.sym == SDLK_ESCAPE)
             about_closing = true;
+    }
+
+    override bool aboutQuit()
+    {
+        about_closing = true; // call modal pop up to ask user about quitting
+
+        return false; // cancel default behavior
     }
 
 protected:
