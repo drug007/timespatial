@@ -56,20 +56,6 @@ class GuiImpl(T) : DefaultViewer!T
 
         addDataLayout(data_layout);
     }
-
-    override public void onMouseDown(ref const(SDL_Event) event)
-    {
-        import std.algorithm: each;
-        import std.conv: text;
-        import gfm.math: vec2f;
-
-        super.onMouseDown(event);
-
-        pickedPointDescription = "";
-        
-        pickPoint(vec2f(mouse_x, mouse_y))
-            .each!(a=>pickedPointDescription ~= text(a, ": ", hdata[a].value, "\n"));
-    }
 };
 
 alias Gui = GuiImpl!(typeof(heterogeneousData()));

@@ -204,7 +204,6 @@ class DefaultViewer(T) : BaseViewer
     {
         import gfm.opengl;  
         import derelict.imgui.imgui;
-        import std.string: toStringz;
 
         {
             // Главное глобальное окно для перехвата пользовательского ввода вне других окон
@@ -263,7 +262,6 @@ class DefaultViewer(T) : BaseViewer
                 igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
                 auto world = projectWindowToPlane0(vec2f(mouse_x, mouse_y));
                 igText("World coords x=%f y=%f", world.x, world.y);
-                igText("Picked point %s", pickedPointDescription.toStringz);
 
                 if(about_closing)
                 {
@@ -315,9 +313,6 @@ class DefaultViewer(T) : BaseViewer
             about_closing = true;
     }
 
-    RTree pointsRtree;
-    string pickedPointDescription;
-
 protected:
     import data_layout: IDataLayout;
 
@@ -331,6 +326,7 @@ protected:
     T hdata;
     DataObject[uint][uint] data_objects;
     bool about_closing;
+    RTree pointsRtree;
 
     void __performanceTest()
     {
