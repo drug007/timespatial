@@ -222,7 +222,7 @@ class DefaultViewer(T) : BaseViewer
 			// делаем окно прозрачным как слеза младенца
             igPushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0, 0.0, 0.0, 0.0));
             igBegin("main", null, flags);
-            auto is_hovered = igIsWindowHovered();
+            is_hovered = igIsWindowHovered();
             auto is_lmb_clicked = igIsMouseClicked(0);
             igEnd();
             igPopStyleColor(1);
@@ -333,6 +333,14 @@ class DefaultViewer(T) : BaseViewer
         return buildDataItemArray(curr_id.map!(a=>&hdata[a].value));
     }
 
+    override public void processMouseWheel(ref const(SDL_Event) event)
+    {
+        if(is_hovered)
+        {
+            super.processMouseWheel(event);
+        }
+    }
+
     override void onKeyUp(ref const(SDL_Event) event)
     {
         import gfm.sdl2: SDLK_ESCAPE, SDLK_RETURN;
@@ -381,6 +389,7 @@ protected:
     bool about_closing;
     RTree pointsRtree;
     Array!BaseDataItem ditem;
+    bool is_hovered; // defines if mouse pointer is hovered under the main window (and not under child ones)
 
     void __performanceTest()
     {
