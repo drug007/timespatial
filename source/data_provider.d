@@ -7,36 +7,6 @@ import gfm.math: vec3f, vec4f, box3f;
 import data_item: DataItem, Attr;
 import vertex_provider: VertexProvider;
 
-struct Id
-{
-    uint source;
-    uint no;
-
-    int opCmp(ref const(Id) other)
-    {
-    	if(source < other.source)
-    		return -1;
-    	if(source > other.source)
-    		return 1;
-    	if(no < other.no)
-    		return -1;
-    	if(no > other.no)
-    		return 1;
-    	return 0;
-    }
-}
-
-struct Data
-{
-    enum State { Begin, Middle, End, }
-
-    Id id;
-    double x, y, z;
-    @("Timestamp")
-    long timestamp;
-    State state;
-}
-
 ref box3f updateBoundingBox(ref box3f one, ref const(box3f) another)
 {
     if(one.min.x > another.min.x)

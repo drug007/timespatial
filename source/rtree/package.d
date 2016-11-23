@@ -2,7 +2,6 @@ module rtree;
 
 import rtree.sqlite_storage;
 import gfm.math: vec3f, box3f;
-import data_provider: Id;
 
 class RTree
 {

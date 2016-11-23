@@ -12,7 +12,6 @@ import timestamp_storage: TimestampStorage;
 import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
 import rtree;
-import data_provider: Data;
 
 class DefaultViewer(T, DataObject) : BaseViewer
 {
@@ -400,8 +399,6 @@ protected:
 
         import dstats: MeanSD;
 
-        import data_provider: Id, Data;
-
         setCameraSize(30_000);
 
         const aspect_ratio = width/cast(double)height;
@@ -427,14 +424,11 @@ protected:
 
             foreach(i; 0..pointsDelta)
             {
-                auto e = Data(
-                        Id( 1, 126),
-                        uniform(-w, w),
-                        uniform(-h, h),
-                        0, 110000000, Data.State.Middle
-                    );
+                auto x = uniform(-w, w);
+                auto y = uniform(-h, h);
+                auto z = 0;
 
-                pointsRtree.addPoint(j*pointsDelta + i, vec3f(e.x, e.y, e.z));
+                pointsRtree.addPoint(j*pointsDelta + i, vec3f(x, y, z));
             }
 
             //ищем 100 случайных точек, замеряем по каждому поиску время

@@ -37,7 +37,6 @@ alias DataObject = DataObjectImpl!DataElement;
 class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
 {
     import gfm.sdl2: SDL_Event;
-    import data_provider: Data;
 
     this(int width, int height, string title, T hdata)
     {

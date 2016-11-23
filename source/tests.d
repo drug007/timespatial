@@ -3,7 +3,35 @@ module tests;
 import std.typecons: AliasSeq;
 import taggedalgebraic: TaggedAlgebraic;
 
-import data_provider: Id, Data;
+struct Id
+{
+    uint source;
+    uint no;
+
+    int opCmp(ref const(Id) other)
+    {
+    	if(source < other.source)
+    		return -1;
+    	if(source > other.source)
+    		return 1;
+    	if(no < other.no)
+    		return -1;
+    	if(no > other.no)
+    		return 1;
+    	return 0;
+    }
+}
+
+struct Data
+{
+    enum State { Begin, Middle, End, }
+
+    Id id;
+    double x, y, z;
+    @("Timestamp")
+    long timestamp;
+    State state;
+}
 
 struct Bar
 {
