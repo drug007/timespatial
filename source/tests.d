@@ -170,14 +170,15 @@ auto filterGraphicData(R)(R hdata)
 	}).map!(a=>tuple!("index", "value")(a.index, a.value.get!Data));
 }
 
-auto prepareData(R)(R data)
+auto prepareData(DataObject, R)(R data)
 {
-    import data_provider: DataObject, DataElement;
     import std.algorithm: filter, sort, map;
     import std.array: array, back;
     import std.math: isNaN;
     import std.conv: text;
     import vertex_provider: Vertex, VertexSlice;
+
+    alias DataElement = DataObject.DataElement;
 
     DataObject[uint][uint] idata;
 

@@ -9,12 +9,12 @@ import gfm.sdl2: SDL_Event;
 import base_viewer: BaseViewer;
 import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
-import data_provider: DataObject, IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
+import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
 import rtree;
 import data_provider: Data;
 
-class DefaultViewer(T) : BaseViewer
+class DefaultViewer(T, DataObject) : BaseViewer
 {
     this(int width, int height, string title, T hdata)
     {
@@ -102,7 +102,7 @@ class DefaultViewer(T) : BaseViewer
         {
             auto dobj = data_objects[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
                                                 // так как на него будет ссылаться DataLayout
-            auto rd = makeRenderableData(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
+            auto rd = makeRenderableData!(DataObject)(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
             timestamp_storage.addTimestamps(rd.getTimestamps());
             updateBoundingBox(box, rd.box);
             foreach(a; rd.aux)

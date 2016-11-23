@@ -75,34 +75,6 @@ ref box3f updateBoundingBox(ref box3f one, ref const(vec3f) another)
     return one;
 }
 
-struct DataElement
-{
-    @("Disabled")
-    uint no;
-    float x, y, z;
-    @("Disabled")
-    float r, g, b, a;
-    @("Timestamp")
-    long timestamp;
-}
-
-struct DataObject
-{
-    @("Disabled")
-    uint no;
-    @("Disabled")
-    string header;
-    @("Disabled")
-    bool visible;
-    @("Disabled")
-    box3f box;
-
-    import vertex_provider: VertexSlice;
-    @("Disabled")
-    VertexSlice.Kind kind;
-    DataElement[] elements;
-}
-
 interface IRenderableData
 {
     long[] getTimestamps();
@@ -121,7 +93,7 @@ struct Auxillary
 }
 
 
-class RenderableData(R) : IRenderableData
+class RenderableData(DataObjectType, R) : IRenderableData
 {
     // Ограничивающий параллелепипед
     box3f box;
@@ -134,7 +106,7 @@ class RenderableData(R) : IRenderableData
     {
         import std.range: ElementType, walkLength;
 
-        static if(is(ElementType!R == DataObject))
+        static if(is(ElementType!R == DataObjectType))
         {
             import std.array: array;
             
@@ -236,9 +208,9 @@ class RenderableData(R) : IRenderableData
     }
 }
 
-auto makeRenderableData(R, D)(uint no, R r, D d)
+auto makeRenderableData(DataObjectType, R, D)(uint no, R r, D d)
 {
-    return new RenderableData!(R)(no, r, d);
+    return new RenderableData!(DataObjectType, R)(no, r, d);
 }
 
 auto sourceToColor(uint source)
