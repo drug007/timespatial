@@ -116,7 +116,7 @@ class DefaultViewer(T) : BaseViewer
             import std.algorithm: sort;
             foreach(ref e2; dobj.sort!((a,b)=>a.no<b.no))
             {
-                dl.add!DataObject(e2, text(e2.no, "\0"));
+                dl.add!DataObject(e2, e2.header);
                 foreach(e; e2.elements)
                     pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z));
             }

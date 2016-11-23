@@ -91,6 +91,8 @@ struct DataObject
     @("Disabled")
     uint no;
     @("Disabled")
+    string header;
+    @("Disabled")
     bool visible;
     @("Disabled")
     box3f box;

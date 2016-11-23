@@ -176,6 +176,7 @@ auto prepareData(R)(R data)
     import std.algorithm: filter, sort, map;
     import std.array: array, back;
     import std.math: isNaN;
+    import std.conv: text;
     import vertex_provider: Vertex, VertexSlice;
 
     DataObject[uint][uint] idata;
@@ -189,6 +190,7 @@ auto prepareData(R)(R data)
             import gfm.math: box3f;
             idata[e.value.id.source][e.value.id.no] = DataObject(
                 e.value.id.no, 
+                text(e.value.id.no, "\0"),
                 true, // visible
                 box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
                 VertexSlice.Kind.LineStrip, 
