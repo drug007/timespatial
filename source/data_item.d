@@ -223,7 +223,16 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                 }
                                 else static if(!isBasicType!T  && !isSomeString!T)
                                 {
-                                    mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ");");
+                                    static if(isArray!Type)
+                                    {
+                                        mixin("const length = value." ~ FieldName ~ ".length;");
+                                        auto header = text(Type.stringof[0..$-1] // remove closing bracket
+                                            , length                             // insert length
+                                            , "]\0");                            // add closing bracket and terminal 0
+                                        mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ", header);");
+                                    }
+                                    else
+                                        mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ");");
                                 }
                             }
                             else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
@@ -255,7 +264,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                 di.length = value.length;
                 alias Type = typeof(value[0]);
                 foreach(i; 0..di.length)
-                    di[i] = new DataItem!(Type)(value[i]);
+                    di[i] = new DataItem!(Type)(value[i], text(Unqual!Type.stringof, "(", i, ")\0"));
             }
         }
         else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
