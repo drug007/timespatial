@@ -96,7 +96,7 @@ class DefaultViewer(T) : BaseViewer
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        // На основании исходных данных генерируем полных набор
+        // На основании исходных данных генерируем полный набор
         // данных для рендеринга
         foreach(k; data_objects.byKey)
         {
