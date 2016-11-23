@@ -102,7 +102,7 @@ class DefaultViewer(T) : BaseViewer
         {
             auto dobj = data_objects[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
                                                 // так как на него будет ссылаться DataLayout
-            auto rd = makeRenderableData(k, dobj, &genVertexProviderHandle);
+            auto rd = makeRenderableData(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
             timestamp_storage.addTimestamps(rd.getTimestamps());
             updateBoundingBox(box, rd.box);
             foreach(a; rd.aux)
