@@ -342,7 +342,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
     override void onKeyUp(ref const(SDL_Event) event)
     {
-        import gfm.sdl2: SDLK_ESCAPE, SDLK_RETURN;
+        import gfm.sdl2: SDLK_ESCAPE, SDLK_RETURN, SDLK_SPACE;
         import derelict.imgui.types: ImGuiKey_Enter, ImGuiKey_Escape;
 
         if(event.key.keysym.sym == SDLK_ESCAPE)
@@ -361,8 +361,13 @@ class DefaultViewer(T, DataObject) : BaseViewer
         {
             // hack, it's used to imitate keyboard control of about closing box
             // (closing application if ENTER was pressed)
-            if(event.key.keysym.sym == SDLK_RETURN)
-                _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
+            {
+                if(event.key.keysym.sym == SDLK_RETURN)
+                    _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
+                if(about_closing && event.key.keysym.sym == SDLK_SPACE) // it allows to close the app using space beside enter button
+                    _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
+
+            }
         }
     }
 
