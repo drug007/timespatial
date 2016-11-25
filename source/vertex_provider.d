@@ -100,7 +100,7 @@ class VertexProvider
         }
 	}
 
-	this(uint no, Vertex[] vertices, VertexSlice[] slices)
+	this(uint no, Vertex[] vertices, VertexSlice[] slices, bool visible = true)
 	{
         assert(vertices.length);
         assert(slices.length);
@@ -108,9 +108,23 @@ class VertexProvider
 		_vertices    = vertices;
 		_slices      = slices; 
 		_curr_slices = slices.dup;
+        _visible     = visible;
 	}
+
+    @property
+    visible()
+    {
+        return _visible;
+    }
+
+    @property
+    visible(bool value)
+    {
+        _visible = value;
+    }
 
 private:
 	VertexSlice[] _slices, _curr_slices;
 	Vertex[]      _vertices;
+    bool          _visible;
 }

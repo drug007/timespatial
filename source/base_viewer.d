@@ -259,9 +259,10 @@ class BaseViewer
 
     void drawObjects()
     {
-        foreach(rd; _rdata)
+        foreach(ref rd; _rdata)
         {
-            rd.g.drawVertices(rd.v.currSlices);
+            if(rd.v.visible)
+                rd.g.drawVertices(rd.v.currSlices);
         }
     }
 
