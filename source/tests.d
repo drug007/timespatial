@@ -2,6 +2,7 @@ module tests;
 
 import std.typecons: AliasSeq;
 import taggedalgebraic: TaggedAlgebraic;
+import color_table: ColorTable;
 
 struct Id
 {
@@ -198,7 +199,7 @@ auto filterGraphicData(R)(R hdata)
 	}).map!(a=>tuple!("index", "value")(a.index, a.value.get!Data));
 }
 
-auto prepareData(DataObject, R)(R data)
+auto prepareData(DataObject, R)(R data, ref const(ColorTable) color_table)
 {
     import std.algorithm: filter, sort, map;
     import std.array: array, back;
@@ -214,6 +215,8 @@ auto prepareData(DataObject, R)(R data)
     {
         auto s = idata.get(e.value.id.source, null);
 
+        auto clr = color_table(e.value.id.source);
+
         if((s is null) || (e.value.id.no !in s))
         {
             import gfm.math: box3f;
@@ -223,11 +226,11 @@ auto prepareData(DataObject, R)(R data)
                 true, // visible
                 box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
                 VertexSlice.Kind.LineStrip, 
-                [DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp)]);
+                [DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp)]);
         }
         else
         {
-            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp);
+            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp);
             import data_provider: updateBoundingBox;
             import gfm.math: vec3f;
             auto vec = vec3f(e.value.x, e.value.y, e.value.z);

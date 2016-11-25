@@ -11,11 +11,12 @@ import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
 import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
+import color_table: ColorTable;
 import rtree;
 
 class DefaultViewer(T, DataObject) : BaseViewer
 {
-    this(int width, int height, string title, T hdata)
+    this(int width, int height, string title, T hdata, ColorTable color_table)
     {
         import imgui_helpers: igGetStyle;
 
@@ -29,7 +30,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
         show_settings = true;
         max_point_counts = 2;
-        clear_color = [0.3f, 0.4f, 0.8f];
+        clear_color = color_table(0); // "нулевой" цвет это цвет фона
 
         box = box3f(
             vec3f(float.max, float.max, float.max),
@@ -57,6 +58,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
         pointsRtree = new RTree(":memory:");
 
         this.hdata = hdata;
+        this.color_table = color_table;
         data_objects = prepareData(); // создаем графические данные во внутреннем формате
         addData();                    // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
         makeDataLayout();             // генерируем неграфические данные
@@ -320,7 +322,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
         // Only clearing specific color here because imgui and timespatial objects rendering is built-in in BaseViewer
         auto ds = _imgui_io.DisplaySize;
         glViewport(0, 0, cast(int) ds.x, cast(int) ds.y);
-        glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
+        glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
@@ -383,7 +385,7 @@ protected:
 
     bool show_settings;
     int max_point_counts;
-    float[3] clear_color;
+    typeof(color_table(0)) clear_color;
     TimestampStorage timestamp_storage;
     IDataLayout[] data_layout;
     box3f box;
@@ -394,6 +396,7 @@ protected:
     RTree pointsRtree;
     Array!BaseDataItem ditem;
     bool is_hovered; // defines if mouse pointer is hovered under the main window (and not under child ones)
+    ColorTable color_table;
 
     void __performanceTest()
     {

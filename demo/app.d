@@ -2,6 +2,7 @@ import gfm.math: box3f;
 
 import tests: heterogeneousData;
 import default_viewer: DefaultViewer;
+import color_table: ColorTable;
 
 struct DataElement
 {
@@ -38,9 +39,9 @@ class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
 {
     import gfm.sdl2: SDL_Event;
 
-    this(int width, int height, string title, T hdata)
+    this(int width, int height, string title, T hdata, ColorTable color_table)
     {
-        super(width, height, title, hdata);
+        super(width, height, title, hdata, color_table);
     }
 
     auto filterGraphicData()
@@ -54,7 +55,7 @@ class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
     {
         import tests: pd = prepareData;
 
-        return filterGraphicData.pd!(DataObjectType);
+        return filterGraphicData.pd!(DataObjectType)(color_table);
     }
 
     override void makeDataLayout()
@@ -104,7 +105,7 @@ int main(string[] args)
     int width = 1800;
     int height = 768;
 
-    auto gui = new Gui(width, height, "Test gui", heterogeneousData());
+    auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]));
     gui.centerCamera();
     gui.run();
     gui.close();

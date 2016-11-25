@@ -10,6 +10,7 @@ dependency "d2sqlite3" version="~>0.9.8"
 dependency "dstats" version="~>1.0.3"
 dependency "taggedalgebraic" version="~>0.10.4"
 dependency "emsi_containers" version="~>0.5.2"
+dependency "color" version="~>0.0.5"
 license "BSL-1.0"
 
 targetPath "bin"
