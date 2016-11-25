@@ -52,6 +52,8 @@ interface IRenderableData
     void setMaxCount(long count);
     Auxillary[] getAuxillary();
     uint getNo();
+    void setVisibility(bool value);
+    bool getVisibility();
 }
 
 /// Дополнительные данные, позволяют добавить к данным доп. информацию
@@ -71,6 +73,7 @@ class RenderableData(DataObjectType, R) : IRenderableData
     uint no;
     R data;
     Auxillary[] aux;
+    private bool _visibility;
 
     this(uint no, R r, uint delegate() generateUniqId)
     {
@@ -82,6 +85,7 @@ class RenderableData(DataObjectType, R) : IRenderableData
             
             this.no = no;
             data = r;
+            _visibility = true;
             aux = data.map!(a=>Auxillary(a.no, [])).array;
 
             box = box3f(
@@ -175,6 +179,19 @@ class RenderableData(DataObjectType, R) : IRenderableData
     uint getNo()
     {
         return no;
+    }
+
+    void setVisibility(bool value)
+    {
+        _visibility = value;
+        foreach(a; aux)
+            foreach(vp; a.vp)
+                vp.visible = value;
+    }
+
+    bool getVisibility()
+    {
+        return _visibility;
     }
 }
 

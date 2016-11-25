@@ -313,6 +313,31 @@ class DefaultViewer(T, DataObject) : BaseViewer
                 }
             }
             igEnd();
+
+            {
+                // TODO all this block is hack
+                igSetNextWindowSize(ImVec2(width/10, height/3), ImGuiSetCond_FirstUseEver);
+                igBegin("Visibility", null);
+                import std.range: lockstep;
+                static bool[256] buffer;
+                size_t i;
+                foreach(ref rd, ref v; lockstep(renderable_data, buffer[]))
+                {
+                    v = rd.getVisibility();
+                    igPushIdInt(cast(int) i++);
+                    igCheckbox("", &v);
+                    igPopId();
+                    igSameLine();
+
+                    import std.conv: text;
+                    auto clr = color_table(rd.getNo);
+                    with(clr) igTextColored(ImVec4(r, g, b, a), text(rd.getNo, "\0").ptr);
+                    
+                    if(v != rd.getVisibility())
+                        rd.setVisibility(v);
+                }
+                igEnd();
+            }
         }
 
         foreach(ref dw; data_layout)
