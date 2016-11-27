@@ -420,6 +420,22 @@ class DefaultViewer(T, DataObject) : BaseViewer
         }
     }
 
+    override public void processMouseUp(ref const(SDL_Event) event)
+    {
+        if(is_hovered)
+        {
+            super.processMouseUp(event);
+        }
+    }
+
+    override public void processMouseDown(ref const(SDL_Event) event)
+    {
+        if(is_hovered)
+        {
+            super.processMouseDown(event);
+        }
+    }
+
     override void onKeyUp(ref const(SDL_Event) event)
     {
         import gfm.sdl2: SDLK_ESCAPE, SDLK_RETURN, SDLK_SPACE;
