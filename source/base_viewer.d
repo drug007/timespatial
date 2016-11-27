@@ -186,15 +186,16 @@ class BaseViewer
 
     auto setVertexProvider(VertexProvider vp)
     {
-        if(auto ptr = vp.no in _rdata)
+        if(auto idx = vp.no in _rdata_idx)
         {
-            ptr.v = vp;
-            ptr.g.freeResources();
-            ptr.g = new GLProvider(_gl, program, vp.vertices()); // TODO возможно нет смысле пересоздавать GLProvider
+            _rdata[*idx].v = vp;
+            _rdata[*idx].g.freeResources();
+            _rdata[*idx].g = new GLProvider(_gl, program, vp.vertices()); // TODO возможно нет смысле пересоздавать GLProvider
         }
         else
         {
-            _rdata[vp.no] = tuple(vp, new GLProvider(_gl, program, vp.vertices()));
+            _rdata           ~= tuple!("v", "g")(vp, new GLProvider(_gl, program, vp.vertices()));
+            _rdata_idx[vp.no] = cast(uint) _rdata.length-1;
         }
     }
 
@@ -302,7 +303,8 @@ protected:
     ImGuiIO* _imgui_io;
     bool _camera_moving;
     uint _vp_handle; // текущий handle для VertexProvider
-    Tuple!(VertexProvider, "v", GLProvider, "g")[uint] _rdata; // rendering data
+    uint[uint] _rdata_idx; // index of rendering data (store indices of _rdata elements)
+    Tuple!(VertexProvider, "v", GLProvider, "g")[] _rdata; // rendering data
     bool running;
 
     bool aboutQuit()

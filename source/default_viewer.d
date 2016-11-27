@@ -316,25 +316,78 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
             {
                 // TODO all this block is hack
+                import std.algorithm: min, swap;
+
+                enum Count = 256u;
+                static bool[Count] state;
+                const Amount = min(renderable_data.length, Count);
+                bool changed = false;
+
                 igSetNextWindowSize(ImVec2(width/10, height/3), ImGuiSetCond_FirstUseEver);
                 igBegin("Visibility", null);
-                import std.range: lockstep;
-                static bool[256] buffer;
-                size_t i;
-                foreach(ref rd, ref v; lockstep(renderable_data, buffer[]))
+                
+                foreach(uint n; 0..Amount)
                 {
-                    v = rd.getVisibility();
-                    igPushIdInt(cast(int) i++);
-                    igCheckbox("", &v);
-                    igPopId();
-                    igSameLine();
-
                     import std.conv: text;
-                    auto clr = color_table(rd.getNo);
-                    with(clr) igTextColored(ImVec4(r, g, b, a), text(rd.getNo, "\0").ptr);
-                    
-                    if(v != rd.getVisibility())
-                        rd.setVisibility(v);
+                    const no = renderable_data[n].getNo;
+                    auto clr = color_table(no);
+                    with(clr) igPushStyleColor(ImGuiCol_Text, ImVec4(r, g, b, a));
+                    state[n] = renderable_data[n].getVisibility();
+                    igSelectableEx(text(state[n] ? " (on) " : "(off) ", no, "\0").ptr, &state[n]);
+                    renderable_data[n].setVisibility(state[n]);
+                    igPopStyleColor();
+
+                    if (igIsItemActive() && !igIsItemHovered())
+                    {
+                        ImVec2 drag;
+                        igGetMouseDragDelta(&drag, 0);
+                        if (drag.y < 0.0f && n > 0)
+                        {
+                            swap(renderable_data[n], renderable_data[n-1]);
+                            changed = true;
+                        }
+                        else if (drag.y > 0.0f && n < Amount-1)
+                        {
+                            swap(renderable_data[n], renderable_data[n+1]);
+                            changed = true;
+                        }
+                        igResetMouseDragDelta();
+                    }
+                }
+                if(changed)
+                {
+                    size_t curr_idx;
+                    uint[] reference;
+                    // rearrange vertex providers
+                    foreach(rd; renderable_data)
+                    {
+                        foreach(a; rd.getAuxillary())
+                        {
+                            foreach(vp; a.vp)
+                            {
+                                size_t new_idx = _rdata.length;
+                                // find index of the current vertex provider by its no
+                                foreach(i; curr_idx.._rdata.length)
+                                {
+                                    if(_rdata[i].v.no == vp.no)
+                                    {
+                                        new_idx = i;
+                                        break;
+                                    }
+                                }
+                                // it should exist
+                                assert(new_idx != _rdata.length);
+                                if(curr_idx != new_idx)
+                                {
+                                    // if old and new indices of the vertex provider 
+                                    // are not equal change its position to reflect this fact
+                                    swap(_rdata[curr_idx], _rdata[new_idx]);
+                                }
+                                curr_idx++;
+                            }
+
+                        }
+                    }
                 }
                 igEnd();
             }
