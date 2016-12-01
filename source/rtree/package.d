@@ -2,7 +2,6 @@ module rtree;
 
 import rtree.sqlite_storage;
 import gfm.math: vec3f, box3f;
-import data_provider: Id;
 
 class RTree
 {
@@ -22,7 +21,7 @@ class RTree
     }
 
     /// Сохраняет точку (вершину) в хранилище
-    void addPoint(long id, vec3f coords)
+    void addPoint(long id, vec3f coords, ubyte[] payload)
     {
         Value v;
 
@@ -37,20 +36,18 @@ class RTree
         v.bbox.min.z = coords.z;
         v.bbox.max.z = coords.z;
 
-        v.payload = [0];
+        v.payload = payload;
 
         storage.addValue(v);
     }
 
     /// Находит все точки, которые лежат внутри и на границах bounding box
-    long[] searchPoints(in box3f searchBox)
+    auto searchPoints(in box3f searchBox)
     {
         import std.algorithm: map;
         import std.array: array;
 
-        return storage.getValues(searchBox)
-            .map!(a=>a.id)
-            .array;
+        return storage.getValues(searchBox);
     }
 }
 
@@ -65,7 +62,7 @@ unittest
         {
             foreach(x; -5..5)
             {
-                s.addPoint(id++, vec3f(x, y, z));
+                s.addPoint(id++, vec3f(x, y, z), [0]);
             }
         }
     }

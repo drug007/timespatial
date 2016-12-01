@@ -2,8 +2,37 @@ module tests;
 
 import std.typecons: AliasSeq;
 import taggedalgebraic: TaggedAlgebraic;
+import color_table: ColorTable;
 
-import data_provider: Id, Data;
+struct Id
+{
+    uint source;
+    uint no;
+
+    int opCmp(ref const(Id) other)
+    {
+    	if(source < other.source)
+    		return -1;
+    	if(source > other.source)
+    		return 1;
+    	if(no < other.no)
+    		return -1;
+    	if(no > other.no)
+    		return 1;
+    	return 0;
+    }
+}
+
+struct Data
+{
+    enum State { Begin, Middle, End, }
+
+    Id id;
+    double x, y, z;
+    @("Timestamp")
+    long timestamp;
+    State state;
+}
 
 struct Bar
 {
@@ -170,13 +199,15 @@ auto filterGraphicData(R)(R hdata)
 	}).map!(a=>tuple!("index", "value")(a.index, a.value.get!Data));
 }
 
-auto prepareData(R)(R data)
+auto prepareData(DataObject, R)(R data, ref const(ColorTable) color_table)
 {
-    import data_provider: DataObject, DataElement;
     import std.algorithm: filter, sort, map;
     import std.array: array, back;
     import std.math: isNaN;
+    import std.conv: text;
     import vertex_provider: Vertex, VertexSlice;
+
+    alias DataElement = DataObject.DataElement;
 
     DataObject[uint][uint] idata;
 
@@ -184,19 +215,22 @@ auto prepareData(R)(R data)
     {
         auto s = idata.get(e.value.id.source, null);
 
+        auto clr = color_table(e.value.id.source);
+
         if((s is null) || (e.value.id.no !in s))
         {
             import gfm.math: box3f;
             idata[e.value.id.source][e.value.id.no] = DataObject(
                 e.value.id.no, 
+                text(e.value.id.no, "\0"),
                 true, // visible
                 box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
                 VertexSlice.Kind.LineStrip, 
-                [DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp)]);
+                [DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp)]);
         }
         else
         {
-            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, 1.0, 0.0, 1.0, 1.0, e.value.timestamp);
+            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp);
             import data_provider: updateBoundingBox;
             import gfm.math: vec3f;
             auto vec = vec3f(e.value.x, e.value.y, e.value.z);
@@ -286,12 +320,12 @@ unittest
     import std.algorithm: equal;
 
     foreach(e; heterogeneousData().filterGraphicData)
-        s.addPoint(e.index, vec3f(e.value.x, e.value.y, e.value.z));
+        s.addPoint(e.index, vec3f(e.value.x, e.value.y, e.value.z), [0]);
 
     auto box = box3f(vec3f(1000, 1000, -10), vec3f(20000, 20000, 10));
     auto point_id = s.searchPoints(box);
 
-    assert(point_id.equal([19, 15, 8, 67, 11, 69, 13, 71, 73, 17, 75, 77]));
+    assert(point_id.map!("a.id").equal([19, 15, 8, 67, 11, 69, 13, 71, 73, 17, 75, 77]));
 
     destroy(s);
 }

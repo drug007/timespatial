@@ -1,21 +1,22 @@
 module default_viewer;
 
 import std.conv: text;
+import std.container: Array;
 
 import gfm.math: box3f, vec3f, vec2f;
-import gfm.sdl2;
+import gfm.sdl2: SDL_Event;
 
 import base_viewer: BaseViewer;
-import data_item: timeToStringz;
+import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
-import data_provider: DataObject, IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
+import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
+import color_table: ColorTable;
 import rtree;
-import data_provider: Data;
 
-class DefaultViewer(T) : BaseViewer
+class DefaultViewer(T, DataObject) : BaseViewer
 {
-    this(int width, int height, string title, T hdata)
+    this(int width, int height, string title, T hdata, ColorTable color_table)
     {
         import imgui_helpers: igGetStyle;
 
@@ -29,7 +30,7 @@ class DefaultViewer(T) : BaseViewer
 
         show_settings = true;
         max_point_counts = 2;
-        clear_color = [0.3f, 0.4f, 0.8f];
+        clear_color = color_table(0); // "нулевой" цвет это цвет фона
 
         box = box3f(
             vec3f(float.max, float.max, float.max),
@@ -57,6 +58,7 @@ class DefaultViewer(T) : BaseViewer
         pointsRtree = new RTree(":memory:");
 
         this.hdata = hdata;
+        this.color_table = color_table;
         data_objects = prepareData(); // создаем графические данные во внутреннем формате
         addData();                    // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
         makeDataLayout();             // генерируем неграфические данные
@@ -95,13 +97,13 @@ class DefaultViewer(T) : BaseViewer
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        // На основании исходных данных генерируем полных набор
+        // На основании исходных данных генерируем полный набор
         // данных для рендеринга
         foreach(k; data_objects.byKey)
         {
             auto dobj = data_objects[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
                                                 // так как на него будет ссылаться DataLayout
-            auto rd = makeRenderableData(k, dobj, &genVertexProviderHandle);
+            auto rd = makeRenderableData!(DataObject)(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
             timestamp_storage.addTimestamps(rd.getTimestamps());
             updateBoundingBox(box, rd.box);
             foreach(a; rd.aux)
@@ -115,9 +117,12 @@ class DefaultViewer(T) : BaseViewer
             import std.algorithm: sort;
             foreach(ref e2; dobj.sort!((a,b)=>a.no<b.no))
             {
-                dl.add!DataObject(e2, text(e2.no, "\0"));
+                dl.add!DataObject(e2, e2.header);
                 foreach(e; e2.elements)
-                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z));
+                {
+                    import msgpack: pack;
+                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
+                }
             }
         }
         onCurrentTimestampChange();
@@ -147,7 +152,7 @@ class DefaultViewer(T) : BaseViewer
     /// Находит ближайшую точку по координатам в окне
     /// Если такой точки нет то возвращает null
     /// Возвращённое значение обслуживается GC
-    long[] pickPoint(in vec2f screenCoords)
+    auto pickPoint(in vec2f screenCoords)
     {
         box3f searchBox;
 
@@ -221,7 +226,7 @@ class DefaultViewer(T) : BaseViewer
 			// делаем окно прозрачным как слеза младенца
             igPushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0, 0.0, 0.0, 0.0));
             igBegin("main", null, flags);
-            auto is_hovered = igIsWindowHovered();
+            is_hovered = igIsWindowHovered();
             auto is_lmb_clicked = igIsMouseClicked(0);
             igEnd();
             igPopStyleColor(1);
@@ -272,17 +277,25 @@ class DefaultViewer(T) : BaseViewer
                 {
                     igText("Do you really want to exit?\0");
 
-                    if (igButton("OK", ImVec2(120, 40))) { igCloseCurrentPopup(); running = false; about_closing = false; }
+                    if (igButton("OK", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Enter])
+                    {
+                        igCloseCurrentPopup(); 
+                        running = false; 
+                        about_closing = false;
+                        _imgui_io.KeysDown[ImGuiKey_Enter] = 0;
+                    }
                     igSameLine();
-                    if (igButton("Cancel", ImVec2(120, 40))) { igCloseCurrentPopup(); about_closing = false; }
+                    if (igButton("Cancel", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Escape])
+                    {
+                        igCloseCurrentPopup(); 
+                        about_closing = false;
+                        _imgui_io.KeysDown[ImGuiKey_Escape] = 0;
+                    }
                     igEndPopup();
                 }
 
-                import std.algorithm: each, map;
+                import std.algorithm: each;
                 import std.array: empty;
-                import std.container: Array;
-                import data_item: BaseDataItem, buildDataItemArray;
-                static Array!BaseDataItem ditem;
 
                 // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
                 // приводит к изменениями внешнего вида пользовательского интерфейса.
@@ -292,8 +305,7 @@ class DefaultViewer(T) : BaseViewer
 
                     ditem.each!(a=>a.destroy);
                     ditem.clear;
-                    auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
-                    ditem = buildDataItemArray(curr_id.map!(a=>&hdata[a].value));
+                    ditem = makePopupDataItems();
                 }
 
                 if (!ditem.empty && igBeginPopup("Popup\0".ptr))
@@ -304,6 +316,84 @@ class DefaultViewer(T) : BaseViewer
                 }
             }
             igEnd();
+
+            {
+                // TODO all this block is hack
+                import std.algorithm: min, swap;
+
+                enum Count = 256u;
+                static bool[Count] state;
+                const Amount = min(renderable_data.length, Count);
+                bool changed = false;
+
+                igSetNextWindowSize(ImVec2(width/10, height/3), ImGuiSetCond_FirstUseEver);
+                igBegin("Visibility", null);
+                
+                foreach(uint n; 0..Amount)
+                {
+                    import std.conv: text;
+                    const no = renderable_data[n].getNo;
+                    auto clr = color_table(no);
+                    with(clr) igPushStyleColor(ImGuiCol_Text, ImVec4(r, g, b, a));
+                    state[n] = renderable_data[n].getVisibility();
+                    igSelectableEx(text(state[n] ? " (on) " : "(off) ", no, "\0").ptr, &state[n]);
+                    renderable_data[n].setVisibility(state[n]);
+                    igPopStyleColor();
+
+                    if (igIsItemActive() && !igIsItemHovered())
+                    {
+                        ImVec2 drag;
+                        igGetMouseDragDelta(&drag, 0);
+                        if (drag.y < 0.0f && n > 0)
+                        {
+                            swap(renderable_data[n], renderable_data[n-1]);
+                            changed = true;
+                        }
+                        else if (drag.y > 0.0f && n < Amount-1)
+                        {
+                            swap(renderable_data[n], renderable_data[n+1]);
+                            changed = true;
+                        }
+                        igResetMouseDragDelta();
+                    }
+                }
+                if(changed)
+                {
+                    size_t curr_idx;
+                    uint[] reference;
+                    // rearrange vertex providers
+                    foreach(rd; renderable_data)
+                    {
+                        foreach(a; rd.getAuxillary())
+                        {
+                            foreach(vp; a.vp)
+                            {
+                                size_t new_idx = _rdata.length;
+                                // find index of the current vertex provider by its no
+                                foreach(i; curr_idx.._rdata.length)
+                                {
+                                    if(_rdata[i].v.no == vp.no)
+                                    {
+                                        new_idx = i;
+                                        break;
+                                    }
+                                }
+                                // it should exist
+                                assert(new_idx != _rdata.length);
+                                if(curr_idx != new_idx)
+                                {
+                                    // if old and new indices of the vertex provider 
+                                    // are not equal change its position to reflect this fact
+                                    swap(_rdata[curr_idx], _rdata[new_idx]);
+                                }
+                                curr_idx++;
+                            }
+
+                        }
+                    }
+                }
+                igEnd();
+            }
         }
 
         foreach(ref dw; data_layout)
@@ -313,14 +403,82 @@ class DefaultViewer(T) : BaseViewer
         // Only clearing specific color here because imgui and timespatial objects rendering is built-in in BaseViewer
         auto ds = _imgui_io.DisplaySize;
         glViewport(0, 0, cast(int) ds.x, cast(int) ds.y);
-        glClearColor(clear_color[0], clear_color[1], clear_color[2], 0);
+        glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
         glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    Array!BaseDataItem makePopupDataItems()
+    {
+        import std.algorithm: map;
+        import msgpack: unpack;
+
+        auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
+        return buildDataItemArray(curr_id.map!((a) {
+            auto id = unpack!uint(a.payload);
+            return &hdata[id].value;
+        }));
+    }
+
+    override public void processMouseWheel(ref const(SDL_Event) event)
+    {
+        if(is_hovered)
+        {
+            super.processMouseWheel(event);
+        }
+    }
+
+    override public void processMouseUp(ref const(SDL_Event) event)
+    {
+        if(is_hovered)
+        {
+            super.processMouseUp(event);
+        }
+    }
+
+    override public void processMouseDown(ref const(SDL_Event) event)
+    {
+        if(is_hovered)
+        {
+            super.processMouseDown(event);
+        }
     }
 
     override void onKeyUp(ref const(SDL_Event) event)
     {
+        import gfm.sdl2: SDLK_ESCAPE, SDLK_RETURN, SDLK_SPACE;
+        import derelict.imgui.types: ImGuiKey_Enter, ImGuiKey_Escape;
+
         if(event.key.keysym.sym == SDLK_ESCAPE)
+        {
+            {
+                // hack, it's used to imitate keyboard control of about closing box
+                // (cancel closing application if ESCAPE was pressed)
+                if(about_closing)
+                    _imgui_io.KeysDown[ImGuiKey_Escape] = 1;
+                else
+                    _imgui_io.KeysDown[ImGuiKey_Escape] = 0;
+            }
             about_closing = true;
+        }
+
+        {
+            // hack, it's used to imitate keyboard control of about closing box
+            // (closing application if ENTER was pressed)
+            {
+                if(event.key.keysym.sym == SDLK_RETURN)
+                    _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
+                if(about_closing && event.key.keysym.sym == SDLK_SPACE) // it allows to close the app using space beside enter button
+                    _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
+
+            }
+        }
+    }
+
+    override bool aboutQuit()
+    {
+        about_closing = true; // call modal pop up to ask user about quitting
+
+        return false; // cancel default behavior
     }
 
 protected:
@@ -328,7 +486,7 @@ protected:
 
     bool show_settings;
     int max_point_counts;
-    float[3] clear_color;
+    typeof(color_table(0)) clear_color;
     TimestampStorage timestamp_storage;
     IDataLayout[] data_layout;
     box3f box;
@@ -337,6 +495,9 @@ protected:
     DataObject[uint][uint] data_objects;
     bool about_closing;
     RTree pointsRtree;
+    Array!BaseDataItem ditem;
+    bool is_hovered; // defines if mouse pointer is hovered under the main window (and not under child ones)
+    ColorTable color_table;
 
     void __performanceTest()
     {
@@ -346,8 +507,6 @@ protected:
         import std.stdio: writefln;
 
         import dstats: MeanSD;
-
-        import data_provider: Id, Data;
 
         setCameraSize(30_000);
 
@@ -374,14 +533,11 @@ protected:
 
             foreach(i; 0..pointsDelta)
             {
-                auto e = Data(
-                        Id( 1, 126),
-                        uniform(-w, w),
-                        uniform(-h, h),
-                        0, 110000000, Data.State.Middle
-                    );
+                auto x = uniform(-w, w);
+                auto y = uniform(-h, h);
+                auto z = 0;
 
-                pointsRtree.addPoint(j*pointsDelta + i, vec3f(e.x, e.y, e.z));
+                pointsRtree.addPoint(j*pointsDelta + i, vec3f(x, y, z), [0]);
             }
 
             //ищем 100 случайных точек, замеряем по каждому поиску время
@@ -392,11 +548,10 @@ protected:
 
             foreach(i; 0..n)
             {
-                long[] point_id;
                 StopWatch sw;
 
                 sw.start();
-                point_id = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
+                auto point_id = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
                 sw.stop();
 
                 auto t = sw.peek().nsecs/1000_000.;

@@ -7,36 +7,6 @@ import gfm.math: vec3f, vec4f, box3f;
 import data_item: DataItem, Attr;
 import vertex_provider: VertexProvider;
 
-struct Id
-{
-    uint source;
-    uint no;
-
-    int opCmp(ref const(Id) other)
-    {
-    	if(source < other.source)
-    		return -1;
-    	if(source > other.source)
-    		return 1;
-    	if(no < other.no)
-    		return -1;
-    	if(no > other.no)
-    		return 1;
-    	return 0;
-    }
-}
-
-struct Data
-{
-    enum State { Begin, Middle, End, }
-
-    Id id;
-    double x, y, z;
-    @("Timestamp")
-    long timestamp;
-    State state;
-}
-
 ref box3f updateBoundingBox(ref box3f one, ref const(box3f) another)
 {
     if(one.min.x > another.min.x)
@@ -75,32 +45,6 @@ ref box3f updateBoundingBox(ref box3f one, ref const(vec3f) another)
     return one;
 }
 
-struct DataElement
-{
-    @("Disabled")
-    uint no;
-    float x, y, z;
-    @("Disabled")
-    float r, g, b, a;
-    @("Timestamp")
-    long timestamp;
-}
-
-struct DataObject
-{
-    @("Disabled")
-    uint no;
-    @("Disabled")
-    bool visible;
-    @("Disabled")
-    box3f box;
-
-    import vertex_provider: VertexSlice;
-    @("Disabled")
-    VertexSlice.Kind kind;
-    DataElement[] elements;
-}
-
 interface IRenderableData
 {
     long[] getTimestamps();
@@ -108,6 +52,8 @@ interface IRenderableData
     void setMaxCount(long count);
     Auxillary[] getAuxillary();
     uint getNo();
+    void setVisibility(bool value);
+    bool getVisibility();
 }
 
 /// Дополнительные данные, позволяют добавить к данным доп. информацию
@@ -119,7 +65,7 @@ struct Auxillary
 }
 
 
-class RenderableData(R) : IRenderableData
+class RenderableData(DataObjectType, R) : IRenderableData
 {
     // Ограничивающий параллелепипед
     box3f box;
@@ -127,17 +73,19 @@ class RenderableData(R) : IRenderableData
     uint no;
     R data;
     Auxillary[] aux;
+    private bool _visibility;
 
     this(uint no, R r, uint delegate() generateUniqId)
     {
         import std.range: ElementType, walkLength;
 
-        static if(is(ElementType!R == DataObject))
+        static if(is(ElementType!R == DataObjectType))
         {
             import std.array: array;
             
             this.no = no;
             data = r;
+            _visibility = true;
             aux = data.map!(a=>Auxillary(a.no, [])).array;
 
             box = box3f(
@@ -232,11 +180,24 @@ class RenderableData(R) : IRenderableData
     {
         return no;
     }
+
+    void setVisibility(bool value)
+    {
+        _visibility = value;
+        foreach(a; aux)
+            foreach(vp; a.vp)
+                vp.visible = value;
+    }
+
+    bool getVisibility()
+    {
+        return _visibility;
+    }
 }
 
-auto makeRenderableData(R, D)(uint no, R r, D d)
+auto makeRenderableData(DataObjectType, R, D)(uint no, R r, D d)
 {
-    return new RenderableData!(R)(no, r, d);
+    return new RenderableData!(DataObjectType, R)(no, r, d);
 }
 
 auto sourceToColor(uint source)

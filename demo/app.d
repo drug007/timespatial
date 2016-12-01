@@ -1,14 +1,49 @@
+import gfm.math: box3f;
+
 import tests: heterogeneousData;
 import default_viewer: DefaultViewer;
+import color_table: ColorTable;
 
-class GuiImpl(T) : DefaultViewer!T
+struct DataElement
+{
+    @("Disabled")
+    uint no;
+    @("Disabled")
+    uint ref_id;
+    float x, y, z;
+    @("Disabled")
+    float r, g, b, a;
+    @("Timestamp")
+    long timestamp;
+}
+
+struct DataObjectImpl(E)
+{
+    alias DataElement = E;
+    @("Disabled")
+    uint no;
+    @("Disabled")
+    string header;
+    @("Disabled")
+    bool visible;
+    @("Disabled")
+    box3f box;
+
+    import vertex_provider: VertexSlice;
+    @("Disabled")
+    VertexSlice.Kind kind;
+    DataElement[] elements;
+}
+
+alias DataObject = DataObjectImpl!DataElement;
+
+class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
 {
     import gfm.sdl2: SDL_Event;
-    import data_provider: DataObject, Data;
 
-    this(int width, int height, string title, T hdata)
+    this(int width, int height, string title, T hdata, ColorTable color_table)
     {
-        super(width, height, title, hdata);
+        super(width, height, title, hdata, color_table);
     }
 
     auto filterGraphicData()
@@ -18,11 +53,11 @@ class GuiImpl(T) : DefaultViewer!T
         return hdata.fgd;
     }
 
-    override DataObject[uint][uint] prepareData()
+    override DataObjectType[uint][uint] prepareData()
     {
         import tests: pd = prepareData;
 
-        return filterGraphicData.pd;
+        return filterGraphicData.pd!(DataObjectType)(color_table);
     }
 
     override void makeDataLayout()
@@ -58,7 +93,7 @@ class GuiImpl(T) : DefaultViewer!T
     }
 };
 
-alias Gui = GuiImpl!(typeof(heterogeneousData()));
+alias Gui = GuiImpl!(typeof(heterogeneousData()), DataObject);
 
 int main(string[] args)
 {
@@ -72,7 +107,7 @@ int main(string[] args)
     int width = 1800;
     int height = 768;
 
-    auto gui = new Gui(width, height, "Test gui", heterogeneousData());
+    auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]));
     gui.centerCamera();
     gui.run();
     gui.close();
