@@ -119,7 +119,10 @@ class DefaultViewer(T, DataObject) : BaseViewer
             {
                 dl.add!DataObject(e2, e2.header);
                 foreach(e; e2.elements)
-                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z));
+                {
+                    import msgpack: pack;
+                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
+                }
             }
         }
         onCurrentTimestampChange();
@@ -149,7 +152,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
     /// Находит ближайшую точку по координатам в окне
     /// Если такой точки нет то возвращает null
     /// Возвращённое значение обслуживается GC
-    long[] pickPoint(in vec2f screenCoords)
+    auto pickPoint(in vec2f screenCoords)
     {
         box3f searchBox;
 
@@ -407,9 +410,13 @@ class DefaultViewer(T, DataObject) : BaseViewer
     Array!BaseDataItem makePopupDataItems()
     {
         import std.algorithm: map;
+        import msgpack: unpack;
 
         auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
-        return buildDataItemArray(curr_id.map!(a=>&hdata[a].value));
+        return buildDataItemArray(curr_id.map!((a) {
+            auto id = unpack!uint(a.payload);
+            return &hdata[id].value;
+        }));
     }
 
     override public void processMouseWheel(ref const(SDL_Event) event)
@@ -530,7 +537,7 @@ protected:
                 auto y = uniform(-h, h);
                 auto z = 0;
 
-                pointsRtree.addPoint(j*pointsDelta + i, vec3f(x, y, z));
+                pointsRtree.addPoint(j*pointsDelta + i, vec3f(x, y, z), [0]);
             }
 
             //ищем 100 случайных точек, замеряем по каждому поиску время
@@ -541,11 +548,10 @@ protected:
 
             foreach(i; 0..n)
             {
-                long[] point_id;
                 StopWatch sw;
 
                 sw.start();
-                point_id = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
+                auto point_id = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
                 sw.stop();
 
                 auto t = sw.peek().nsecs/1000_000.;

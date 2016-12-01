@@ -226,11 +226,11 @@ auto prepareData(DataObject, R)(R data, ref const(ColorTable) color_table)
                 true, // visible
                 box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
                 VertexSlice.Kind.LineStrip, 
-                [DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp)]);
+                [DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp)]);
         }
         else
         {
-            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp);
+            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp);
             import data_provider: updateBoundingBox;
             import gfm.math: vec3f;
             auto vec = vec3f(e.value.x, e.value.y, e.value.z);
@@ -320,12 +320,12 @@ unittest
     import std.algorithm: equal;
 
     foreach(e; heterogeneousData().filterGraphicData)
-        s.addPoint(e.index, vec3f(e.value.x, e.value.y, e.value.z));
+        s.addPoint(e.index, vec3f(e.value.x, e.value.y, e.value.z), [0]);
 
     auto box = box3f(vec3f(1000, 1000, -10), vec3f(20000, 20000, 10));
     auto point_id = s.searchPoints(box);
 
-    assert(point_id.equal([19, 15, 8, 67, 11, 69, 13, 71, 73, 17, 75, 77]));
+    assert(point_id.map!("a.id").equal([19, 15, 8, 67, 11, 69, 13, 71, 73, 17, 75, 77]));
 
     destroy(s);
 }
