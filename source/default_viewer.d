@@ -128,19 +128,19 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
     ~this()
     {
-//        import std.format : format;
-//        import std.file : write;
+        import std.format : format;
+        import std.file : write;
 
-//        string json, pre_json = "{
-//  \"position\": [
-//    %f,
-//    %f,
-//    %f
-//  ],
-//  \"size\": %f
-//}";
-//        with(_camera_pos) json = format(pre_json, x, y, z, size);
-        //write(settingsFilename, json);
+        string json, pre_json = "{
+  \"position\": [
+    %f,
+    %f,
+    %f
+  ],
+  \"size\": %f
+}";
+        with(_camera_pos) json = format(pre_json, x, y, z, size);
+        write(settingsFilename, json);
 
         destroy(pointsRtree);
     }
