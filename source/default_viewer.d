@@ -18,7 +18,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    this(int width, int height, string title, T hdata, ColorTable color_table)
+    this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: igGetStyle;
 
@@ -28,7 +28,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
             GrabRounding  = 4.0;
         }
 
-        super(width, height, title);
+        super(width, height, title, fullscreen);
 
         show_settings = true;
         max_point_counts = 2;

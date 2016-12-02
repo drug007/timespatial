@@ -6,7 +6,7 @@ import std.exception: enforce;
 import std.file: thisExePath;
 import std.path: dirName, buildPath;
 import std.range: iota;
-import std.typecons: tuple, Tuple;
+import std.typecons: tuple, Tuple, Flag;
 
 import std.experimental.logger: Logger, NullLogger;
 
@@ -89,7 +89,8 @@ class GLProvider
 
 class BaseViewer
 {
-    this(int width, int height, string title)
+    alias FullScreen = Flag!"FullScreen";
+    this(int width, int height, string title, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: imguiInit;
 
@@ -119,7 +120,13 @@ class BaseViewer
                                 SDL_WINDOW_OPENGL);
 
         window.setTitle(title);
-        //window.setFullscreenSetting(SDL_WINDOW_FULLSCREEN_DESKTOP);
+        if(fullscreen)
+        {
+            window.setFullscreenSetting(SDL_WINDOW_FULLSCREEN_DESKTOP);
+            auto ws = window.getSize;
+            this.width  = ws.x;
+            this.height = ws.y;
+        }
 
         // reload OpenGL now that a context exists
         _gl.reload();

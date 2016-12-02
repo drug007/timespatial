@@ -41,9 +41,9 @@ class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
 {
     import gfm.sdl2: SDL_Event;
 
-    this(int width, int height, string title, T hdata, ColorTable color_table)
+    this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
-        super(width, height, title, hdata, color_table);
+        super(width, height, title, hdata, color_table, fullscreen);
     }
 
     auto filterGraphicData()
@@ -107,7 +107,7 @@ int main(string[] args)
     int width = 1800;
     int height = 768;
 
-    auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]));
+    auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
     gui.run();
     gui.close();
     destroy(gui);
