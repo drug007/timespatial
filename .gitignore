@@ -10,3 +10,4 @@ __dummy.html
 *.a
 /demoapp
 timespatial.sublime-workspace
+*.json

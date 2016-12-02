@@ -108,7 +108,6 @@ int main(string[] args)
     int height = 768;
 
     auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]));
-    gui.centerCamera();
     gui.run();
     gui.close();
     destroy(gui);

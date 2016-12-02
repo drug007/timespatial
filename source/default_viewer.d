@@ -16,6 +16,8 @@ import rtree;
 
 class DefaultViewer(T, DataObject) : BaseViewer
 {
+    enum settingsFilename = "settings.json";
+
     this(int width, int height, string title, T hdata, ColorTable color_table)
     {
         import imgui_helpers: igGetStyle;
@@ -64,6 +66,48 @@ class DefaultViewer(T, DataObject) : BaseViewer
         makeDataLayout();             // генерируем неграфические данные
 
         about_closing = false;
+
+        import std.json : JSONValue, parseJSON, JSON_TYPE;
+        import std.format : format;
+        import std.file : exists, readText;
+
+        if (settingsFilename.exists)
+        {
+            float json_size;
+            vec3f pos;
+            scope(success)
+            {
+                setCameraSize(json_size);
+                setCameraPosition(pos);
+            }
+
+            try
+            {
+                string s = readText(settingsFilename);
+                JSONValue jv = parseJSON(s);
+                if (jv["size"].type == JSON_TYPE.INTEGER)
+                    json_size = jv["size"].integer;
+                else if (jv["size"].type == JSON_TYPE.FLOAT)
+                    json_size = jv["size"].floating;
+                else
+                    json_size = 10_000;
+
+                foreach(i; 0..3)
+                {
+                    if (jv["position"][i].type == JSON_TYPE.INTEGER)
+                        pos[i] = jv["position"][i].integer;
+                    else if (jv["position"][i].type == JSON_TYPE.FLOAT)
+                        pos[i] = jv["position"][i].floating;
+                    else
+                        pos[i] = 0;
+                }
+            }
+            catch(Exception e)
+            {
+            }
+        }
+        else
+            centerCamera();
     }
 
     void centerCamera()
@@ -84,6 +128,20 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
     ~this()
     {
+//        import std.format : format;
+//        import std.file : write;
+
+//        string json, pre_json = "{
+//  \"position\": [
+//    %f,
+//    %f,
+//    %f
+//  ],
+//  \"size\": %f
+//}";
+//        with(_camera_pos) json = format(pre_json, x, y, z, size);
+        //write(settingsFilename, json);
+
         destroy(pointsRtree);
     }
 
@@ -267,6 +325,8 @@ class DefaultViewer(T, DataObject) : BaseViewer
                 igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
                 auto world = projectWindowToPlane0(vec2f(mouse_x, mouse_y));
                 igText("World coords x=%f y=%f", world.x, world.y);
+            	igText("_camera_pos: x=%f y=%f", _camera_pos.x, _camera_pos.y);
+            	igText("size: %f", size);
 
                 if(about_closing)
                 {
