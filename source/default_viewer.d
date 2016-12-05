@@ -453,6 +453,77 @@ class DefaultViewer(T, DataObject) : BaseViewer
                     }
                 }
                 igEnd();
+
+                auto wh = height * 0.025;
+                igSetNextWindowPos(ImVec2(0, height - wh), ImGuiSetCond_FirstUseEver);
+                igSetNextWindowSize(ImVec2(width, wh), ImGuiSetCond_FirstUseEver);
+                // Окно без заголовка, неизменяемое, неперемещаемое и без настроек
+                flags = ImGuiWindowFlags_NoTitleBar 
+                    | ImGuiWindowFlags_NoResize 
+                    | ImGuiWindowFlags_NoMove
+                    | ImGuiWindowFlags_NoSavedSettings;
+                igBegin("toolbar", null, flags);
+                auto btn_size = wh * 0.8; // TODO implement automatic size calculation
+                
+                if (igButton("C0", ImVec2(btn_size, btn_size)))
+                {
+                    centerCamera();
+                }
+                igSameLine();
+                // open input dialog to allow user to input coordinates of the center
+                if (igButton("C1", ImVec2(btn_size, btn_size)))
+                {
+                    igOpenPopup("Center1\0".ptr);
+                }
+
+                if (igBeginPopupModal("Center1\0".ptr, null, ImGuiWindowFlags_AlwaysAutoResize))
+                {
+                    igText("Enter coordinates\0");
+                    enum bufferSize = 64;
+                    static char[bufferSize] xbuf, ybuf;
+
+                    igInputText("X", xbuf.ptr, bufferSize, ImGuiInputTextFlags_CharsDecimal);
+                    igInputText("Y", ybuf.ptr, bufferSize, ImGuiInputTextFlags_CharsDecimal);
+
+                    if (igButton("OK##Centering\0", ImVec2(120, 40)))
+                    {
+                        scope(exit) igCloseCurrentPopup();
+                        
+                        try
+                        {
+                            import std.conv : to;
+                            import std.exception : enforce;
+                            import std.math : isNaN;
+                            import std.string : fromStringz;
+
+                            auto x = xbuf.ptr.fromStringz.to!float;
+                            auto y = ybuf.ptr.fromStringz.to!float;
+                            enforce(!x.isNaN);
+                            enforce(!y.isNaN);
+
+                            auto pos = vec3f(x, y, 0);
+                            setCameraPosition(pos);
+                        }
+                        catch(Exception e)
+                        {
+                            igOpenPopup("Wrong input!\0".ptr);
+                        }
+                    }
+                    igSameLine();
+                    if (igButton("Cancel##Centering\0", ImVec2(120, 40)))
+                    {
+                        igCloseCurrentPopup();
+                    }
+
+                    if (igBeginPopupModal("Wrong input!\0".ptr, null, ImGuiWindowFlags_AlwaysAutoResize))
+                    {
+                        igText("Wrong input!\0");
+                        igButton("OK", ImVec2(120, 40));
+                        igEndPopup();
+                    }
+                    igEndPopup();
+                }
+                igEnd();
             }
         }
 
