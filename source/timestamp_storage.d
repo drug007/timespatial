@@ -52,12 +52,12 @@ struct TimestampStorage
         return _timestamp.length;
     }
 
-    auto set(ulong value)
+    auto set(long value)
     {        
         move(value - current);
     }
 
-    auto setIndex(ulong idx)
+    auto setIndex(long idx)
     {        
         assert(idx >= 0);
         if(_timestamp.length)

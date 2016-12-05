@@ -327,53 +327,53 @@ class DefaultViewer(T, DataObject) : BaseViewer
                 igText("World coords x=%f y=%f", world.x, world.y);
             	igText("_camera_pos: x=%f y=%f", _camera_pos.x, _camera_pos.y);
             	igText("size: %f", size);
+            }
 
-                if(about_closing)
+            if(about_closing)
+            {
+                igOpenPopup("Question?\0".ptr);
+            }
+
+            if (igBeginPopupModal("Question?\0".ptr, null, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                igText("Do you really want to exit?\0");
+
+                if (igButton("OK##AboutClosing\0", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Enter])
                 {
-                    igOpenPopup("Question?\0".ptr);
+                    igCloseCurrentPopup(); 
+                    running = false; 
+                    about_closing = false;
+                    _imgui_io.KeysDown[ImGuiKey_Enter] = 0;
                 }
-
-                if (igBeginPopupModal("Question?\0".ptr, null, ImGuiWindowFlags_AlwaysAutoResize))
+                igSameLine();
+                if (igButton("Cancel##AboutClosing\0", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Escape])
                 {
-                    igText("Do you really want to exit?\0");
-
-                    if (igButton("OK", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Enter])
-                    {
-                        igCloseCurrentPopup(); 
-                        running = false; 
-                        about_closing = false;
-                        _imgui_io.KeysDown[ImGuiKey_Enter] = 0;
-                    }
-                    igSameLine();
-                    if (igButton("Cancel", ImVec2(120, 40)) || _imgui_io.KeysDown[ImGuiKey_Escape])
-                    {
-                        igCloseCurrentPopup(); 
-                        about_closing = false;
-                        _imgui_io.KeysDown[ImGuiKey_Escape] = 0;
-                    }
-                    igEndPopup();
+                    igCloseCurrentPopup(); 
+                    about_closing = false;
+                    _imgui_io.KeysDown[ImGuiKey_Escape] = 0;
                 }
+                igEndPopup();
+            }
 
-                import std.algorithm: each;
-                import std.array: empty;
+            import std.algorithm: each;
+            import std.array: empty;
 
-                // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
-                // приводит к изменениями внешнего вида пользовательского интерфейса.
-                if (is_hovered && is_lmb_clicked)
-                {
-                    igOpenPopup("Popup\0".ptr);
+            // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
+            // приводит к изменениями внешнего вида пользовательского интерфейса.
+            if (is_hovered && is_lmb_clicked)
+            {
+                igOpenPopup("Popup\0".ptr);
 
-                    ditem.each!(a=>a.destroy);
-                    ditem.clear;
-                    ditem = makePopupDataItems();
-                }
+                ditem.each!(a=>a.destroy);
+                ditem.clear;
+                ditem = makePopupDataItems();
+            }
 
-                if (!ditem.empty && igBeginPopup("Popup\0".ptr))
-                {
-                    ditem.each!(a=>a.draw);
-                    
-                    igEndPopup();
-                }
+            if (!ditem.empty && igBeginPopup("Popup\0".ptr))
+            {
+                ditem.each!(a=>a.draw);
+                
+                igEndPopup();
             }
             igEnd();
 
@@ -524,6 +524,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
         {
             // hack, it's used to imitate keyboard control of about closing box
             // (closing application if ENTER was pressed)
+            if (about_closing)
             {
                 if(event.key.keysym.sym == SDLK_RETURN)
                     _imgui_io.KeysDown[ImGuiKey_Enter] = 1;
