@@ -152,7 +152,7 @@ class RenderableData(DataObjectType, R) : IRenderableData
                 // start is equal to the index of first element that is bigger or equal to the minimal element
                 start = filtered.front.index;
             
-                filtered = d.elements.enumerate(1).find!((a,b)=>a.value.timestamp >= b)(max);
+                filtered = d.elements.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
                 if(!filtered.empty)
                     // start+length is equal to index of first element that is bigger or equal to the maximal one
                     length = filtered.front.index - start;
@@ -161,7 +161,7 @@ class RenderableData(DataObjectType, R) : IRenderableData
                     // start+length должны равнятся индексу последнего элемента
                     // if there is no element bigger or equal to the maximal element
                     // then start+length = the last element index
-                    length = cast(uint) d.elements.length - start;
+                    length = cast(uint) d.elements.length - 1 - start;
             }
 
             auto s  = VertexSlice(VertexSlice.Kind.LineStrip, start, length);
