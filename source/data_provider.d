@@ -137,19 +137,32 @@ class RenderableData(DataObjectType, R) : IRenderableData
         {
             // важным инвариантом является отсортированность данных по временным отметкам
             // поэтому данные, попавшие во временное окно представляют собой также упорядоченную
-            // последовательность без пропусков по сравнению с исходными данными
-            //auto filtered = d.elements.filter!(a => a.timestamp > min && a.timestamp <= max);
+            // последовательность без пропусков
             auto filtered = d.elements.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(min);
             uint start, length;
-            if(!filtered.empty)
-                start = filtered.front.index;
-            else
+            if (filtered.empty)
+            {
+                // there is no any element with bigger than / equal to the minimal one, so
+                // the window is empty
                 start = 0;
-            filtered = d.elements.enumerate(1).find!((a,b)=>a.value.timestamp >= b)(max);
-            if(!filtered.empty)
-                length = filtered.front.index - start;
+                length = 0;
+            }
             else
-                length = cast(uint) d.elements.length - start;
+            {
+                // start is equal to the index of first element that is bigger or equal to the minimal element
+                start = filtered.front.index;
+            
+                filtered = d.elements.enumerate(1).find!((a,b)=>a.value.timestamp >= b)(max);
+                if(!filtered.empty)
+                    // start+length is equal to index of first element that is bigger or equal to the maximal one
+                    length = filtered.front.index - start;
+                else
+                    // нет элемента больше/равного максимальному, значит
+                    // start+length должны равнятся индексу последнего элемента
+                    // if there is no element bigger or equal to the maximal element
+                    // then start+length = the last element index
+                    length = cast(uint) d.elements.length - start;
+            }
 
             auto s  = VertexSlice(VertexSlice.Kind.LineStrip, start, length);
             a.vp.front.currSlices = [s]; // FIXME почему слайс приваивается только первому vertex provider'у?
