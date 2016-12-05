@@ -301,6 +301,8 @@ class DefaultViewer(T, DataObject) : BaseViewer
             {
                 onMaxPointChange();
             }
+            import std.datetime: convert;
+            enum minimalTimeWindowWidth = 1.convert!("minutes", "hnsecs");
             with(timestamp_storage_start)
             {
                 int curr_idx = cast(int) currIndex;
@@ -310,9 +312,9 @@ class DefaultViewer(T, DataObject) : BaseViewer
                 if(curr_idx != currIndex)
                 {
                     setIndex(curr_idx);
-                    if(current > timestamp_storage_finish.current)
+                    if(current > (timestamp_storage_finish.current - minimalTimeWindowWidth))
                     {
-                        timestamp_storage_finish.setIndex(curr_idx); // there is assumption that timesliders values are identical
+                        timestamp_storage_finish.move(current - timestamp_storage_finish.current + minimalTimeWindowWidth);
                     }
                     if(onCurrentTimestampChange !is null)
                         onCurrentTimestampChange();
@@ -338,9 +340,9 @@ class DefaultViewer(T, DataObject) : BaseViewer
                 if(curr_idx != currIndex)
                 {
                     setIndex(curr_idx);
-                    if(current < timestamp_storage_start.current)
+                    if(current < (timestamp_storage_start.current + minimalTimeWindowWidth))
                     {
-                        timestamp_storage_start.setIndex(curr_idx); // there is assumption that timesliders values are identical
+                        timestamp_storage_start.move(current - timestamp_storage_start.current - minimalTimeWindowWidth);
                     }
                     if(onCurrentTimestampChange !is null)
                         onCurrentTimestampChange();
