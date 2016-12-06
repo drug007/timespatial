@@ -14,11 +14,11 @@ import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
 import rtree;
 
-class DefaultViewer(T, DataObject) : BaseViewer
+class DefaultViewer(HDataRange, DataObject) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: igGetStyle;
 
@@ -661,7 +661,7 @@ protected:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
-    T hdata;
+    HDataRange hdata;
     DataObject[uint][uint] data_objects;
     bool about_closing;
     RTree pointsRtree;
