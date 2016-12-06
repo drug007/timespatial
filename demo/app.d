@@ -46,20 +46,6 @@ class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
         super(width, height, title, hdata, color_table, fullscreen);
     }
 
-    auto filterGraphicData()
-    {
-        import tests: fgd = filterGraphicData;
-
-        return hdata.fgd;
-    }
-
-    override void prepareData()
-    {
-        import tests: pd = prepareData;
-
-        data_objects = filterGraphicData.pd!(DataObjectType)(color_table);
-    }
-
     override void makeDataLayout()
     {
         import std.algorithm: map;

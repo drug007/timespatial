@@ -185,7 +185,7 @@ auto heterogeneousData()
 	].enumerate(0).array;
 }
 
-auto filterGraphicData(R)(R hdata)
+private auto filterGraphicData(R)(R hdata)
 {
 	import std.algorithm: filter, map;
 	import std.array: front;
@@ -197,48 +197,6 @@ auto filterGraphicData(R)(R hdata)
 			return true;
 		return false;
 	}).map!(a=>tuple!("index", "value")(a.index, a.value.get!Data));
-}
-
-auto prepareData(DataObject, R)(R data, ref const(ColorTable) color_table)
-{
-    import std.algorithm: filter, sort, map;
-    import std.array: array, back;
-    import std.math: isNaN;
-    import std.conv: text;
-    import vertex_provider: Vertex, VertexSlice;
-
-    alias DataElement = DataObject.DataElement;
-
-    DataObject[uint][uint] idata;
-
-    foreach(e; data)
-    {
-        auto s = idata.get(e.value.id.source, null);
-
-        auto clr = color_table(e.value.id.source);
-
-        if((s is null) || (e.value.id.no !in s))
-        {
-            import gfm.math: box3f;
-            idata[e.value.id.source][e.value.id.no] = DataObject(
-                e.value.id.no, 
-                text(e.value.id.no, "\0"),
-                true, // visible
-                box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
-                VertexSlice.Kind.LineStrip, 
-                [DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp)]);
-        }
-        else
-        {
-            s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp);
-            import data_provider: updateBoundingBox;
-            import gfm.math: vec3f;
-            auto vec = vec3f(e.value.x, e.value.y, e.value.z);
-            updateBoundingBox(s[e.value.id.no].box, vec);
-        }
-    }
-    
-    return idata;
 }
 
 /** Исходные данные в виде контейнера HStorage массива разнородных данных TaggedAlgebraic!(SomeTypes...)

@@ -12,13 +12,14 @@ import timestamp_storage: TimestampStorage;
 import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
+import data_index : DataIndex;
 import rtree;
 
 class DefaultViewer(HDataRange, DataObject) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    alias HDataIndex = DataObject[uint][uint];
+    alias HDataIndex = DataIndex!(HDataRange, DataObject);
 
     this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
@@ -66,8 +67,8 @@ class DefaultViewer(HDataRange, DataObject) : BaseViewer
 
         this.hdata = hdata;
         this.color_table = color_table;
-        prepareData();    // создаем графические данные во внутреннем формате
-        addData();        // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
+        data_index = HDataIndex(hdata, color_table);
+        addData();
         makeDataLayout(); // генерируем неграфические данные
 
         about_closing = false;
@@ -150,7 +151,6 @@ class DefaultViewer(HDataRange, DataObject) : BaseViewer
         destroy(pointsRtree);
     }
 
-    abstract void prepareData();
     abstract void makeDataLayout();
 
     void addData()
@@ -162,9 +162,9 @@ class DefaultViewer(HDataRange, DataObject) : BaseViewer
         
         // На основании исходных данных генерируем полный набор
         // данных для рендеринга
-        foreach(k; data_objects.byKey)
+        foreach(k; data_index.byKey)
         {
-            auto dobj = data_objects[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
+            auto dobj = data_index[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
                                                 // так как на него будет ссылаться DataLayout
             auto rd = makeRenderableData!(DataObject)(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
             timestamp_storage_start.addTimestamps(rd.getTimestamps());
@@ -664,7 +664,7 @@ protected:
     box3f box;
     IRenderableData[] renderable_data;
     HDataRange hdata;
-    HDataIndex data_objects;
+    HDataIndex data_index;
     bool about_closing;
     RTree pointsRtree;
     Array!BaseDataItem ditem;
