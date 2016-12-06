@@ -53,11 +53,11 @@ class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
         return hdata.fgd;
     }
 
-    override DataObjectType[uint][uint] prepareData()
+    override void prepareData()
     {
         import tests: pd = prepareData;
 
-        return filterGraphicData.pd!(DataObjectType)(color_table);
+        data_objects = filterGraphicData.pd!(DataObjectType)(color_table);
     }
 
     override void makeDataLayout()

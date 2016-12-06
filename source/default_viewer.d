@@ -64,9 +64,9 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
         this.hdata = hdata;
         this.color_table = color_table;
-        data_objects = prepareData(); // создаем графические данные во внутреннем формате
-        addData();                    // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
-        makeDataLayout();             // генерируем неграфические данные
+        prepareData();    // создаем графические данные во внутреннем формате
+        addData();        // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
+        makeDataLayout(); // генерируем неграфические данные
 
         about_closing = false;
 
@@ -148,7 +148,7 @@ class DefaultViewer(T, DataObject) : BaseViewer
         destroy(pointsRtree);
     }
 
-    abstract DataObject[uint][uint] prepareData();
+    abstract void prepareData();
     abstract void makeDataLayout();
 
     void addData()
