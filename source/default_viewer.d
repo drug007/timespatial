@@ -18,6 +18,8 @@ class DefaultViewer(HDataRange, DataObject) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
+    alias HDataIndex = DataObject[uint][uint];
+
     this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: igGetStyle;
@@ -662,7 +664,7 @@ protected:
     box3f box;
     IRenderableData[] renderable_data;
     HDataRange hdata;
-    DataObject[uint][uint] data_objects;
+    HDataIndex data_objects;
     bool about_closing;
     RTree pointsRtree;
     Array!BaseDataItem ditem;
