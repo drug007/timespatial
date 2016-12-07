@@ -24,7 +24,7 @@ struct DataIndex0
     import containers.dynamicarray: DynamicArray;
 
     import std.experimental.allocator.mallocator : Mallocator;
-    import std.experimental.allocator.building_blocks : Region;
+    import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
     import std.experimental.allocator : make;
 
     alias AllowableType = AliasSeq!(Data);
@@ -32,13 +32,14 @@ struct DataIndex0
     alias ByTrackIndex = Index!(uint, ByElementIndex*);
     alias BySourceIndex = Index!(uint, ByTrackIndex*);
     
-    Region!Mallocator allocator;
+    alias Allocator = StatsCollector!(Region!Mallocator, Options.all, Options.all);
+    Allocator allocator;
     BySourceIndex idx;
     alias idx this;
 
     this(R)(R hs)
     {
-        allocator = Region!Mallocator(1024 * 1024);
+        allocator = Allocator(Region!Mallocator(1024 * 1024));
         idx = BySourceIndex();
         size_t order_no;
         foreach(ref e; hs)
@@ -69,6 +70,19 @@ struct DataIndex0
                 }
             }
             order_no++;
+        }
+    }
+
+    ~this()
+    {
+        debug
+        {
+            import std.file : remove;
+            import std.stdio : File;
+
+            auto f = "stats_collector.txt";
+            Allocator.reportPerCallStatistics(File(f, "w"));
+            allocator.reportStatistics(File(f, "a"));
         }
     }
 }
