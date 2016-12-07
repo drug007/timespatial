@@ -41,35 +41,33 @@ struct DataIndex0(DataElement)
     {
         allocator = Allocator(Region!Mallocator(1024 * 1024));
         idx = BySourceIndex();
-        size_t order_no;
         foreach(ref e; hs)
         {
             import taggedalgebraic: hasType;
 
             foreach(T; AllowableType)
             {
-                if(e.hasType!(T))
+                if(e.value.hasType!(T))
                 {
                     ByTrackIndex* track_idx; 
-                    if (!idx.containsKey(e.id.source))
+                    if (!idx.containsKey(e.value.id.source))
                     {
                         track_idx = allocator.make!ByTrackIndex();
-                        idx[e.id.source] = track_idx;
+                        idx[e.value.id.source] = track_idx;
                     }
                     else
                     {
-                        track_idx = idx[e.id.source];
+                        track_idx = idx[e.value.id.source];
                     }
-                    if(!track_idx.containsKey(e.id.no))
+                    if(!track_idx.containsKey(e.value.id.no))
                     {
-                        (*track_idx)[e.id.no] = allocator.make!ByElementIndex();    
+                        (*track_idx)[e.value.id.no] = allocator.make!ByElementIndex();    
                     }
-                    (*track_idx)[e.id.no].insert(DataElement(order_no, e));
+                    (*track_idx)[e.value.id.no].insert(DataElement(e.index, e.value));
 
                     break;
                 }
             }
-            order_no++;
         }
     }
 
@@ -101,7 +99,7 @@ unittest
         }
     }
 
-    auto hs  = heterogeneousData().map!(a=>a.value);
+    auto hs  = heterogeneousData();
     auto idx = DataIndex0!(DataElement)(hs);
 
     version(none)
@@ -141,8 +139,8 @@ unittest
     assert((*ds)[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 
     import tests: Id;
-    assert(hs[ds.opIndex(1).no].id == Id(29, 1));
-    assert(hs[ds.opIndex(1).no].state == Data.State.Middle);
+    assert(hs[ds.opIndex(1).no].value.id == Id(29, 1));
+    assert(hs[ds.opIndex(1).no].value.state == Data.State.Middle);
 }
 
 struct DataIndex(DataRange, DataObjectType)
