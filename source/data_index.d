@@ -17,7 +17,7 @@ struct Index(K, V)
     alias idx this;
 }
 
-struct DataIndex0
+struct DataIndex0(DataElement)
 {
     import std.typecons : AliasSeq;
     import tests : heterogeneousData, Data;
@@ -28,7 +28,7 @@ struct DataIndex0
     import std.experimental.allocator : make;
 
     alias AllowableType = AliasSeq!(Data);
-    alias ByElementIndex = DynamicArray!(ulong, Mallocator, false);
+    alias ByElementIndex = DynamicArray!(DataElement, Mallocator, false);
     alias ByTrackIndex = Index!(uint, ByElementIndex*);
     alias BySourceIndex = Index!(uint, ByTrackIndex*);
     
@@ -64,7 +64,7 @@ struct DataIndex0
                     {
                         (*track_idx)[e.id.no] = allocator.make!ByElementIndex();    
                     }
-                    (*track_idx)[e.id.no].insert(order_no);
+                    (*track_idx)[e.id.no].insert(DataElement(order_no, e));
 
                     break;
                 }
@@ -92,16 +92,26 @@ unittest
     import std.algorithm : map;
     import tests : heterogeneousData, Data;
 
+    static struct DataElement
+    {
+        size_t no;
+        this(T)(size_t no, ref const(T) data)
+        {
+            this.no = no;
+        }
+    }
+
     auto hs  = heterogeneousData().map!(a=>a.value);
-    auto idx = DataIndex0(hs);
+    auto idx = DataIndex0!(DataElement)(hs);
 
     version(none)
     {
         import std.stdio;
-        foreach(ref DataIndex0.BySourceIndex.Key k, ref DataIndex0.BySourceIndex.Value v; idx)
+        alias DataIndex = DataIndex0!(DataElement);
+        foreach(ref DataIndex.BySourceIndex.Key k, ref DataIndex.BySourceIndex.Value v; idx)
         {
             writeln(k, ": ", v);
-            foreach(ref DataIndex0.ByTrackIndex.Key k2, ref DataIndex0.ByTrackIndex.Value v2; *v)
+            foreach(ref DataIndex.ByTrackIndex.Key k2, ref DataIndex.ByTrackIndex.Value v2; *v)
             {
                 writeln("\t", k2, ": ", v2);
                 foreach(ref e; *v2)
@@ -128,11 +138,11 @@ unittest
     assert(ds.length == 29);  // набор данных имеет 29 элементов
 
     import std.algorithm: equal;
-    assert((*ds)[].equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
+    assert((*ds)[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 
     import tests: Id;
-    assert(hs[ds.opIndex(1)].id == Id(29, 1));
-    assert(hs[ds.opIndex(1)].state == Data.State.Middle);
+    assert(hs[ds.opIndex(1).no].id == Id(29, 1));
+    assert(hs[ds.opIndex(1).no].state == Data.State.Middle);
 }
 
 struct DataIndex(DataRange, DataObjectType)
