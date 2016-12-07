@@ -1,6 +1,7 @@
 module data_index;
 import color_table : ColorTable;
 
+@nogc
 struct Index(K, V)
 {
     alias Key = K;
@@ -17,6 +18,7 @@ struct Index(K, V)
     alias idx this;
 }
 
+@nogc
 struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...)
 {
     import containers.dynamicarray: DynamicArray;
