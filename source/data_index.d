@@ -21,19 +21,21 @@ struct Index(K, V)
 @nogc
 struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...)
 {
-    import containers.dynamicarray: DynamicArray;
+    import std.algorithm : move;
 
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator : make;
 
+    import containers.dynamicarray: DynamicArray;
+
     static struct ByDataSet
     {
-        ByElementIndex* idx_ptr;
+        ByElementIndex idx;
         DataSet dataset;
 
-        this(ByElementIndex* idx_ptr, ref const(DataSet) dataset)
+        this(ref ByElementIndex idx, ref const(DataSet) dataset)
         {
-            this.idx_ptr = idx_ptr;
+            this.idx = move(idx);
             this.dataset = dataset;
         }
     }
@@ -51,7 +53,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
     }
 
     alias ByElementIndex = DynamicArray!(DataElement, Mallocator, false);
-    alias BySetIndex = Index!(uint, ByDataSet);
+    alias BySetIndex = Index!(uint, ByDataSet*);
     alias BySourceIndex = Index!(uint, BySource);
     
     Allocator* allocator;
@@ -83,9 +85,9 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     if(!by_source.idx_ptr.containsKey(e.value.id.no))
                     {
                         auto dataset = DataSet(e.value.id.no, e.value);
-                        (*by_source.idx_ptr)[e.value.id.no] = ByDataSet(allocator.make!ByElementIndex(), dataset);
+                        (*by_source.idx_ptr)[e.value.id.no] = allocator.make!ByDataSet(*allocator.make!ByElementIndex(), dataset);
                     }
-                    (*by_source.idx_ptr)[e.value.id.no].idx_ptr.insert(DataElement(e.index, e.value));
+                    (*by_source.idx_ptr)[e.value.id.no].idx.insert(DataElement(e.index, e.value));
 
                     break;
                 }
@@ -161,7 +163,7 @@ unittest
             foreach(ref DataIndex.BySetIndex.Key k2, ref DataIndex.BySetIndex.Value v2; *v.idx_ptr)
             {
                 writeln("\t", k2, ": ", v2);
-                foreach(ref e; *v2.idx_ptr)
+                foreach(ref e; v2.idx)
                 {
                     writeln("\t\t", e);
                 }
@@ -182,14 +184,14 @@ unittest
     auto ds0 = (*src.idx_ptr)[1];     // один вариант выбора набора данных с номером 1
     auto ds = src.idx_ptr.opIndex(1); // другой вариант выбора набора данных с номером 1
     assert(ds0 is ds);        // оба варианты дают один и тот же результат
-    assert(ds.idx_ptr.length == 29);  // набор данных имеет 29 элементов
+    assert(ds.idx.length == 29);  // набор данных имеет 29 элементов
 
     import std.algorithm: equal;
-    assert((*ds.idx_ptr)[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
+    assert(ds.idx[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 
     import tests: Id;
-    assert(hs[ds.idx_ptr.opIndex(1).no].value.id == Id(29, 1));
-    assert(hs[ds.idx_ptr.opIndex(1).no].value.state == Data.State.Middle);
+    assert(hs[ds.idx[1].no].value.id == Id(29, 1));
+    assert(hs[ds.idx[1].no].value.state == Data.State.Middle);
 }
 
 struct DataIndex(DataRange, DataObjectType)
