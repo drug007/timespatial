@@ -17,7 +17,7 @@ struct Index(K, V)
     alias idx this;
 }
 
-struct DataIndex0(DataSet, DataElement)
+struct DataIndex0(DataSource, DataSet, DataElement)
 {
     import std.typecons : AliasSeq;
     import tests : heterogeneousData, Data;
@@ -39,10 +39,22 @@ struct DataIndex0(DataSet, DataElement)
         }
     }
 
+    static struct BySource
+    {
+        BySetIndex* idx_ptr;
+        DataSource source;
+
+        this(BySetIndex* idx_ptr, const(DataSource) source)
+        {
+            this.idx_ptr = idx_ptr;
+            this.source = source;
+        }
+    }
+
     alias AllowableType = AliasSeq!(Data);
     alias ByElementIndex = DynamicArray!(DataElement, Mallocator, false);
-    alias ByTrackIndex = Index!(uint, ByDataSet);
-    alias BySourceIndex = Index!(uint, ByTrackIndex*);
+    alias BySetIndex = Index!(uint, ByDataSet);
+    alias BySourceIndex = Index!(uint, BySource);
     
     alias Allocator = StatsCollector!(Region!Mallocator, Options.all, Options.all);
     Allocator allocator;
@@ -61,22 +73,22 @@ struct DataIndex0(DataSet, DataElement)
             {
                 if(e.value.hasType!(T))
                 {
-                    ByTrackIndex* track_idx; 
+                    BySource by_source;
                     if (!idx.containsKey(e.value.id.source))
                     {
-                        track_idx = allocator.make!ByTrackIndex();
-                        idx[e.value.id.source] = track_idx;
+                        by_source = BySource(allocator.make!BySetIndex(), DataSource(e.value.id.source));
+                        idx[e.value.id.source] = by_source;
                     }
                     else
                     {
-                        track_idx = idx[e.value.id.source];
+                        by_source = idx[e.value.id.source];
                     }
-                    if(!track_idx.containsKey(e.value.id.no))
+                    if(!by_source.idx_ptr.containsKey(e.value.id.no))
                     {
                         auto dataset = DataSet(e.value.id.no, e.value);
-                        (*track_idx)[e.value.id.no] = ByDataSet(allocator.make!ByElementIndex(), dataset);
+                        (*by_source.idx_ptr)[e.value.id.no] = ByDataSet(allocator.make!ByElementIndex(), dataset);
                     }
-                    (*track_idx)[e.value.id.no].idx_ptr.insert(DataElement(e.index, e.value));
+                    (*by_source.idx_ptr)[e.value.id.no].idx_ptr.insert(DataElement(e.index, e.value));
 
                     break;
                 }
@@ -121,8 +133,17 @@ unittest
         }
     }
 
+    static struct DataSource
+    {
+        size_t no;
+        this(size_t no)
+        {
+            this.no = no;
+        }
+    }
+
     auto hs  = heterogeneousData();
-    alias DataIndex = DataIndex0!(DataSet, DataElement);
+    alias DataIndex = DataIndex0!(DataSource, DataSet, DataElement);
     auto idx = DataIndex(hs);
 
     version(none)
@@ -131,7 +152,7 @@ unittest
         foreach(ref DataIndex.BySourceIndex.Key k, ref DataIndex.BySourceIndex.Value v; idx)
         {
             writeln(k, ": ", v);
-            foreach(ref DataIndex.ByTrackIndex.Key k2, ref DataIndex.ByTrackIndex.Value v2; *v)
+            foreach(ref DataIndex.BySetIndex.Key k2, ref DataIndex.BySetIndex.Value v2; *v.idx_ptr)
             {
                 writeln("\t", k2, ": ", v2);
                 foreach(ref e; *v2.idx_ptr)
@@ -146,14 +167,14 @@ unittest
     assert(idx.containsKey(29));   // источник номер 29 существует
 
     auto src = idx[29]; // выбираем источник номер 29
-    assert(src.length == 2);  // у источника номер 29 имеется два набора данных
+    assert(src.idx_ptr.length == 2);  // у источника номер 29 имеется два набора данных
 
-    assert(!src.containsKey(888)); // источник номер 29 не содержит набор данных с номером 888
-    assert(src.containsKey(1));    // источник номер 29 содержит набор данных с номером 1
+    assert(!src.idx_ptr.containsKey(888)); // источник номер 29 не содержит набор данных с номером 888
+    assert(src.idx_ptr.containsKey(1));    // источник номер 29 содержит набор данных с номером 1
 
     // выбираем набор данных с номером 1
-    auto ds0 = (*src)[1];     // один вариант выбора набора данных с номером 1
-    auto ds = src.opIndex(1); // другой вариант выбора набора данных с номером 1
+    auto ds0 = (*src.idx_ptr)[1];     // один вариант выбора набора данных с номером 1
+    auto ds = src.idx_ptr.opIndex(1); // другой вариант выбора набора данных с номером 1
     assert(ds0 is ds);        // оба варианты дают один и тот же результат
     assert(ds.idx_ptr.length == 29);  // набор данных имеет 29 элементов
 
