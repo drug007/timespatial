@@ -17,10 +17,8 @@ struct Index(K, V)
     alias idx this;
 }
 
-struct DataIndex0(DataSource, DataSet, DataElement)
+struct DataIndex0(DataSource, DataSet, DataElement, AllowableTypes...)
 {
-    import std.typecons : AliasSeq;
-    import tests : heterogeneousData, Data;
     import containers.dynamicarray: DynamicArray;
 
     import std.experimental.allocator.mallocator : Mallocator;
@@ -51,7 +49,6 @@ struct DataIndex0(DataSource, DataSet, DataElement)
         }
     }
 
-    alias AllowableType = AliasSeq!(Data);
     alias ByElementIndex = DynamicArray!(DataElement, Mallocator, false);
     alias BySetIndex = Index!(uint, ByDataSet);
     alias BySourceIndex = Index!(uint, BySource);
@@ -69,7 +66,7 @@ struct DataIndex0(DataSource, DataSet, DataElement)
         {
             import taggedalgebraic: hasType;
 
-            foreach(T; AllowableType)
+            foreach(T; AllowableTypes)
             {
                 if(e.value.hasType!(T))
                 {
@@ -113,6 +110,7 @@ struct DataIndex0(DataSource, DataSet, DataElement)
 unittest
 {
     import std.algorithm : map;
+    import std.typecons : AliasSeq;
     import tests : heterogeneousData, Data;
 
     static struct DataElement
@@ -143,7 +141,7 @@ unittest
     }
 
     auto hs  = heterogeneousData();
-    alias DataIndex = DataIndex0!(DataSource, DataSet, DataElement);
+    alias DataIndex = DataIndex0!(DataSource, DataSet, DataElement, AliasSeq!(Data));
     auto idx = DataIndex(hs);
 
     version(none)
