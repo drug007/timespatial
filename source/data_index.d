@@ -17,9 +17,8 @@ struct Index(K, V)
     alias idx this;
 }
 
-unittest
+struct DataIndex0
 {
-    import std.algorithm : map;
     import std.typecons : AliasSeq;
     import tests : heterogeneousData, Data;
     import containers.dynamicarray: DynamicArray;
@@ -28,57 +27,73 @@ unittest
     import std.experimental.allocator.building_blocks : Region;
     import std.experimental.allocator : make;
 
-    auto allocator = Region!Mallocator(1024 * 1024);
-
     alias AllowableType = AliasSeq!(Data);
-    auto hs = heterogeneousData().map!(a=>a.value);
     alias ByElementIndex = DynamicArray!(ulong, Mallocator, false);
     alias ByTrackIndex = Index!(uint, ByElementIndex*);
     alias BySourceIndex = Index!(uint, ByTrackIndex*);
-    auto idx = BySourceIndex();
+    
+    Region!Mallocator allocator;
+    BySourceIndex idx;
+    alias idx this;
 
-    size_t order_no;
-    foreach(ref e; hs)
+    this(R)(R hs)
     {
-        import taggedalgebraic: hasType;
-
-        foreach(T; AllowableType)
+        allocator = Region!Mallocator(1024 * 1024);
+        idx = BySourceIndex();
+        size_t order_no;
+        foreach(ref e; hs)
         {
-            if(e.hasType!(T))
-            {
-                ByTrackIndex* track_idx; 
-                if (!idx.containsKey(e.id.source))
-                {
-                    track_idx = allocator.make!ByTrackIndex();
-                    idx[e.id.source] = track_idx;
-                }
-                else
-                {
-                    track_idx = idx[e.id.source];
-                }
-                if(!track_idx.containsKey(e.id.no))
-                {
-                    (*track_idx)[e.id.no] = allocator.make!ByElementIndex();    
-                }
-                (*track_idx)[e.id.no].insert(order_no);
+            import taggedalgebraic: hasType;
 
-                break;
+            foreach(T; AllowableType)
+            {
+                if(e.hasType!(T))
+                {
+                    ByTrackIndex* track_idx; 
+                    if (!idx.containsKey(e.id.source))
+                    {
+                        track_idx = allocator.make!ByTrackIndex();
+                        idx[e.id.source] = track_idx;
+                    }
+                    else
+                    {
+                        track_idx = idx[e.id.source];
+                    }
+                    if(!track_idx.containsKey(e.id.no))
+                    {
+                        (*track_idx)[e.id.no] = allocator.make!ByElementIndex();    
+                    }
+                    (*track_idx)[e.id.no].insert(order_no);
+
+                    break;
+                }
             }
+            order_no++;
         }
-        order_no++;
     }
+}
 
-    import std.stdio;
-    writeln("some text");
-    foreach(ref BySourceIndex.Key k, ref BySourceIndex.Value v; idx)
+unittest
+{
+    import std.algorithm : map;
+    import tests : heterogeneousData, Data;
+
+    auto hs  = heterogeneousData().map!(a=>a.value);
+    auto idx = DataIndex0(hs);
+
+    version(none)
     {
-        writeln(k, ": ", v);
-        foreach(ref ByTrackIndex.Key k2, ref ByTrackIndex.Value v2; *v)
+        import std.stdio;
+        foreach(ref DataIndex0.BySourceIndex.Key k, ref DataIndex0.BySourceIndex.Value v; idx)
         {
-            writeln("\t", k2, ": ", v2);
-            foreach(ref e; *v2)
+            writeln(k, ": ", v);
+            foreach(ref DataIndex0.ByTrackIndex.Key k2, ref DataIndex0.ByTrackIndex.Value v2; *v)
             {
-                writeln("\t\t", e);
+                writeln("\t", k2, ": ", v2);
+                foreach(ref e; *v2)
+                {
+                    writeln("\t\t", e);
+                }
             }
         }
     }
@@ -98,12 +113,8 @@ unittest
     assert(ds0 is ds);        // оба варианты дают один и тот же результат
     assert(ds.length == 29);  // набор данных имеет 29 элементов
 
-    size_t[] values;
-    foreach(k, v; *ds)
-        values ~= v;
-
     import std.algorithm: equal;
-    assert(values.equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
+    assert((*ds)[].equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 
     import tests: Id;
     assert(hs[ds.opIndex(1)].id == Id(29, 1));
