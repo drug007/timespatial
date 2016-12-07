@@ -33,6 +33,8 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
         ByElementIndex idx;
         DataSet dataset;
 
+        alias idx this;
+
         this(ref ByElementIndex idx, ref const(DataSet) dataset)
         {
             this.idx = move(idx);
@@ -44,6 +46,8 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
     {
         BySetIndex idx;
         DataSource source;
+
+        alias idx this;
 
         this(ref BySetIndex idx, ref const(DataSource) source)
         {
@@ -84,7 +88,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                         by_source = idx[e.value.id.source];
                     }
                     ByDataSet* by_dataset;
-                    if(!by_source.idx.containsKey(e.value.id.no))
+                    if(!by_source.containsKey(e.value.id.no))
                     {
                         auto dataset = DataSet(e.value.id.no, e.value);
                         by_dataset = allocator.make!ByDataSet(*allocator.make!ByElementIndex(), dataset);
@@ -94,7 +98,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     {
                         by_dataset = by_source.idx[e.value.id.no];
                     }
-                    by_dataset.idx.insert(DataElement(e.index, e.value));
+                    by_dataset.insert(DataElement(e.index, e.value));
 
                     break;
                 }
@@ -164,13 +168,13 @@ unittest
     version(none)
     {
         import std.stdio;
-        foreach(ref DataIndex.BySourceIndex.Key k, ref DataIndex.BySourceIndex.Value v; idx)
+        foreach(DataIndex.BySourceIndex.Key source_no, DataIndex.BySourceIndex.Value dataset; idx)
         {
-            writeln(k, ": ", v);
-            foreach(ref DataIndex.BySetIndex.Key k2, ref DataIndex.BySetIndex.Value v2; v.idx)
+            writeln(source_no, ": ", dataset);
+            foreach(DataIndex.BySetIndex.Key dataset_no, DataIndex.BySetIndex.Value elements; *dataset)
             {
-                writeln("\t", k2, ": ", v2);
-                foreach(ref e; v2.idx)
+                writeln("\t", dataset_no, ": ", elements);
+                foreach(ref e; *elements)
                 {
                     writeln("\t\t", e);
                 }
@@ -182,23 +186,27 @@ unittest
     assert(idx.containsKey(29));   // источник номер 29 существует
 
     auto src = idx[29]; // выбираем источник номер 29
-    assert(src.idx.length == 2);  // у источника номер 29 имеется два набора данных
+    assert(src.length == 2);  // у источника номер 29 имеется два набора данных
 
-    assert(!src.idx.containsKey(888)); // источник номер 29 не содержит набор данных с номером 888
-    assert(src.idx.containsKey(1));    // источник номер 29 содержит набор данных с номером 1
+    assert(!src.containsKey(888)); // источник номер 29 не содержит набор данных с номером 888
+    assert(src.containsKey(1));    // источник номер 29 содержит набор данных с номером 1
 
     // выбираем набор данных с номером 1
     auto ds0 = src.idx[1];     // один вариант выбора набора данных с номером 1
-    auto ds = src.idx.opIndex(1); // другой вариант выбора набора данных с номером 1
+    auto ds = src.opIndex(1); // другой вариант выбора набора данных с номером 1
     assert(ds0 is ds);        // оба варианты дают один и тот же результат
-    assert(ds.idx.length == 29);  // набор данных имеет 29 элементов
+    assert(ds.length == 29);  // набор данных имеет 29 элементов
 
     import std.algorithm: equal;
     assert(ds.idx[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
+    assert((*ds)[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 
     import tests: Id;
     assert(hs[ds.idx[1].no].value.id == Id(29, 1));
+    assert(hs[(*ds)[1].no].value.id == Id(29, 1));
+    
     assert(hs[ds.idx[1].no].value.state == Data.State.Middle);
+    assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
 }
 
 struct DataIndex(DataRange, DataObjectType)
