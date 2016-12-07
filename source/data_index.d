@@ -17,12 +17,11 @@ struct Index(K, V)
     alias idx this;
 }
 
-struct DataIndex0(DataSource, DataSet, DataElement, AllowableTypes...)
+struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...)
 {
     import containers.dynamicarray: DynamicArray;
 
     import std.experimental.allocator.mallocator : Mallocator;
-    import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
     import std.experimental.allocator : make;
 
     static struct ByDataSet
@@ -53,14 +52,13 @@ struct DataIndex0(DataSource, DataSet, DataElement, AllowableTypes...)
     alias BySetIndex = Index!(uint, ByDataSet);
     alias BySourceIndex = Index!(uint, BySource);
     
-    alias Allocator = StatsCollector!(Region!Mallocator, Options.all, Options.all);
-    Allocator allocator;
+    Allocator* allocator;
     BySourceIndex idx;
     alias idx this;
 
-    this(R)(R hs)
+    this(R)(ref Allocator allocator, R hs)
     {
-        allocator = Allocator(Region!Mallocator(1024 * 1024));
+        this.allocator = &allocator;
         idx = BySourceIndex();
         foreach(ref e; hs)
         {
@@ -140,9 +138,17 @@ unittest
         }
     }
 
+    import std.experimental.allocator.mallocator : Mallocator;
+    import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
+    
+    alias BaseAllocator = Region!Mallocator;
+    alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
+    alias DataIndex = DataIndex0!(DataSource, DataSet, DataElement, Allocator, AliasSeq!(Data));
+    
+    auto allocator = Allocator(BaseAllocator(1024 * 1024));
+    
     auto hs  = heterogeneousData();
-    alias DataIndex = DataIndex0!(DataSource, DataSet, DataElement, AliasSeq!(Data));
-    auto idx = DataIndex(hs);
+    auto idx = DataIndex(allocator, hs);
 
     version(none)
     {
