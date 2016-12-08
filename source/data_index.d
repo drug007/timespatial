@@ -23,7 +23,7 @@ struct Index(K, V)
 }
 
 @nogc
-struct DataIndex0(DataSourceHeader, DataSetHeader, DataElement, Allocator, AllowableTypes...)
+struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, AllowableTypes...)
 {
     import std.algorithm : move;
 
@@ -173,7 +173,7 @@ unittest
     
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndex0!(DataSource, DataSet, DataElement, Allocator, AliasSeq!(Data));
+    alias DataIndex = DataIndexImpl!(DataSource, DataSet, DataElement, Allocator, AliasSeq!(Data));
     
     auto allocator = Allocator(BaseAllocator(1024 * 1024));
     
@@ -234,7 +234,7 @@ struct DataIndex(DataRange, DataSetHeader, DataElement)
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndex0!(uint, DataSetHeader, DataElement, Allocator, AliasSeq!(Data));
+    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, AliasSeq!(Data));
     Allocator allocator;
     DataIndex didx;
 
