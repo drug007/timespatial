@@ -169,6 +169,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
             alias DataSet = typeof(*datasource.Value);
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(source_no);
+            auto clr = color_table(source_no);
             foreach(ref dataset_no, ref dataset; *datasource)
             {
                 import std.algorithm : map;
@@ -178,7 +179,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
 
                 auto vertices = dataset.idx[].map!(a=>Vertex(
                     vec3f(a.x, a.y, a.z),      // position
-                    vec4f(1.0, 0.0, 0.0, 1.0), // color
+                    vec4f(clr.r, clr.g, clr.b, clr.a), // color
                 )).array;
 
                 auto uniq_id = genVertexProviderHandle();
