@@ -226,7 +226,7 @@ unittest
     assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
 }
 
-struct DataIndex(DataRange, DataObjectType)
+struct DataIndex(DataRange, DataSet, DataElement)
 {
     import std.typecons : AliasSeq;
     import std.experimental.allocator.mallocator : Mallocator;
@@ -236,7 +236,7 @@ struct DataIndex(DataRange, DataObjectType)
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndex0!(uint, DataObjectType, DataObjectType.DataElement, Allocator, AliasSeq!(Data));
+    alias DataIndex = DataIndex0!(uint, DataSet, DataElement, Allocator, AliasSeq!(Data));
     Allocator allocator;
     DataIndex didx;
 

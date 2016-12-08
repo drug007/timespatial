@@ -15,11 +15,11 @@ import color_table: ColorTable;
 import data_index : DataIndex;
 import rtree;
 
-class DefaultViewer(HDataRange, DataObject) : BaseViewer
+class DefaultViewer(HDataRange, DataObject, DataElement) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    alias HDataIndex = DataIndex!(HDataRange, DataObject);
+    alias HDataIndex = DataIndex!(HDataRange, DataObject, DataElement);
 
     this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {

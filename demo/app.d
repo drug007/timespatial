@@ -91,7 +91,7 @@ struct DataObjectImpl(E)
 
 alias DataObject = DataObjectImpl!DataElement;
 
-class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
+class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType, DataElement)
 {
     import gfm.sdl2: SDL_Event;
 
@@ -133,7 +133,7 @@ class GuiImpl(T, DataObjectType) : DefaultViewer!(T, DataObjectType)
     }
 };
 
-alias Gui = GuiImpl!(typeof(heterogeneousData()), DataObject);
+alias Gui = GuiImpl!(typeof(heterogeneousData()), DataObject, DataElement);
 
 int main(string[] args)
 {
