@@ -166,7 +166,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
             dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
 
-            alias DataSet = typeof(datasource.Value.header);
+            alias DataSet = typeof(*datasource.Value);
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(source_no);
             foreach(ref dataset_no, ref dataset; *datasource)
@@ -176,16 +176,16 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
                 import gfm.math : vec4f;
                 import vertex_provider : Vertex, VertexSlice;
 
-                auto vertices = dataset.header.elements.map!(a=>Vertex(
+                auto vertices = dataset.idx[].map!(a=>Vertex(
                     vec3f(a.x, a.y, a.z),      // position
                     vec4f(1.0, 0.0, 0.0, 1.0), // color
                 )).array;
 
                 auto uniq_id = genVertexProviderHandle();
                 auto vp = new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
-                rd.addDataSet(dataset.header, vp);
+                rd.addDataSet(*dataset, vp);
 
-                dl.add!DataSet(dataset.header, dataset.header.title);
+                dl.add!DataSet(*dataset, dataset.header.title);
 
                 foreach(ref e; *dataset)
                 {

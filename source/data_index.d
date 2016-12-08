@@ -105,7 +105,6 @@ struct DataIndex0(DataSourceHeader, DataSetHeader, DataElement, Allocator, Allow
                     }
                     auto de = DataElement(e.index, e.value);
                     dataset.insert(de);
-                    dataset.header.add(de);
 
                     break;
                 }

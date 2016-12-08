@@ -44,9 +44,8 @@ struct DataElement
     }
 }
 
-struct DataSetHeaderImpl(E)
+struct DataSetHeader
 {
-    alias DataElement = E;
     @("Disabled")
     uint no;
     @("Disabled")
@@ -59,7 +58,6 @@ struct DataSetHeaderImpl(E)
     import vertex_provider: VertexSlice;
     @("Disabled")
     VertexSlice.Kind kind;
-    DataElement[] elements;
 
     this(uint no)
     {
@@ -70,12 +68,6 @@ struct DataSetHeaderImpl(E)
         visible = true;
         box = box3f.init;
         kind = VertexSlice.Kind.LineStrip;
-        elements = elements.init;
-    }
-
-    auto add(ref DataElement de)
-    {
-        elements ~= de;
     }
 
     this(const(this) other)
@@ -85,11 +77,8 @@ struct DataSetHeaderImpl(E)
         this.visible  = other.visible;
         this.box      = other.box;
         this.kind     = other.kind;
-        this.elements = other.elements.dup;
     }
 }
-
-alias DataSetHeader = DataSetHeaderImpl!DataElement;
 
 class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType, DataElement)
 {
