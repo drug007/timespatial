@@ -161,33 +161,33 @@ class DefaultViewer(HDataRange, DataObject, DataElement) : BaseViewer
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        foreach(ref source_no, ref by_datasource; data_index)
+        foreach(ref source_no, ref datasource; data_index)
         {
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
             dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
 
-            alias DataSet = typeof(by_datasource.Value.header);
+            alias DataSet = typeof(datasource.Value.header);
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(source_no);
-            foreach(ref dataset_no, ref by_dataset; *by_datasource)
+            foreach(ref dataset_no, ref dataset; *datasource)
             {
                 import std.algorithm : map;
                 import std.array : array;
                 import gfm.math : vec4f;
                 import vertex_provider : Vertex, VertexSlice;
 
-                auto vertices = by_dataset.header.elements.map!(a=>Vertex(
+                auto vertices = dataset.header.elements.map!(a=>Vertex(
                     vec3f(a.x, a.y, a.z),      // position
                     vec4f(1.0, 0.0, 0.0, 1.0), // color
                 )).array;
 
                 auto uniq_id = genVertexProviderHandle();
-                auto vp = new VertexProvider(uniq_id, vertices, [VertexSlice(by_dataset.header.kind, 0, vertices.length)]);
-                rd.addDataSet(by_dataset.header, vp);
+                auto vp = new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
+                rd.addDataSet(dataset.header, vp);
 
-                dl.add!DataSet(by_dataset.header, by_dataset.header.header);
+                dl.add!DataSet(dataset.header, dataset.header.title);
 
-                foreach(ref e; *by_dataset)
+                foreach(ref e; *dataset)
                 {
                     import msgpack: pack;
                     pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);

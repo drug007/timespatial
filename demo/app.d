@@ -50,7 +50,7 @@ struct DataObjectImpl(E)
     @("Disabled")
     uint no;
     @("Disabled")
-    string header;
+    string title;
     @("Disabled")
     bool visible;
     @("Disabled")
@@ -66,7 +66,7 @@ struct DataObjectImpl(E)
         import std.conv : text;
 
         this.no = no;
-        header = text(no, "\0");
+        title = text(no, "\0");
         visible = true;
         box = box3f.init;
         kind = VertexSlice.Kind.LineStrip;
@@ -81,7 +81,7 @@ struct DataObjectImpl(E)
     this(const(this) other)
     {
         this.no       = other.no;
-        this.header   = other.header.dup;
+        this.title   = other.title.dup;
         this.visible  = other.visible;
         this.box      = other.box;
         this.kind     = other.kind;
