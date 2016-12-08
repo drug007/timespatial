@@ -141,7 +141,17 @@ class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType
 
     override void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset)
     {
-        dl.add!DataSet(dataset, dataset.header.title);
+        import std.conv : text;
+        import data_item : DataItem, timeToString;
+        import data_layout: Dummy, DataItemGroup;
+
+        auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
+        auto group = DataItemGroup(new DataItem!Dummy(*dummy, text(dataset.header.no, "\0")));
+
+        foreach(ref e; dataset)
+            group.child ~= new DataItem!DataElement(e, e.timestamp.timeToString);
+
+        dl.addGroupRaw(group);
     }
 };
 
