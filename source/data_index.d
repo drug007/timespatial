@@ -32,6 +32,8 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, Al
 
     import containers.dynamicarray: DynamicArray;
 
+    static assert(AllowableTypes.length);
+
     static struct DataSet
     {
         DataSetHeader header;
@@ -224,9 +226,8 @@ unittest
     assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
 }
 
-struct DataIndex(DataRange, DataSetHeader, DataElement)
+struct DataIndex(DataRange, DataSetHeader, DataElement, AllowableTypes...)
 {
-    import std.typecons : AliasSeq;
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
 
@@ -234,7 +235,7 @@ struct DataIndex(DataRange, DataSetHeader, DataElement)
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, AliasSeq!(Data));
+    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, AllowableTypes);
     Allocator allocator;
     DataIndex didx;
 

@@ -16,11 +16,11 @@ import color_table: ColorTable;
 import data_index : DataIndex;
 import rtree;
 
-class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
+class DefaultViewer(HDataRange, DataSetHeader, DataElement, AllowableTypes...) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement);
+    alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement, AllowableTypes);
     alias DataSet = typeof(*HDataIndex.Value.Value);
     alias Color = typeof(color_table(0));
 
