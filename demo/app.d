@@ -44,7 +44,7 @@ struct DataElement
     }
 }
 
-struct DataObjectImpl(E)
+struct DataSetHeaderImpl(E)
 {
     alias DataElement = E;
     @("Disabled")
@@ -89,7 +89,7 @@ struct DataObjectImpl(E)
     }
 }
 
-alias DataObject = DataObjectImpl!DataElement;
+alias DataSetHeader = DataSetHeaderImpl!DataElement;
 
 class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType, DataElement)
 {
@@ -133,7 +133,7 @@ class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType
     }
 };
 
-alias Gui = GuiImpl!(typeof(heterogeneousData()), DataObject, DataElement);
+alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement);
 
 int main(string[] args)
 {
