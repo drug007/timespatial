@@ -10,6 +10,7 @@ import base_viewer: BaseViewer;
 import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
 import data_provider: IRenderableData, RenderableData, updateBoundingBox;
+import vertex_provider : VertexProvider;
 import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
 import data_index : DataIndex;
@@ -155,6 +156,22 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
 
     abstract void makeDataLayout();
 
+    auto makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr)
+    {
+        import std.algorithm : map;
+        import std.array : array;
+        import gfm.math : vec4f;
+        import vertex_provider : Vertex, VertexSlice;
+
+        auto vertices = dataset.idx[].map!(a=>Vertex(
+            vec3f(a.x, a.y, a.z),      // position
+            vec4f(clr.r, clr.g, clr.b, clr.a), // color
+        )).array;
+
+        auto uniq_id = genVertexProviderHandle();
+        return new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
+    }
+
     void addData()
     {
         import vertex_provider: VertexProvider;
@@ -173,18 +190,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
             auto clr = color_table(source_no);
             foreach(ref dataset_no, ref dataset; *datasource)
             {
-                import std.algorithm : map;
-                import std.array : array;
-                import gfm.math : vec4f;
-                import vertex_provider : Vertex, VertexSlice;
-
-                auto vertices = dataset.idx[].map!(a=>Vertex(
-                    vec3f(a.x, a.y, a.z),      // position
-                    vec4f(clr.r, clr.g, clr.b, clr.a), // color
-                )).array;
-
-                auto uniq_id = genVertexProviderHandle();
-                auto vp = new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
+                auto vp = makeVertexProvider(*dataset, clr);
                 rd.addDataSet(*dataset, vp);
 
                 dl.add!DataSet(*dataset, dataset.header.title);
