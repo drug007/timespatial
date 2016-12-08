@@ -82,7 +82,9 @@ struct DataSetHeader
 
 class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType, DataElement)
 {
-    import gfm.sdl2: SDL_Event;
+    import gfm.sdl2 : SDL_Event;
+    import vertex_provider : VertexProvider;
+    import data_layout : DataLayout;
 
     this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
@@ -119,6 +121,27 @@ class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType
         }
 
         addDataLayout(data_layout);
+    }
+
+    override VertexProvider makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr)
+    {
+        import std.algorithm : map;
+        import std.array : array;
+        import gfm.math : vec3f, vec4f;
+        import vertex_provider : Vertex, VertexSlice;
+
+        auto vertices = dataset.idx[].map!(a=>Vertex(
+            vec3f(a.x, a.y, a.z),              // position
+            vec4f(clr.r, clr.g, clr.b, clr.a), // color
+        )).array;
+
+        auto uniq_id = genVertexProviderHandle();
+        return new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
+    }
+
+    override void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset)
+    {
+        dl.add!DataSet(dataset, dataset.header.title);
     }
 };
 

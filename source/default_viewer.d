@@ -155,22 +155,8 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
     }
 
     abstract void makeDataLayout();
-
-    auto makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr)
-    {
-        import std.algorithm : map;
-        import std.array : array;
-        import gfm.math : vec4f;
-        import vertex_provider : Vertex, VertexSlice;
-
-        auto vertices = dataset.idx[].map!(a=>Vertex(
-            vec3f(a.x, a.y, a.z),      // position
-            vec4f(clr.r, clr.g, clr.b, clr.a), // color
-        )).array;
-
-        auto uniq_id = genVertexProviderHandle();
-        return new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
-    }
+    abstract VertexProvider makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr);
+    abstract void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset);
 
     void addData()
     {
@@ -193,7 +179,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
                 auto vp = makeVertexProvider(*dataset, clr);
                 rd.addDataSet(*dataset, vp);
 
-                dl.add!DataSet(*dataset, dataset.header.title);
+                addDataSetLayout(dl, *dataset);
 
                 foreach(ref e; *dataset)
                 {
