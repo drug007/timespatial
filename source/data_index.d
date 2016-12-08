@@ -33,46 +33,46 @@ struct DataIndex0(DataSourceHeader, DataSetHeader, DataElement, Allocator, Allow
 
     import containers.dynamicarray: DynamicArray;
 
-    static struct ByDataSet
+    static struct DataSet
     {
-        ByElementIndex idx;
         DataSetHeader header;
+        DataElementIndex idx;
 
         alias idx this;
 
-        this(ref ByElementIndex idx, ref const(DataSetHeader) header)
+        this(ref DataElementIndex idx, ref const(DataSetHeader) header)
         {
             this.idx = move(idx);
             this.header = DataSetHeader(header);
         }
     }
 
-    static struct BySource
+    static struct DataSource
     {
-        BySetIndex idx;
         DataSourceHeader header;
+        DataSetIndex idx;
 
         alias idx this;
 
-        this(ref BySetIndex idx, ref const(DataSourceHeader) header)
+        this(ref DataSetIndex idx, ref const(DataSourceHeader) header)
         {
             this.idx = move(idx);
             this.header = header;
         }
     }
 
-    alias ByElementIndex = DynamicArray!(DataElement, Mallocator, false);
-    alias BySetIndex = Index!(uint, ByDataSet*);
-    alias BySourceIndex = Index!(uint, BySource*);
+    alias DataElementIndex = DynamicArray!(DataElement, Mallocator, false);
+    alias DataSetIndex = Index!(uint, DataSet*);
+    alias DataSourceIndex = Index!(uint, DataSource*);
     
     Allocator* allocator;
-    BySourceIndex idx;
+    DataSourceIndex idx;
     alias idx this;
 
     this(R)(ref Allocator allocator, R hs)
     {
         this.allocator = &allocator;
-        idx = BySourceIndex();
+        idx = DataSourceIndex();
         foreach(ref e; hs)
         {
             import taggedalgebraic: hasType;
@@ -81,31 +81,31 @@ struct DataIndex0(DataSourceHeader, DataSetHeader, DataElement, Allocator, Allow
             {
                 if(e.value.hasType!(T))
                 {
-                    BySource* by_source;
+                    DataSource* datasource;
                     if (!idx.containsKey(e.value.id.source))
                     {
-                        auto datasource = DataSourceHeader(e.value.id.source);
-                        by_source = allocator.make!BySource(*allocator.make!BySetIndex(), datasource);
-                        idx[e.value.id.source] = by_source;
+                        auto datasource_header = DataSourceHeader(e.value.id.source);
+                        datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                        idx[e.value.id.source] = datasource;
                     }
                     else
                     {
-                        by_source = idx[e.value.id.source];
+                        datasource = idx[e.value.id.source];
                     }
-                    ByDataSet* by_dataset;
-                    if(!by_source.containsKey(e.value.id.no))
+                    DataSet* dataset;
+                    if(!datasource.containsKey(e.value.id.no))
                     {
                         auto dataset_header = DataSetHeader(e.value.id.no);
-                        by_dataset = allocator.make!ByDataSet(*allocator.make!ByElementIndex(), dataset_header);
-                        by_source.idx[e.value.id.no] = by_dataset;
+                        dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                        datasource.idx[e.value.id.no] = dataset;
                     }
                     else
                     {
-                        by_dataset = by_source.idx[e.value.id.no];
+                        dataset = datasource.idx[e.value.id.no];
                     }
                     auto de = DataElement(e.index, e.value);
-                    by_dataset.insert(de);
-                    by_dataset.header.add(de);
+                    dataset.insert(de);
+                    dataset.header.add(de);
 
                     break;
                 }
