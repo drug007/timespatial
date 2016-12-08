@@ -24,7 +24,7 @@ struct Index(K, V)
 }
 
 @nogc
-struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...)
+struct DataIndex0(DataSourceHeader, DataSetHeader, DataElement, Allocator, AllowableTypes...)
 {
     import std.algorithm : move;
 
@@ -36,28 +36,28 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
     static struct ByDataSet
     {
         ByElementIndex idx;
-        DataSet dataset;
+        DataSetHeader header;
 
         alias idx this;
 
-        this(ref ByElementIndex idx, ref const(DataSet) dataset)
+        this(ref ByElementIndex idx, ref const(DataSetHeader) header)
         {
             this.idx = move(idx);
-            this.dataset = DataSet(dataset);
+            this.header = DataSetHeader(header);
         }
     }
 
     static struct BySource
     {
         BySetIndex idx;
-        DataSource source;
+        DataSourceHeader header;
 
         alias idx this;
 
-        this(ref BySetIndex idx, ref const(DataSource) source)
+        this(ref BySetIndex idx, ref const(DataSourceHeader) header)
         {
             this.idx = move(idx);
-            this.source = source;
+            this.header = header;
         }
     }
 
@@ -84,7 +84,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     BySource* by_source;
                     if (!idx.containsKey(e.value.id.source))
                     {
-                        auto datasource = DataSource(e.value.id.source);
+                        auto datasource = DataSourceHeader(e.value.id.source);
                         by_source = allocator.make!BySource(*allocator.make!BySetIndex(), datasource);
                         idx[e.value.id.source] = by_source;
                     }
@@ -95,8 +95,8 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     ByDataSet* by_dataset;
                     if(!by_source.containsKey(e.value.id.no))
                     {
-                        auto dataset = DataSet(e.value.id.no);
-                        by_dataset = allocator.make!ByDataSet(*allocator.make!ByElementIndex(), dataset);
+                        auto dataset_header = DataSetHeader(e.value.id.no);
+                        by_dataset = allocator.make!ByDataSet(*allocator.make!ByElementIndex(), dataset_header);
                         by_source.idx[e.value.id.no] = by_dataset;
                     }
                     else
@@ -105,7 +105,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     }
                     auto de = DataElement(e.index, e.value);
                     by_dataset.insert(de);
-                    by_dataset.dataset.add(de);
+                    by_dataset.header.add(de);
 
                     break;
                 }

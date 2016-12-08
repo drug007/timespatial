@@ -182,14 +182,14 @@ class DefaultViewer(HDataRange, DataObject) : BaseViewer
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
             dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
 
-            alias DataSet = typeof(by_datasource.Value.dataset);
+            alias DataSet = typeof(by_datasource.Value.header);
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(source_no);
             foreach(ref dataset_no, ref by_dataset; *by_datasource)
             {
-                rd.addDataSet(by_dataset.dataset, &generateVertexProvider!(DataSet));
+                rd.addDataSet(by_dataset.header, &generateVertexProvider!(DataSet));
 
-                dl.add!DataSet(by_dataset.dataset, by_dataset.dataset.header);
+                dl.add!DataSet(by_dataset.header, by_dataset.header.header);
 
                 foreach(ref e; *by_dataset)
                 {
