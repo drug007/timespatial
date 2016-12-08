@@ -80,7 +80,7 @@ struct DataSetHeader
     }
 }
 
-class GuiImpl(T, DataObjectType, DataElement, AllowableTypes...) : DefaultViewer!(T, DataObjectType, DataElement, AllowableTypes)
+class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, AllowableTypes...) : DefaultViewer!(T, DataObjectType, DataElement, ProcessElementMethod, AllowableTypes)
 {
     import gfm.sdl2 : SDL_Event;
     import vertex_provider : VertexProvider;
@@ -180,9 +180,10 @@ class GuiImpl(T, DataObjectType, DataElement, AllowableTypes...) : DefaultViewer
 };
 
 import std.typecons : AliasSeq;
+import data_index : defaultProcessElement;
 
 alias AllowableTypes = AliasSeq!(Data);
-alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement, AllowableTypes);
+alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement, defaultProcessElement, AllowableTypes);
 
 int main(string[] args)
 {
