@@ -64,16 +64,16 @@ struct DataSetHeader
         import std.conv : text;
 
         this.no = no;
-        title = text(no, "\0");
+        title   = text(no, "\0");
         visible = true;
-        box = box3f.init;
-        kind = VertexSlice.Kind.LineStrip;
+        box     = box3f.init;
+        kind    = VertexSlice.Kind.LineStrip;
     }
 
     this(const(this) other)
     {
         this.no       = other.no;
-        this.title   = other.title.dup;
+        this.title    = other.title.dup;
         this.visible  = other.visible;
         this.box      = other.box;
         this.kind     = other.kind;

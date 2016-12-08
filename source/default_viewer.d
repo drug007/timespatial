@@ -20,6 +20,8 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
     enum settingsFilename = "settings.json";
 
     alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement);
+    alias DataSet = typeof(*HDataIndex.Value.Value);
+    alias Color = typeof(color_table(0));
 
     this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
@@ -166,7 +168,6 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
             dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
 
-            alias DataSet = typeof(*datasource.Value);
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(source_no);
             auto clr = color_table(source_no);
@@ -675,7 +676,7 @@ protected:
 
     bool show_settings;
     int max_point_counts;
-    typeof(color_table(0)) clear_color;
+    Color clear_color;
     TimestampStorage timestamp_storage_start, timestamp_storage_finish;
     IDataLayout[] data_layout;
     box3f box;
