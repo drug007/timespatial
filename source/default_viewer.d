@@ -161,22 +161,6 @@ class DefaultViewer(HDataRange, DataObject, DataElement) : BaseViewer
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        VertexProvider generateVertexProvider(DataSet)(ref DataSet dataset)
-        {
-            import std.algorithm : map;
-            import std.array : array;
-            import gfm.math : vec4f;
-            import vertex_provider : Vertex, VertexSlice;
-
-            auto vertices = dataset.elements.map!(a=>Vertex(
-                vec3f(a.x, a.y, a.z),      // position
-                vec4f(1.0, 0.0, 0.0, 1.0), // color
-            )).array;
-
-            auto uniq_id = genVertexProviderHandle();
-            return new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.kind, 0, vertices.length)]);
-        }
-
         foreach(ref source_no, ref by_datasource; data_index)
         {
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
@@ -187,7 +171,19 @@ class DefaultViewer(HDataRange, DataObject, DataElement) : BaseViewer
             auto rd = new RenderableData!(DataSet)(source_no);
             foreach(ref dataset_no, ref by_dataset; *by_datasource)
             {
-                rd.addDataSet(by_dataset.header, &generateVertexProvider!(DataSet));
+                import std.algorithm : map;
+                import std.array : array;
+                import gfm.math : vec4f;
+                import vertex_provider : Vertex, VertexSlice;
+
+                auto vertices = by_dataset.header.elements.map!(a=>Vertex(
+                    vec3f(a.x, a.y, a.z),      // position
+                    vec4f(1.0, 0.0, 0.0, 1.0), // color
+                )).array;
+
+                auto uniq_id = genVertexProviderHandle();
+                auto vp = new VertexProvider(uniq_id, vertices, [VertexSlice(by_dataset.header.kind, 0, vertices.length)]);
+                rd.addDataSet(by_dataset.header, vp);
 
                 dl.add!DataSet(by_dataset.header, by_dataset.header.header);
 

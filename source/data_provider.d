@@ -83,10 +83,10 @@ class RenderableData(DataSet) : IRenderableData
         _visibility = true;
     }
 
-    auto addDataSet(ref DataSet dataset, VertexProvider delegate(ref DataSet ds) dg)
+    auto addDataSet(ref DataSet dataset, VertexProvider vp)
     {
         data ~= &dataset;
-        aux ~= Auxillary(dataset.no, [dg(dataset)]);
+        aux ~= Auxillary(dataset.no, [vp]);
         updateBoundingBox(box, dataset.box);
     }
 
