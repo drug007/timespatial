@@ -142,16 +142,40 @@ class GuiImpl(T, DataObjectType, DataElement) : DefaultViewer!(T, DataObjectType
     override void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset)
     {
         import std.conv : text;
-        import data_item : DataItem, timeToString;
-        import data_layout: Dummy, DataItemGroup;
+        import data_item : BaseDataItem, DataItem, timeToString;
 
-        auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-        auto group = DataItemGroup(new DataItem!Dummy(*dummy, text(dataset.header.no, "\0")));
+        static class CustomDataItem : BaseDataItem
+        {
+            string header;
+            BaseDataItem[] di;
 
+            override bool draw()
+            {
+                import derelict.imgui.imgui: igTreeNodePtr, igText, igIndent, igUnindent, igTreePop;
+
+                auto r = igTreeNodePtr(cast(void*)this, header.ptr, null);
+                if(r)
+                {
+                    igIndent();
+                    foreach(e; di)
+                    {
+                        assert(e);
+                        e.draw();
+                    }
+                    igUnindent();
+
+                    igTreePop();
+                }
+                return r;
+            }
+        }
+
+        auto cdi = new CustomDataItem();
+        cdi.header = text(dataset.header.no, "\0");
         foreach(ref e; dataset)
-            group.child ~= new DataItem!DataElement(e, e.timestamp.timeToString);
+            cdi.di ~= new DataItem!DataElement(e, e.timestamp.timeToString);
 
-        dl.addGroupRaw(group);
+        dl.addItemRaw!CustomDataItem(cdi);
     }
 };
 
