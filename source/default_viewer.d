@@ -9,7 +9,7 @@ import gfm.sdl2: SDL_Event;
 import base_viewer: BaseViewer;
 import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
-import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
+import data_provider: IRenderableData, RenderableData, updateBoundingBox;
 import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
 import data_index : DataIndex;
@@ -155,39 +155,59 @@ class DefaultViewer(HDataRange, DataObject) : BaseViewer
 
     void addData()
     {
+        import vertex_provider: VertexProvider;
         import data_layout: Dummy;
 
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        // На основании исходных данных генерируем полный набор
-        // данных для рендеринга
-        foreach(k; data_index.byKey)
+        VertexProvider generateVertexProvider(DataSet)(ref DataSet dataset)
         {
-            auto dobj = data_index[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
-                                                // так как на него будет ссылаться DataLayout
-            auto rd = makeRenderableData!(DataObject)(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
-            timestamp_storage_start.addTimestamps(rd.getTimestamps());
-            timestamp_storage_finish.addTimestamps(rd.getTimestamps());
-            updateBoundingBox(box, rd.box);
-            foreach(a; rd.aux)
-                setVertexProvider(a.vp);
-            renderable_data ~= rd;
+            import std.algorithm : map;
+            import std.array : array;
+            import gfm.math : vec4f;
+            import vertex_provider : Vertex, VertexSlice;
 
-            // data layout
-            assert(dobj.length);
+            auto vertices = dataset.elements.map!(a=>Vertex(
+                vec3f(a.x, a.y, a.z),      // position
+                vec4f(1.0, 0.0, 0.0, 1.0), // color
+            )).array;
+
+            auto uniq_id = genVertexProviderHandle();
+            return new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.kind, 0, vertices.length)]);
+        }
+
+        foreach(ref source_no, ref by_datasource; data_index)
+        {
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            dl.addGroup!Dummy(*dummy, text(k, "\0"));
-            import std.algorithm: sort;
-            foreach(ref e2; dobj.sort!((a,b)=>a.no<b.no))
+            dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
+
+            alias DataSet = typeof(by_datasource.Value.dataset);
+            // for each source create correspondence RenderableData
+            auto rd = new RenderableData!(DataSet)(source_no);
+            foreach(ref dataset_no, ref by_dataset; *by_datasource)
             {
-                dl.add!DataObject(e2, e2.header);
-                foreach(e; e2.elements)
+                rd.addDataSet(by_dataset.dataset, &generateVertexProvider!(DataSet));
+
+                dl.add!DataSet(by_dataset.dataset, by_dataset.dataset.header);
+
+                foreach(ref e; *by_dataset)
                 {
                     import msgpack: pack;
                     pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
                 }
             }
+            
+            auto ts = rd.getTimestamps();
+            timestamp_storage_start.addTimestamps(ts);
+            timestamp_storage_finish.addTimestamps(ts);
+
+            updateBoundingBox(box, rd.box);
+
+            foreach(a; rd.aux)
+                setVertexProvider(a.vp);
+
+            renderable_data ~= rd;
         }
         onCurrentTimestampChange();
     }

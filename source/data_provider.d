@@ -65,52 +65,29 @@ struct Auxillary
 }
 
 
-class RenderableData(DataObjectType, R) : IRenderableData
+class RenderableData(DataSet) : IRenderableData
 {
+    import vertex_provider: VertexProvider;
+
     // Ограничивающий параллелепипед
     box3f box;
 
     uint no;
-    R data;
+    DataSet*[] data; // TODO transfer dataset pointer to Auxillary struct 
     Auxillary[] aux;
     private bool _visibility;
 
-    this(uint no, R r, uint delegate() generateUniqId)
+    this(uint no)
     {
-        import std.range: ElementType, walkLength;
+        this.no = no;
+        _visibility = true;
+    }
 
-        static if(is(ElementType!R == DataObjectType))
-        {
-            import std.array: array;
-            
-            this.no = no;
-            data = r;
-            _visibility = true;
-            aux = data.map!(a=>Auxillary(a.no, [])).array;
-
-            box = box3f(
-                vec3f(float.max, float.max, float.max),
-                vec3f(float.min_normal, float.min_normal, float.min_normal),
-            );
-
-            import std.range: lockstep;
-            import vertex_provider: Vertex, VertexSlice;
-            foreach(ref d, ref a; lockstep(data, aux))
-            {
-                updateBoundingBox(box, d.box);
-
-                auto vertices = d.elements.map!(a=>Vertex(
-                    vec3f(a.x, a.y, a.z),      // position
-                    vec4f(a.r, a.g, a.b, a.a), // color
-                )).array;
-
-                auto uniq_id = generateUniqId();
-                a.vp ~= new VertexProvider(uniq_id, vertices, [VertexSlice(d.kind, 0, vertices.length)]);
-            }
-
-        }
-        else
-            static assert(0, "Supported only ranges with DataObjects element type, not '" ~ (ElementType!R).stringof ~ "' (type of the range is '" ~ R.stringof ~ "'");
+    auto addDataSet(ref DataSet dataset, VertexProvider delegate(ref DataSet ds) dg)
+    {
+        data ~= &dataset;
+        aux ~= Auxillary(dataset.no, [dg(dataset)]);
+        updateBoundingBox(box, dataset.box);
     }
 
     long[] getTimestamps()
@@ -206,11 +183,6 @@ class RenderableData(DataObjectType, R) : IRenderableData
     {
         return _visibility;
     }
-}
-
-auto makeRenderableData(DataObjectType, R, D)(uint no, R r, D d)
-{
-    return new RenderableData!(DataObjectType, R)(no, r, d);
 }
 
 auto sourceToColor(uint source)

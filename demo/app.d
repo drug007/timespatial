@@ -1,6 +1,6 @@
 import gfm.math: box3f;
 
-import tests: heterogeneousData;
+import tests: heterogeneousData, Data;
 import default_viewer: DefaultViewer;
 import color_table: ColorTable;
 
@@ -15,6 +15,33 @@ struct DataElement
     float r, g, b, a;
     @("Timestamp")
     long timestamp;
+
+    this(uint no, ref const(Data) data)
+    {
+        this.no = no;
+        ref_id = no;
+        x = data.x;
+        y = data.y;
+        z = data.z;
+        timestamp = data.timestamp;
+    }
+
+    this(uint no, const(Data) data)
+    {
+        this(no, data);
+    }
+
+    this(T)(uint no, ref const(T) t)
+    {
+        import taggedalgebraic: get, hasType;
+
+        if (t.hasType!Data)
+        {
+            this(no, t.get!Data);
+            return;
+        }
+        assert(0);
+    }
 }
 
 struct DataObjectImpl(E)
@@ -33,6 +60,33 @@ struct DataObjectImpl(E)
     @("Disabled")
     VertexSlice.Kind kind;
     DataElement[] elements;
+
+    this(uint no)
+    {
+        import std.conv : text;
+
+        this.no = no;
+        header = text(no, "\0");
+        visible = true;
+        box = box3f.init;
+        kind = VertexSlice.Kind.LineStrip;
+        elements = elements.init;
+    }
+
+    auto add(ref DataElement de)
+    {
+        elements ~= de;
+    }
+
+    this(const(this) other)
+    {
+        this.no       = other.no;
+        this.header   = other.header.dup;
+        this.visible  = other.visible;
+        this.box      = other.box;
+        this.kind     = other.kind;
+        this.elements = other.elements.dup;
+    }
 }
 
 alias DataObject = DataObjectImpl!DataElement;

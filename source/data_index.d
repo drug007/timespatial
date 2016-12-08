@@ -16,6 +16,11 @@ struct Index(K, V)
     }
 
     alias idx this;
+
+    auto opApply(int delegate(ref K k, ref V v) dg)
+    {
+        return idx.opApply(dg);
+    }
 }
 
 @nogc
@@ -38,7 +43,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
         this(ref ByElementIndex idx, ref const(DataSet) dataset)
         {
             this.idx = move(idx);
-            this.dataset = dataset;
+            this.dataset = DataSet(dataset);
         }
     }
 
@@ -90,7 +95,7 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     ByDataSet* by_dataset;
                     if(!by_source.containsKey(e.value.id.no))
                     {
-                        auto dataset = DataSet(e.value.id.no, e.value);
+                        auto dataset = DataSet(e.value.id.no);
                         by_dataset = allocator.make!ByDataSet(*allocator.make!ByElementIndex(), dataset);
                         by_source.idx[e.value.id.no] = by_dataset;
                     }
@@ -98,7 +103,9 @@ struct DataIndex0(DataSource, DataSet, DataElement, Allocator, AllowableTypes...
                     {
                         by_dataset = by_source.idx[e.value.id.no];
                     }
-                    by_dataset.insert(DataElement(e.index, e.value));
+                    auto de = DataElement(e.index, e.value);
+                    by_dataset.insert(de);
+                    by_dataset.dataset.add(de);
 
                     break;
                 }
@@ -138,9 +145,19 @@ unittest
     static struct DataSet
     {
         size_t no;
-        this(T)(size_t no, ref const(T) data)
+        this(size_t no)
         {
             this.no = no;
+        }
+
+        this(const(this) other)
+        {
+            this.no = other.no;
+        }
+
+        void add(T)(T t)
+        {
+            
         }
     }
 
@@ -211,70 +228,29 @@ unittest
 
 struct DataIndex(DataRange, DataObjectType)
 {
-	DataObjectType[uint][uint] idata;
+    import std.typecons : AliasSeq;
+    import std.experimental.allocator.mallocator : Mallocator;
+    import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
 
-    alias idata this;
+    import tests : Data;
+
+    alias BaseAllocator = Region!Mallocator;
+    alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
+    alias DataIndex = DataIndex0!(uint, DataObjectType, DataObjectType.DataElement, Allocator, AliasSeq!(Data));
+    Allocator allocator;
+    DataIndex didx;
+
+    alias Key = DataIndex.Key;
+    alias Value = DataIndex.Value;
 
 	this(DataRange hdata, ref const(ColorTable) color_table)
 	{
-        import std.conv : text;
-        import std.range : ElementType;
-        import std.traits : isInstanceOf;
-        import taggedalgebraic : TaggedAlgebraic;
-        import vertex_provider : VertexSlice;
+        allocator = Allocator(BaseAllocator(1024 * 1024));
+        didx = DataIndex(allocator, hdata);
+    }
 
-        alias ValueType = typeof(ElementType!DataRange.value);
-
-        static assert(isInstanceOf!(TaggedAlgebraic, ValueType));
-
-        alias DataElement = DataObjectType.DataElement;
-
-        uint element_index;
-        foreach(e; hdata)
-        {
-            final switch(e.value.kind)
-            {
-                case ValueType.Kind._data:
-                {
-                    auto s = idata.get(e.value.id.source, null);
-
-                    auto clr = color_table(e.value.id.source);
-
-                    if(s is null)
-                    {
-                        idata[e.value.id.source] = (DataObjectType[uint]).init;
-                    }
-
-                    if((s is null) || (e.value.id.no !in s))
-                    {
-                        import gfm.math: box3f;
-                        idata[e.value.id.source][e.value.id.no] = DataObjectType(
-                            e.value.id.no, 
-                            text(e.value.id.no, "\0"),
-                            true, // visible
-                            box3f(e.value.x, e.value.y, e.value.z, e.value.x, e.value.y, e.value.z), 
-                            VertexSlice.Kind.LineStrip, 
-                            [DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp)]);
-                    }
-                    else
-                    {
-                        s[e.value.id.no].elements ~= DataElement(cast(uint)e.index, cast(uint)e.index, e.value.x, e.value.y, e.value.z, clr.r, clr.g, clr.b, clr.a, e.value.timestamp);
-                        import data_provider: updateBoundingBox;
-                        import gfm.math: vec3f;
-                        auto vec = vec3f(e.value.x, e.value.y, e.value.z);
-                        updateBoundingBox(s[e.value.id.no].box, vec);
-                    }
-                    break;
-                }
-                case ValueType.Kind._bar:
-                {
-                    break;
-                }
-                case ValueType.Kind._foo:
-                {
-                    break;
-                }
-            }
-        }
+    auto opApply(int delegate(ref Key k, ref Value v) dg)
+    {
+        return didx.opApply(dg);
     }
 }
