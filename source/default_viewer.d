@@ -67,7 +67,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement) : BaseViewer
 
         this.hdata = hdata;
         this.color_table = color_table;
-        data_index = HDataIndex(hdata, color_table);
+        data_index = HDataIndex(hdata);
         addData();
         makeDataLayout(); // генерируем неграфические данные
 

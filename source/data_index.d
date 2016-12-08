@@ -1,5 +1,4 @@
 module data_index;
-import color_table : ColorTable;
 
 @nogc
 struct Index(K, V)
@@ -242,7 +241,7 @@ struct DataIndex(DataRange, DataSetHeader, DataElement)
     alias Key = DataIndex.Key;
     alias Value = DataIndex.Value;
 
-	this(DataRange hdata, ref const(ColorTable) color_table)
+	this(DataRange hdata)
 	{
         allocator = Allocator(BaseAllocator(1024 * 1024));
         didx = DataIndex(allocator, hdata);
