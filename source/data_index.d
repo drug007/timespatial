@@ -9,7 +9,7 @@ struct Index(K, V)
     import std.experimental.allocator.mallocator: Mallocator;
     
     alias Idx = TreeMap!(Key, Value, Mallocator, "a<b", false);
-    private
+    public
     {
         Idx idx = void;
     }
