@@ -11,8 +11,6 @@ struct DataElement
     @("Disabled")
     uint ref_id;
     float x, y, z;
-    @("Disabled")
-    float r, g, b, a;
     @("Timestamp")
     long timestamp;
 
