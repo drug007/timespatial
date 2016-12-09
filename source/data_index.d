@@ -22,49 +22,8 @@ struct Index(K, V)
     }
 }
 
-mixin template defaultProcessElement(AllowableTypes...)
-{
-    void processElement(T)(ref T e)
-    {
-        import taggedalgebraic: hasType;
-
-        foreach(T; AllowableTypes)
-        {
-            if(e.value.hasType!(T))
-            {
-                DataSource* datasource;
-                if (!idx.containsKey(e.value.id.source))
-                {
-                    auto datasource_header = DataSourceHeader(e.value.id.source);
-                    datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
-                    idx[e.value.id.source] = datasource;
-                }
-                else
-                {
-                    datasource = idx[e.value.id.source];
-                }
-                DataSet* dataset;
-                if(!datasource.containsKey(e.value.id.no))
-                {
-                    auto dataset_header = DataSetHeader(e.value.id.no);
-                    dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
-                    datasource.idx[e.value.id.no] = dataset;
-                }
-                else
-                {
-                    dataset = datasource.idx[e.value.id.no];
-                }
-                auto de = DataElement(e.index, e.value);
-                dataset.insert(de);
-
-                break;
-            }
-        }
-    }
-}
-
 @nogc
-struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, alias ProcessElementMethod, AllowableTypes...)
+struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, alias ProcessElementMethod)
 {
     import std.algorithm : move;
 
@@ -72,10 +31,8 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     import std.experimental.allocator : make;
 
     import containers.dynamicarray: DynamicArray;
-
-    static assert(AllowableTypes.length);
     
-    mixin ProcessElementMethod!AllowableTypes;
+    mixin ProcessElementMethod;
 
     static struct DataSet
     {
@@ -137,10 +94,46 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     }
 }
 
+private mixin template ProcessElement()
+{
+    void processElement(U)(ref U e)
+    {
+        import taggedalgebraic : hasType;
+        import tests : Data;
+        
+        if(e.value.hasType!(Data))
+        {
+            DataSource* datasource;
+            if (!idx.containsKey(e.value.id.source))
+            {
+                auto datasource_header = DataSourceHeader(e.value.id.source);
+                datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                idx[e.value.id.source] = datasource;
+            }
+            else
+            {
+                datasource = idx[e.value.id.source];
+            }
+            DataSet* dataset;
+            if(!datasource.containsKey(e.value.id.no))
+            {
+                auto dataset_header = DataSetHeader(e.value.id.no);
+                dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                datasource.idx[e.value.id.no] = dataset;
+            }
+            else
+            {
+                dataset = datasource.idx[e.value.id.no];
+            }
+            auto de = DataElement(e.index, e.value);
+            dataset.insert(de);
+        }
+    }
+}
+
 unittest
 {
     import std.algorithm : map;
-    import std.typecons : AliasSeq;
     import tests : heterogeneousData, Data;
 
     static struct DataElement
@@ -185,7 +178,7 @@ unittest
     
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndexImpl!(DataSource, DataSet, DataElement, Allocator, defaultProcessElement, AliasSeq!(Data));
+    alias DataIndex = DataIndexImpl!(DataSource, DataSet, DataElement, Allocator, ProcessElement);
     
     auto allocator = Allocator(BaseAllocator(1024 * 1024));
     
@@ -236,7 +229,7 @@ unittest
     assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
 }
 
-struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMethod, AllowableTypes...)
+struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMethod)
 {
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
@@ -245,7 +238,7 @@ struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMeth
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, ProcessElementMethod, AllowableTypes);
+    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, ProcessElementMethod);
     Allocator allocator;
     DataIndex didx;
 

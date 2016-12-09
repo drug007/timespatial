@@ -179,11 +179,44 @@ class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, Allowa
     }
 };
 
-import std.typecons : AliasSeq;
-import data_index : defaultProcessElement;
+mixin template ProcessElement()
+{
+    void processElement(U)(ref U e)
+    {
+        import taggedalgebraic : hasType;
+        import tests : Data;
+        
+        if(e.value.hasType!(Data))
+        {
+            DataSource* datasource;
+            if (!idx.containsKey(e.value.id.source))
+            {
+                auto datasource_header = DataSourceHeader(e.value.id.source);
+                datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                idx[e.value.id.source] = datasource;
+            }
+            else
+            {
+                datasource = idx[e.value.id.source];
+            }
+            DataSet* dataset;
+            if(!datasource.containsKey(e.value.id.no))
+            {
+                auto dataset_header = DataSetHeader(e.value.id.no);
+                dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                datasource.idx[e.value.id.no] = dataset;
+            }
+            else
+            {
+                dataset = datasource.idx[e.value.id.no];
+            }
+            auto de = DataElement(e.index, e.value);
+            dataset.insert(de);
+        }
+    }
+}
 
-alias AllowableTypes = AliasSeq!(Data);
-alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement, defaultProcessElement, AllowableTypes);
+alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement, ProcessElement);
 
 int main(string[] args)
 {
