@@ -112,6 +112,12 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
         }
     }
 
+    this(const(T)* ptr)
+    {
+
+        this(*ptr);
+    }
+
     override bool draw()
     {
         static if(kind != Kind.Disabled)
@@ -189,6 +195,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                     {
                         static if(isFieldPublic!(T, FieldName))
                         {
+                            import std.traits : PointerTarget;
                             /// return type of field
                             /// if field type is pointer it's pointer target type
                             /// else it's field type itself
