@@ -141,8 +141,14 @@ class RenderableData(DataSet) : IRenderableData
                     length = cast(uint) d.idx[].length - 1 - start;
             }
 
-            auto s  = VertexSlice(VertexSlice.Kind.LineStrip, start, length);
-            a.vp.front.currSlices = [s]; // FIXME почему слайс приваивается только первому vertex provider'у?
+            foreach(vp; a.vp)
+            {
+                foreach(ref slice; vp.currSlices)
+                {
+                    slice.start  = start;
+                    slice.length = length;
+                }
+            }
         }
     }
 

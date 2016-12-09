@@ -134,7 +134,10 @@ class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, Allowa
         )).array;
 
         auto uniq_id = genVertexProviderHandle();
-        return new VertexProvider(uniq_id, vertices, [VertexSlice(dataset.header.kind, 0, vertices.length)]);
+        return new VertexProvider(uniq_id, vertices, [
+            VertexSlice(dataset.header.kind, 0, vertices.length),
+            VertexSlice(VertexSlice.Kind.Points, 0, vertices.length),
+        ]);
     }
 
     override void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset)
