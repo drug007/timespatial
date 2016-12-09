@@ -15,6 +15,9 @@ interface IDataLayout
     /// return true if during gui phase data has been changed
     /// and updating is requiring
     bool draw();
+
+    /// sort the contents by BaseDataItem.order_no
+    void sort();
 }
 
 /// Используется как пустышка при создании групп виджетов
@@ -106,5 +109,18 @@ class DataLayout : IDataLayout
 		import std.array: back;
 
 		_info.back.child ~= value;
+	}
+
+	void sort()
+	{
+		// Сортируем трассы по номеру цели, а не внутреннему номеру
+        import std.algorithm : sort;
+        import std.array : array;
+        
+        foreach(ref group; _info)
+        {
+            auto tmp = group.child.sort!((a,b)=>a.order_no < b.order_no).array;
+            group.child = tmp;
+        }
 	}
 }

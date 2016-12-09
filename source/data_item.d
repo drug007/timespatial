@@ -35,6 +35,10 @@ abstract class BaseDataItem
 public:
     bool draw();
 
+    // определяет порядок сортировки при выводе в виде DataLayout, для смены сортировки необходимо изменить данное поле
+    // и отсортировать конейнер, содержащий BaseDataItem по возрастанию/убыванию
+    uint order_no;
+
     bool visible;
 
     this()
