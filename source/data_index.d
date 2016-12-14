@@ -247,7 +247,7 @@ struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMeth
 
 	this(DataRange hdata)
 	{
-        allocator = Allocator(BaseAllocator(1024 * 1024));
+        allocator = Allocator(BaseAllocator(16 * 1024 * 1024));
         didx = DataIndex(allocator, hdata);
     }
 
