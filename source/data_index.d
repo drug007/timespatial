@@ -299,7 +299,7 @@ unittest
     assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
 }
 
-struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMethod)
+struct DataIndex(DataRange, DataSourceHeader, DataSetHeader, DataElement, alias ProcessElementMethod)
 {
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
@@ -308,7 +308,7 @@ struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMeth
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, ProcessElementMethod);
+    alias DataIndex = DataIndexImpl!(DataSourceHeader, DataSetHeader, DataElement, Allocator, ProcessElementMethod);
     Allocator allocator;
     DataIndex didx;
     DataRange data;

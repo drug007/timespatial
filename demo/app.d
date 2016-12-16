@@ -81,7 +81,7 @@ struct DataSetHeader
 import data_index : DataIndex;
 
 alias HDataRange = typeof(heterogeneousData());
-alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement, ProcessElement);
+alias HDataIndex = DataIndex!(HDataRange, uint, DataSetHeader, DataElement, ProcessElement);
 
 class GuiImpl(HDataIndex) : DefaultViewer!(HDataIndex)
 {
