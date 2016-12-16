@@ -58,7 +58,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
         this(ref DataSetIndex idx, ref const(DataSourceHeader) header)
         {
             this.idx = move(idx);
-            this.header = header;
+            this.header = DataSourceHeader(header);
         }
     }
 
@@ -240,6 +240,11 @@ unittest
         this(size_t no)
         {
             this.no = no;
+        }
+
+        this(const(this) other)
+        {
+            this.no = other.no;
         }
     }
 
