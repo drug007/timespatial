@@ -70,10 +70,23 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     DataSourceIndex idx;
     alias idx this;
 
+    @disable
+    this();
+
+    this(ref Allocator allocator)
+    {
+        this.allocator = &allocator;
+    }
+
     this(R)(ref Allocator allocator, R hs)
     {
         this.allocator = &allocator;
         idx = DataSourceIndex();
+        build(hs);
+    }
+
+    void build(R)(R hs)
+    {
         foreach(ref e; hs)
         {
             processElement(e);

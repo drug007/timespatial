@@ -68,7 +68,20 @@ class DefaultViewer(HDataIndex) : BaseViewer
 
         this.color_table = color_table;
         this.data_index = &data_index;
-        addData();
+
+        {
+            // benchmarking of data index creating
+            import std.datetime : StopWatch;
+            StopWatch sw;
+            sw.start();
+
+            addData();
+
+            sw.stop();
+            import std.stdio : writefln;
+            writefln("Data adding took %s ms", sw.peek().msecs);
+        }
+
         makeDataLayout(); // генерируем неграфические данные
 
         about_closing = false;
