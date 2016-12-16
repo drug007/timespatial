@@ -16,7 +16,7 @@ struct Index(K, V)
 
     alias idx this;
 
-    auto opApply(int delegate(ref K k, ref V v) dg)
+    int opApply(int delegate(ref Key k, ref Value v) dg)
     {
         return idx.opApply(dg);
     }
@@ -90,6 +90,63 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
             auto f = "stats_collector.txt";
             Allocator.reportPerCallStatistics(File(f, "w"));
             allocator.reportStatistics(File(f, "a"));
+        }
+    }
+
+    void toMsgpack(Packer)(ref Packer packer) //const
+    {
+        packer.beginArray(idx.length);
+        foreach(ref DataSourceIndex.Key source_no, ref DataSourceIndex.Value datasource; idx)
+        {
+            packer.pack(source_no, datasource.header);
+            packer.beginArray(datasource.length);
+            foreach(DataSetIndex.Key dataset_no, DataSetIndex.Value dataset; *datasource)
+            {
+                packer.pack(dataset_no, dataset.header);
+                packer.beginArray(dataset.length);
+                foreach(ref e; *dataset)
+                {
+                    packer.pack(e);
+                }
+            }
+        }
+    }
+
+    void fromMsgpack(Unpacker)(ref Unpacker unpacker)
+    {
+        auto source_count = unpacker.beginArray();
+        foreach(_; 0..source_count)
+        {
+            DataSourceIndex.Key datasource_no;
+            DataSourceHeader datasource_header;
+
+            // распаковываем номер источника и его заголовок
+            unpacker.unpack(datasource_no, datasource_header);
+            // создаем соответствующий источник
+            auto datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+            // вносим в контейнер
+            idx[datasource_no] = datasource;
+            // распаковываем вложенные наборы данных
+            auto dataset_count = unpacker.beginArray();
+            foreach(_1; 0..dataset_count)
+            {
+                DataSetIndex.Key dataset_no;
+                DataSetHeader dataset_header;
+                // считываем номер и заголовок набора данных
+                unpacker.unpack(dataset_no, dataset_header);
+                // создаем соответствующий набор данных
+                auto dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                // вносим в источник данных
+                datasource.idx[dataset_no] = dataset;
+                // распаковываем вложенные наборы данных
+                auto element_count = unpacker.beginArray();
+                foreach(_2; 0..element_count)
+                {
+                    DataElement de;
+                    unpacker.unpack(de);
+                    dataset.insert(de);
+                }
+            }
         }
     }
 }
