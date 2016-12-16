@@ -68,7 +68,6 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElement
 
         pointsRtree = new RTree(":memory:");
 
-        this.hdata = hdata;
         this.color_table = color_table;
         data_index = HDataIndex(hdata);
         addData();
@@ -596,7 +595,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElement
         auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
         return buildDataItemArray(curr_id.map!((a) {
             auto id = unpack!uint(a.payload);
-            return &hdata[id].value;
+            return &data_index.data[id].value;
         }));
     }
 
@@ -673,7 +672,6 @@ protected:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
-    HDataRange hdata;
     HDataIndex data_index;
     bool about_closing;
     RTree pointsRtree;

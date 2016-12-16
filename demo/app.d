@@ -98,7 +98,7 @@ class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, Allowa
 
         auto data_layout = new DataLayout("Heterogeneous data");
 
-        foreach(ref e; hdata)
+        foreach(ref e; data_index.data)
         {
             alias Kind = typeof(e.value.kind);
             final switch(e.value.kind)

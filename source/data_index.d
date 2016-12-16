@@ -298,14 +298,16 @@ struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMeth
     alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, ProcessElementMethod);
     Allocator allocator;
     DataIndex didx;
+    DataRange data;
 
     alias Key = DataIndex.Key;
     alias Value = DataIndex.Value;
 
-	this(DataRange hdata)
+	this(DataRange data)
 	{
         allocator = Allocator(BaseAllocator(16 * 1024 * 1024));
-        didx = DataIndex(allocator, hdata);
+        didx = DataIndex(allocator, data);
+        this.data = data;
     }
 
     auto opApply(int delegate(ref Key k, ref Value v) dg)
