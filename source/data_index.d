@@ -41,10 +41,10 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
 
         alias idx this;
 
-        this(ref DataElementIndex idx, ref const(DataSetHeader) header)
+        this(DataSetHeader header)
         {
-            this.idx = move(idx);
-            this.header = DataSetHeader(header);
+            this.idx = DataElementIndex();
+            this.header = move(header);
         }
     }
 
@@ -55,10 +55,10 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
 
         alias idx this;
 
-        this(ref DataSetIndex idx, ref const(DataSourceHeader) header)
+        this(DataSourceHeader header)
         {
-            this.idx = move(idx);
-            this.header = DataSourceHeader(header);
+            this.idx = DataSetIndex();
+            this.header = move(header);
         }
     }
 
@@ -136,7 +136,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
             // распаковываем номер источника и его заголовок
             unpacker.unpack(datasource_no, datasource_header);
             // создаем соответствующий источник
-            auto datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+            auto datasource = allocator.make!DataSource(datasource_header);
             // вносим в контейнер
             idx[datasource_no] = datasource;
             // распаковываем вложенные наборы данных
@@ -148,7 +148,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
                 // считываем номер и заголовок набора данных
                 unpacker.unpack(dataset_no, dataset_header);
                 // создаем соответствующий набор данных
-                auto dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                auto dataset = allocator.make!DataSet(dataset_header);
                 // вносим в источник данных
                 datasource.idx[dataset_no] = dataset;
                 // распаковываем вложенные наборы данных
@@ -177,7 +177,7 @@ private mixin template ProcessElement()
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
-                datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                datasource = allocator.make!DataSource(datasource_header);
                 idx[e.value.id.source] = datasource;
             }
             else
@@ -188,7 +188,7 @@ private mixin template ProcessElement()
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);
-                dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                dataset = allocator.make!DataSet(dataset_header);
                 datasource.idx[e.value.id.no] = dataset;
             }
             else

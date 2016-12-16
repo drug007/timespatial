@@ -67,21 +67,22 @@ struct DataSetHeader
         box     = box3f.init;
         kind    = VertexSlice.Kind.LineStrip;
     }
+}
 
-    this(const(this) other)
+struct DataSourceHeader
+{
+    uint no;
+
+    this(uint no)
     {
-        this.no       = other.no;
-        this.title    = other.title.dup;
-        this.visible  = other.visible;
-        this.box      = other.box;
-        this.kind     = other.kind;
+        this.no = no;
     }
 }
 
 import data_index : DataIndex;
 
 alias HDataRange = typeof(heterogeneousData());
-alias HDataIndex = DataIndex!(HDataRange, uint, DataSetHeader, DataElement, ProcessElement);
+alias HDataIndex = DataIndex!(HDataRange, DataSourceHeader, DataSetHeader, DataElement, ProcessElement);
 
 class GuiImpl(HDataIndex) : DefaultViewer!(HDataIndex)
 {
@@ -198,7 +199,7 @@ mixin template ProcessElement()
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
-                datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                datasource = allocator.make!DataSource(datasource_header);
                 idx[e.value.id.source] = datasource;
             }
             else
@@ -209,7 +210,7 @@ mixin template ProcessElement()
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);
-                dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                dataset = allocator.make!DataSet(dataset_header);
                 datasource.idx[e.value.id.no] = dataset;
             }
             else
