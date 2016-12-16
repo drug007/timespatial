@@ -78,15 +78,20 @@ struct DataSetHeader
     }
 }
 
-class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, AllowableTypes...) : DefaultViewer!(T, DataObjectType, DataElement, ProcessElementMethod, AllowableTypes)
+import data_index : DataIndex;
+
+alias HDataRange = typeof(heterogeneousData());
+alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement, ProcessElement);
+
+class GuiImpl(HDataIndex) : DefaultViewer!(HDataIndex)
 {
     import gfm.sdl2 : SDL_Event;
     import vertex_provider : VertexProvider;
     import data_layout : DataLayout;
 
-    this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    this(int width, int height, string title, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
-        super(width, height, title, hdata, color_table, fullscreen);
+        super(width, height, title, data_index, color_table, fullscreen);
     }
 
     override void makeDataLayout()
@@ -217,7 +222,7 @@ mixin template ProcessElement()
     }
 }
 
-alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement, ProcessElement);
+alias Gui = GuiImpl!(HDataIndex);
 
 int main(string[] args)
 {
@@ -231,7 +236,8 @@ int main(string[] args)
     int width = 1800;
     int height = 768;
 
-    auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
+    auto data_index = HDataIndex(heterogeneousData());
+    auto gui = new Gui(width, height, "Test gui", data_index, ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
     gui.run();
     gui.close();
     destroy(gui);
