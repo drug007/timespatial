@@ -23,7 +23,7 @@ struct Index(K, V)
 }
 
 @nogc
-struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, alias ProcessElementMethod)
+struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator, alias ProcessElementMethod)
 {
     import std.algorithm : move;
 
@@ -33,6 +33,8 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     import containers.dynamicarray: DynamicArray;
     
     mixin ProcessElementMethod;
+
+    alias DataElement = DataElementType;
 
     static struct DataSet
     {
@@ -54,6 +56,9 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
         DataSetIndex idx;
 
         alias idx this;
+
+        @disable
+        this();
 
         this(DataSourceHeader header)
         {
@@ -97,7 +102,6 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     {
         debug
         {
-            import std.file : remove;
             import std.stdio : File;
 
             auto f = "stats_collector.txt";
