@@ -1,5 +1,26 @@
 module data_index;
 
+/// allocates memory using an allocator and create a struct given type
+///
+/// allocator.make / emplace doesn't work with structs, those fields
+/// are not copyable (@disable this();)
+auto create(T, Allocator, Args...)(ref Allocator allocator, auto ref Args args)
+{
+    static assert (is (T == struct));
+
+    // manually allocate memory
+    auto m = allocator.allocate(T.sizeof);
+    assert (m.ptr !is null);
+    scope(failure) allocator.deallocate(m);
+    auto obj = cast(T*) m.ptr;
+    // construct the object
+    import std.algorithm.mutation : move;
+    static assert(args.length);
+    *obj = T(move(args));
+
+    return obj;
+}
+
 @nogc
 struct Index(K, V)
 {
@@ -38,12 +59,14 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
 
     static struct DataSet
     {
-        DataSetHeader header;
+        alias Header = DataSetHeader;
+
+        Header header;
         DataElementIndex idx;
 
         alias idx this;
 
-        this(DataSetHeader header)
+        this(Header header)
         {
             this.idx = DataElementIndex();
             this.header = move(header);
@@ -52,7 +75,9 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
 
     static struct DataSource
     {
-        DataSourceHeader header;
+        alias Header = DataSourceHeader;
+
+        Header header;
         DataSetIndex idx;
 
         alias idx this;
@@ -60,7 +85,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
         @disable
         this();
 
-        this(DataSourceHeader header)
+        this(Header header)
         {
             this.idx = DataSetIndex();
             this.header = move(header);
