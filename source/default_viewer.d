@@ -15,14 +15,14 @@ import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
 import rtree;
 
-class DefaultViewer(HDataIndex) : BaseViewer
+class DefaultViewer(HData, HDataIndex) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    alias DataSet = typeof(*HDataIndex.Value.Value);
+    alias DataSet = HDataIndex.DataSet;
     alias Color = typeof(color_table(0));
 
-    this(int width, int height, string title, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: igGetStyle;
 
@@ -68,6 +68,7 @@ class DefaultViewer(HDataIndex) : BaseViewer
 
         this.color_table = color_table;
         this.data_index = &data_index;
+        this.data = &data;
 
         {
             // benchmarking of data index creating
@@ -606,7 +607,7 @@ class DefaultViewer(HDataIndex) : BaseViewer
         auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
         return buildDataItemArray(curr_id.map!((a) {
             auto id = unpack!uint(a.payload);
-            return &data_index.data[id].value;
+            return &(*data)[id].value;
         }));
     }
 
@@ -684,6 +685,7 @@ protected:
     box3f box;
     IRenderableData[] renderable_data;
     HDataIndex* data_index;
+    HData* data;
     bool about_closing;
     RTree pointsRtree;
     Array!BaseDataItem ditem;

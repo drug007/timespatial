@@ -84,15 +84,15 @@ import data_index : DataIndex;
 alias HDataRange = typeof(heterogeneousData());
 alias HDataIndex = DataIndex!(HDataRange, DataSourceHeader, DataSetHeader, DataElement, ProcessElement);
 
-class GuiImpl(HDataIndex) : DefaultViewer!(HDataIndex)
+class GuiImpl(HData, HDataIndex) : DefaultViewer!(HData, HDataIndex)
 {
     import gfm.sdl2 : SDL_Event;
     import vertex_provider : VertexProvider;
     import data_layout : DataLayout;
 
-    this(int width, int height, string title, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
-        super(width, height, title, data_index, color_table, fullscreen);
+        super(width, height, title, data, data_index, color_table, fullscreen);
     }
 
     override void makeDataLayout()
@@ -104,7 +104,7 @@ class GuiImpl(HDataIndex) : DefaultViewer!(HDataIndex)
 
         auto data_layout = new DataLayout("Heterogeneous data");
 
-        foreach(ref e; data_index.data)
+        foreach(ref e; *data)
         {
             alias Kind = typeof(e.value.kind);
             final switch(e.value.kind)
@@ -223,7 +223,7 @@ mixin template ProcessElement()
     }
 }
 
-alias Gui = GuiImpl!(HDataIndex);
+alias Gui = GuiImpl!(HDataIndex.DataRange, HDataIndex.DataIndex);
 
 int main(string[] args)
 {
@@ -237,8 +237,9 @@ int main(string[] args)
     int width = 1800;
     int height = 768;
 
-    auto data_index = HDataIndex(heterogeneousData());
-    auto gui = new Gui(width, height, "Test gui", data_index, ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
+    auto hdata = heterogeneousData();
+    auto data_index = HDataIndex(hdata);
+    auto gui = new Gui(width, height, "Test gui", hdata, data_index.didx, ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
     gui.run();
     gui.close();
     destroy(gui);
