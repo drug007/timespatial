@@ -135,6 +135,21 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
         }
     }
 
+    DataSource* opIndex(uint source_no)
+    {
+        return idx[source_no];
+    }
+
+    DataSet* opIndex(uint source_no, uint dataset_no)
+    {
+        return (*idx[source_no])[dataset_no];
+    }
+
+    DataElement opIndex(uint source_no, uint dataset_no, size_t element_no)
+    {
+        return (*(*idx[source_no])[dataset_no]).idx[element_no];
+    }
+
     void toMsgpack(Packer)(ref Packer packer) //const
     {
         packer.beginArray(idx.length);
