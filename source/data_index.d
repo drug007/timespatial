@@ -165,7 +165,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
             // распаковываем номер источника и его заголовок
             unpacker.unpack(datasource_no, datasource_header);
             // создаем соответствующий источник
-            auto datasource = allocator.make!DataSource(datasource_header);
+            auto datasource = allocator.create!DataSource(datasource_header);
             // вносим в контейнер
             idx[datasource_no] = datasource;
             // распаковываем вложенные наборы данных
