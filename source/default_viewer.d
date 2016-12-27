@@ -9,16 +9,22 @@ import gfm.sdl2: SDL_Event;
 import base_viewer: BaseViewer;
 import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
-import data_provider: IRenderableData, RenderableData, makeRenderableData, updateBoundingBox;
+import data_provider: IRenderableData, RenderableData, updateBoundingBox;
+import vertex_provider : VertexProvider;
 import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
+import data_index : DataIndex;
 import rtree;
 
-class DefaultViewer(T, DataObject) : BaseViewer
+class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElementMethod, AllowableTypes...) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement, ProcessElementMethod, AllowableTypes);
+    alias DataSet = typeof(*HDataIndex.Value.Value);
+    alias Color = typeof(color_table(0));
+
+    this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: igGetStyle;
 
@@ -64,9 +70,9 @@ class DefaultViewer(T, DataObject) : BaseViewer
 
         this.hdata = hdata;
         this.color_table = color_table;
-        data_objects = prepareData(); // создаем графические данные во внутреннем формате
-        addData();                    // на основе графических данных создаем графические примитив opengl и строим пространственный индекс
-        makeDataLayout();             // генерируем неграфические данные
+        data_index = HDataIndex(hdata);
+        addData();
+        makeDataLayout(); // генерируем неграфические данные
 
         about_closing = false;
 
@@ -148,44 +154,50 @@ class DefaultViewer(T, DataObject) : BaseViewer
         destroy(pointsRtree);
     }
 
-    abstract DataObject[uint][uint] prepareData();
     abstract void makeDataLayout();
+    abstract VertexProvider makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr);
+    abstract void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset);
 
     void addData()
     {
+        import vertex_provider: VertexProvider;
         import data_layout: Dummy;
 
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        // На основании исходных данных генерируем полный набор
-        // данных для рендеринга
-        foreach(k; data_objects.byKey)
+        foreach(ref source_no, ref datasource; data_index)
         {
-            auto dobj = data_objects[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
-                                                // так как на него будет ссылаться DataLayout
-            auto rd = makeRenderableData!(DataObject)(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
-            timestamp_storage_start.addTimestamps(rd.getTimestamps());
-            timestamp_storage_finish.addTimestamps(rd.getTimestamps());
-            updateBoundingBox(box, rd.box);
-            foreach(a; rd.aux)
-                setVertexProvider(a.vp);
-            renderable_data ~= rd;
-
-            // data layout
-            assert(dobj.length);
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            dl.addGroup!Dummy(*dummy, text(k, "\0"));
-            import std.algorithm: sort;
-            foreach(ref e2; dobj.sort!((a,b)=>a.no<b.no))
+            dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
+
+            // for each source create correspondence RenderableData
+            auto rd = new RenderableData!(DataSet)(source_no);
+            auto clr = color_table(source_no);
+            foreach(ref dataset_no, ref dataset; *datasource)
             {
-                dl.add!DataObject(e2, e2.header);
-                foreach(e; e2.elements)
+                auto vp = makeVertexProvider(*dataset, clr);
+                rd.addDataSet(*dataset, vp);
+
+                addDataSetLayout(dl, *dataset);
+
+                foreach(ref e; *dataset)
                 {
                     import msgpack: pack;
                     pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
                 }
             }
+            
+            auto ts = rd.getTimestamps();
+            timestamp_storage_start.addTimestamps(ts);
+            timestamp_storage_finish.addTimestamps(ts);
+
+            updateBoundingBox(box, rd.box);
+
+            foreach(a; rd.aux)
+                setVertexProvider(a.vp);
+
+            renderable_data ~= rd;
         }
         onCurrentTimestampChange();
     }
@@ -656,13 +668,13 @@ protected:
 
     bool show_settings;
     int max_point_counts;
-    typeof(color_table(0)) clear_color;
+    Color clear_color;
     TimestampStorage timestamp_storage_start, timestamp_storage_finish;
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
-    T hdata;
-    DataObject[uint][uint] data_objects;
+    HDataRange hdata;
+    HDataIndex data_index;
     bool about_closing;
     RTree pointsRtree;
     Array!BaseDataItem ditem;

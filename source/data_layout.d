@@ -1,5 +1,7 @@
 module data_layout;
 
+import std.traits : isInstanceOf;
+
 import data_item: DataItem, BaseDataItem;
 
 struct DataItemGroup
@@ -13,6 +15,9 @@ interface IDataLayout
     /// return true if during gui phase data has been changed
     /// and updating is requiring
     bool draw();
+
+    /// sort the contents by BaseDataItem.order_no
+    void sort();
 }
 
 /// Используется как пустышка при создании групп виджетов
@@ -67,7 +72,7 @@ class DataLayout : IDataLayout
 		return false;
 	}
 
-	auto addGroup(T)(ref const(T) value, string header)
+	auto addGroup(T)(ref const(T) value, string header) if (!isInstanceOf!(DataItem, T))
 	{
 		_info ~= DataItemGroup(
 			new DataItem!(T)(value, header),
@@ -75,98 +80,47 @@ class DataLayout : IDataLayout
 		);
 	}
 
-	auto addGroup(T)(const(T) value, string header)
+	auto addGroup(T)(const(T) value, string header) if (!isInstanceOf!(DataItem, T))
 	{
 		addGroup!T(value, header);
 	}
 
-	auto add(T)(ref const(T) value, string header = "")
+	auto add(T)(ref const(T) value, string header = "") if (!isInstanceOf!(DataItem, T))
 	{
 	    import std.array: back;
 
-		_info.back.child ~= new DataItem!T(value, header);
+	    _info.back.child ~= new DataItem!T(value, header);
 	}
 
-	auto add(T)(const(T) value, string header = "")
+	auto add(T)(const(T) value, string header = "") if (!isInstanceOf!(DataItem, T))
 	{
 		add!T(value, header);
 	}
+
+	auto addGroupRaw(T)(ref T value)
+	{
+		import std.array: back;
+
+		_info ~= value;
+	}
+
+	auto addItemRaw(T)(ref T value)
+	{
+		import std.array: back;
+
+		_info.back.child ~= value;
+	}
+
+	void sort()
+	{
+		// Сортируем трассы по номеру цели, а не внутреннему номеру
+        import std.algorithm : sort;
+        import std.array : array;
+        
+        foreach(ref group; _info)
+        {
+            auto tmp = group.child.sort!((a,b)=>a.order_no < b.order_no).array;
+            group.child = tmp;
+        }
+	}
 }
-
-///// specialized data layout for Timespatial with ability
-///// to control of visibility
-//class TimeSpatialLayout : DataLayout
-//{
-//	private TimeSpatial _timespatial;
-//	public bool visible;
-
-//	this(string title, TimeSpatial timespatial)
-//	{
-//		import std.conv: text;
-
-//		super(title);
-
-//		visible = true;
-//		_timespatial = timespatial;
-
-//		foreach(ref r; _timespatial.record)
-//			add(r.dataset, r.dataset.no.text ~ "\0");
-//	}
-
-//	override bool draw()
-//	{
-//		import derelict.imgui.imgui;
-
-//		auto invalidated = false;
-
-//		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
-//		igBegin(_title.ptr, &visible);
-//		version(widget_clipping_enabled)
-//		{
-//			import imgui_helpers: ImGuiListClipper;
-			
-//			auto clipper = ImGuiListClipper(cast(int)_info.length, igGetTextLineHeightWithSpacing());
-//			size_t start = clipper.DisplayStart;
-//			size_t end = clipper.DisplayEnd;
-//		}
-//		else
-//		{
-//			size_t start = 0;
-//			size_t end = _info.length;
-//		}
-//		foreach(size_t i; start..end)
-//		{
-//			auto old = _info[i].self.visible;
-//			igPushIdInt(cast(int) i);
-//			igCheckbox("", &_info[i].self.visible);
-//			igPopId();
-//			igSameLine();
-
-//			if(old != _info[i].self.visible)
-//			{
-//				if(old)
-//				{
-//					_timespatial.record[i].visible = false;
-//				}
-//				else
-//				{
-//					_timespatial.record[i].visible = true;
-//				}
-//				invalidated = true;
-//			}
-
-//			auto r = _info[i].self.draw();
-//			if(r)
-//			{
-//				igIndent();
-//				foreach(ref c; _info[i].child)
-//					c.draw();
-//				igUnindent();
-//			}
-//		}
-//		version(widget_clipping_enabled) clipper.End();
-//		igEnd();
-
-//		return invalidated;
-//	}
-//}

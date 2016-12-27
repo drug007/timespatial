@@ -134,6 +134,8 @@ class BaseViewer
         // redirect OpenGL output to our Logger
         _gl.redirectDebugOutput();
 
+        glEnable( GL_PROGRAM_POINT_SIZE );
+
         // create a shader program made of a single fragment shader
         const program_source =
             q{#version 330 core
@@ -146,6 +148,7 @@ class BaseViewer
             void main()
             {
                 gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
+                gl_PointSize = 3.0;                
                 fragment = color;
             }
             #endif

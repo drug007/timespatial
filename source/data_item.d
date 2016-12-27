@@ -35,6 +35,10 @@ abstract class BaseDataItem
 public:
     bool draw();
 
+    // определяет порядок сортировки при выводе в виде DataLayout, для смены сортировки необходимо изменить данное поле
+    // и отсортировать конейнер, содержащий BaseDataItem по возрастанию/убыванию
+    uint order_no;
+
     bool visible;
 
     this()
@@ -106,6 +110,12 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
             mixin defineInitFunction!T;
             initFunction();
         }
+    }
+
+    this(const(T)* ptr)
+    {
+
+        this(*ptr);
     }
 
     override bool draw()
@@ -185,6 +195,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                     {
                         static if(isFieldPublic!(T, FieldName))
                         {
+                            import std.traits : PointerTarget;
                             /// return type of field
                             /// if field type is pointer it's pointer target type
                             /// else it's field type itself
