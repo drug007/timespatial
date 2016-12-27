@@ -39,20 +39,23 @@ class DefaultViewer(T, DataObject) : BaseViewer
             vec3f(float.min_normal, float.min_normal, float.min_normal),
         );
 
-        timestamp_storage = TimestampStorage((long[]).init);
+        timestamp_storage_start  = TimestampStorage((long[]).init);
+        timestamp_storage_finish = TimestampStorage((long[]).init);
                 
         onMaxPointChange = () {
+            assert(timestamp_storage_start.current <= timestamp_storage_finish.current, text(timestamp_storage_start.current, " ", timestamp_storage_finish.current));
             foreach(ref e; renderable_data)
             {
-                e.setTimeWindow(long.min, timestamp_storage.current);
+                e.setTimeWindow(timestamp_storage_start.current, timestamp_storage_finish.current);
                 e.setMaxCount(max_point_counts);
             }
         };
 
         onCurrentTimestampChange = () {
+            assert(timestamp_storage_start.current <= timestamp_storage_finish.current, text(timestamp_storage_start.current, " ", timestamp_storage_finish.current));
             foreach(ref e; renderable_data)
             {
-                e.setTimeWindow(long.min, timestamp_storage.current);
+                e.setTimeWindow(timestamp_storage_start.current, timestamp_storage_finish.current);                
                 e.setMaxCount(max_point_counts);
             }
         };
@@ -162,7 +165,8 @@ class DefaultViewer(T, DataObject) : BaseViewer
             auto dobj = data_objects[k].values; // TODO неэффективно, так как динамический массив будет удерживаться в памяти
                                                 // так как на него будет ссылаться DataLayout
             auto rd = makeRenderableData!(DataObject)(k, dobj.dup, &genVertexProviderHandle); // duplicate array to make it unique
-            timestamp_storage.addTimestamps(rd.getTimestamps());
+            timestamp_storage_start.addTimestamps(rd.getTimestamps());
+            timestamp_storage_finish.addTimestamps(rd.getTimestamps());
             updateBoundingBox(box, rd.box);
             foreach(a; rd.aux)
                 setVertexProvider(a.vp);
@@ -297,15 +301,49 @@ class DefaultViewer(T, DataObject) : BaseViewer
             {
                 onMaxPointChange();
             }
-            with(timestamp_storage)
+            import std.datetime: convert;
+            enum minimalTimeWindowWidth = 1.convert!("minutes", "hnsecs");
+            with(timestamp_storage_start)
             {
                 int curr_idx = cast(int) currIndex;
                 int min = 0;
                 int max = cast(int)(length)-1;
-                igSliderInt("Timestamp", &curr_idx, min, max);
+                igSliderInt("Timestamp##start\0", &curr_idx, min, max);
                 if(curr_idx != currIndex)
                 {
                     setIndex(curr_idx);
+                    if(current > (timestamp_storage_finish.current - minimalTimeWindowWidth))
+                    {
+                        timestamp_storage_finish.move(current - timestamp_storage_finish.current + minimalTimeWindowWidth);
+                    }
+                    if(onCurrentTimestampChange !is null)
+                        onCurrentTimestampChange();
+                }
+                igText("Min time");
+                igSameLine();
+                igText(timeByIndex(min).timeToStringz);
+                igSameLine();
+                igText("Current time");
+                igSameLine();
+                igText(current.timeToStringz);
+                igSameLine();
+                igText("Max time");
+                igSameLine();
+                igText(timeByIndex(max).timeToStringz);
+            }
+            with(timestamp_storage_finish)
+            {
+                int curr_idx = cast(int) currIndex;
+                int min = 0;
+                int max = cast(int)(length)-1;
+                igSliderInt("Timestamp##finish", &curr_idx, min, max);
+                if(curr_idx != currIndex)
+                {
+                    setIndex(curr_idx);
+                    if(current < (timestamp_storage_start.current + minimalTimeWindowWidth))
+                    {
+                        timestamp_storage_start.move(current - timestamp_storage_start.current - minimalTimeWindowWidth);
+                    }
                     if(onCurrentTimestampChange !is null)
                         onCurrentTimestampChange();
                 }
@@ -619,7 +657,7 @@ protected:
     bool show_settings;
     int max_point_counts;
     typeof(color_table(0)) clear_color;
-    TimestampStorage timestamp_storage;
+    TimestampStorage timestamp_storage_start, timestamp_storage_finish;
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
