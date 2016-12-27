@@ -1,5 +1,26 @@
 module data_index;
 
+/// allocates memory using an allocator and create a struct given type
+///
+/// allocator.make / emplace doesn't work with structs, those fields
+/// are not copyable (@disable this();)
+auto create(T, Allocator, Args...)(ref Allocator allocator, auto ref Args args)
+{
+    static assert (is (T == struct));
+
+    // manually allocate memory
+    auto m = allocator.allocate(T.sizeof);
+    assert (m.ptr !is null);
+    scope(failure) allocator.deallocate(m);
+    auto obj = cast(T*) m.ptr;
+    // construct the object
+    import std.algorithm.mutation : move;
+    static assert(args.length);
+    *obj = T(move(args));
+
+    return obj;
+}
+
 @nogc
 struct Index(K, V)
 {
@@ -23,7 +44,7 @@ struct Index(K, V)
 }
 
 @nogc
-struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, alias ProcessElementMethod)
+struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator, alias ProcessElementMethod)
 {
     import std.algorithm : move;
 
@@ -34,31 +55,40 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     
     mixin ProcessElementMethod;
 
+    alias DataElement = DataElementType;
+
     static struct DataSet
     {
-        DataSetHeader header;
+        alias Header = DataSetHeader;
+
+        Header header;
         DataElementIndex idx;
 
         alias idx this;
 
-        this(ref DataElementIndex idx, ref const(DataSetHeader) header)
+        this(Header header)
         {
-            this.idx = move(idx);
-            this.header = DataSetHeader(header);
+            this.idx = DataElementIndex();
+            this.header = move(header);
         }
     }
 
     static struct DataSource
     {
-        DataSourceHeader header;
+        alias Header = DataSourceHeader;
+
+        Header header;
         DataSetIndex idx;
 
         alias idx this;
 
-        this(ref DataSetIndex idx, ref const(DataSourceHeader) header)
+        @disable
+        this();
+
+        this(Header header)
         {
-            this.idx = move(idx);
-            this.header = header;
+            this.idx = DataSetIndex();
+            this.header = move(header);
         }
     }
 
@@ -70,10 +100,23 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     DataSourceIndex idx;
     alias idx this;
 
+    @disable
+    this();
+
+    this(ref Allocator allocator)
+    {
+        this.allocator = &allocator;
+    }
+
     this(R)(ref Allocator allocator, R hs)
     {
         this.allocator = &allocator;
         idx = DataSourceIndex();
+        build(hs);
+    }
+
+    void build(R)(R hs)
+    {
         foreach(ref e; hs)
         {
             processElement(e);
@@ -84,13 +127,27 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
     {
         debug
         {
-            import std.file : remove;
             import std.stdio : File;
 
             auto f = "stats_collector.txt";
             Allocator.reportPerCallStatistics(File(f, "w"));
             allocator.reportStatistics(File(f, "a"));
         }
+    }
+
+    DataSource* opIndex(uint source_no)
+    {
+        return idx[source_no];
+    }
+
+    DataSet* opIndex(uint source_no, uint dataset_no)
+    {
+        return (*idx[source_no])[dataset_no];
+    }
+
+    DataElement opIndex(uint source_no, uint dataset_no, size_t element_no)
+    {
+        return (*(*idx[source_no])[dataset_no]).idx[element_no];
     }
 
     void toMsgpack(Packer)(ref Packer packer) //const
@@ -123,7 +180,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
             // распаковываем номер источника и его заголовок
             unpacker.unpack(datasource_no, datasource_header);
             // создаем соответствующий источник
-            auto datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+            auto datasource = allocator.create!DataSource(datasource_header);
             // вносим в контейнер
             idx[datasource_no] = datasource;
             // распаковываем вложенные наборы данных
@@ -135,7 +192,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElement, Allocator, al
                 // считываем номер и заголовок набора данных
                 unpacker.unpack(dataset_no, dataset_header);
                 // создаем соответствующий набор данных
-                auto dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                auto dataset = allocator.make!DataSet(dataset_header);
                 // вносим в источник данных
                 datasource.idx[dataset_no] = dataset;
                 // распаковываем вложенные наборы данных
@@ -164,7 +221,7 @@ private mixin template ProcessElement()
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
-                datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                datasource = allocator.make!DataSource(datasource_header);
                 idx[e.value.id.source] = datasource;
             }
             else
@@ -175,7 +232,7 @@ private mixin template ProcessElement()
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);
-                dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                dataset = allocator.make!DataSet(dataset_header);
                 datasource.idx[e.value.id.no] = dataset;
             }
             else
@@ -227,6 +284,11 @@ unittest
         this(size_t no)
         {
             this.no = no;
+        }
+
+        this(const(this) other)
+        {
+            this.no = other.no;
         }
     }
 
@@ -286,7 +348,7 @@ unittest
     assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
 }
 
-struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMethod)
+struct DataIndex(DataRange_, DataSourceHeader, DataSetHeader, DataElement, alias ProcessElementMethod)
 {
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
@@ -295,17 +357,20 @@ struct DataIndex(DataRange, DataSetHeader, DataElement, alias ProcessElementMeth
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
-    alias DataIndex = DataIndexImpl!(uint, DataSetHeader, DataElement, Allocator, ProcessElementMethod);
+    alias DataIndex = DataIndexImpl!(DataSourceHeader, DataSetHeader, DataElement, Allocator, ProcessElementMethod);
+    alias DataRange = DataRange_;
     Allocator allocator;
     DataIndex didx;
+    DataRange data;
 
     alias Key = DataIndex.Key;
     alias Value = DataIndex.Value;
 
-	this(DataRange hdata)
+	this(DataRange data)
 	{
         allocator = Allocator(BaseAllocator(16 * 1024 * 1024));
-        didx = DataIndex(allocator, hdata);
+        didx = DataIndex(allocator, data);
+        this.data = data;
     }
 
     auto opApply(int delegate(ref Key k, ref Value v) dg)

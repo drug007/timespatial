@@ -67,26 +67,32 @@ struct DataSetHeader
         box     = box3f.init;
         kind    = VertexSlice.Kind.LineStrip;
     }
+}
 
-    this(const(this) other)
+struct DataSourceHeader
+{
+    uint no;
+
+    this(uint no)
     {
-        this.no       = other.no;
-        this.title    = other.title.dup;
-        this.visible  = other.visible;
-        this.box      = other.box;
-        this.kind     = other.kind;
+        this.no = no;
     }
 }
 
-class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, AllowableTypes...) : DefaultViewer!(T, DataObjectType, DataElement, ProcessElementMethod, AllowableTypes)
+import data_index : DataIndex;
+
+alias HDataRange = typeof(heterogeneousData());
+alias HDataIndex = DataIndex!(HDataRange, DataSourceHeader, DataSetHeader, DataElement, ProcessElement);
+
+class GuiImpl(HData, HDataIndex) : DefaultViewer!(HData, HDataIndex)
 {
     import gfm.sdl2 : SDL_Event;
     import vertex_provider : VertexProvider;
     import data_layout : DataLayout;
 
-    this(int width, int height, string title, T hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
-        super(width, height, title, hdata, color_table, fullscreen);
+        super(width, height, title, data, data_index, color_table, fullscreen);
     }
 
     override void makeDataLayout()
@@ -98,7 +104,7 @@ class GuiImpl(T, DataObjectType, DataElement, alias ProcessElementMethod, Allowa
 
         auto data_layout = new DataLayout("Heterogeneous data");
 
-        foreach(ref e; hdata)
+        foreach(ref e; *data)
         {
             alias Kind = typeof(e.value.kind);
             final switch(e.value.kind)
@@ -193,7 +199,7 @@ mixin template ProcessElement()
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
-                datasource = allocator.make!DataSource(*allocator.make!DataSetIndex(), datasource_header);
+                datasource = allocator.make!DataSource(datasource_header);
                 idx[e.value.id.source] = datasource;
             }
             else
@@ -204,7 +210,7 @@ mixin template ProcessElement()
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);
-                dataset = allocator.make!DataSet(*allocator.make!DataElementIndex(), dataset_header);
+                dataset = allocator.make!DataSet(dataset_header);
                 datasource.idx[e.value.id.no] = dataset;
             }
             else
@@ -217,7 +223,7 @@ mixin template ProcessElement()
     }
 }
 
-alias Gui = GuiImpl!(typeof(heterogeneousData()), DataSetHeader, DataElement, ProcessElement);
+alias Gui = GuiImpl!(HDataIndex.DataRange, HDataIndex.DataIndex);
 
 int main(string[] args)
 {
@@ -231,7 +237,9 @@ int main(string[] args)
     int width = 1800;
     int height = 768;
 
-    auto gui = new Gui(width, height, "Test gui", heterogeneousData(), ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
+    auto hdata = heterogeneousData();
+    auto data_index = HDataIndex(hdata);
+    auto gui = new Gui(width, height, "Test gui", hdata, data_index.didx, ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
     gui.run();
     gui.close();
     destroy(gui);

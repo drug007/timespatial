@@ -13,18 +13,16 @@ import data_provider: IRenderableData, RenderableData, updateBoundingBox;
 import vertex_provider : VertexProvider;
 import data_layout: IDataLayout, DataLayout;
 import color_table: ColorTable;
-import data_index : DataIndex;
 import rtree;
 
-class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElementMethod, AllowableTypes...) : BaseViewer
+class DefaultViewer(HData, HDataIndex) : BaseViewer
 {
     enum settingsFilename = "settings.json";
 
-    alias HDataIndex = DataIndex!(HDataRange, DataSetHeader, DataElement, ProcessElementMethod, AllowableTypes);
-    alias DataSet = typeof(*HDataIndex.Value.Value);
+    alias DataSet = HDataIndex.DataSet;
     alias Color = typeof(color_table(0));
 
-    this(int width, int height, string title, HDataRange hdata, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
+    this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
         import imgui_helpers: igGetStyle;
 
@@ -68,10 +66,23 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElement
 
         pointsRtree = new RTree(":memory:");
 
-        this.hdata = hdata;
         this.color_table = color_table;
-        data_index = HDataIndex(hdata);
-        addData();
+        this.data_index = &data_index;
+        this.data = &data;
+
+        {
+            // benchmarking of data index creating
+            import std.datetime : StopWatch;
+            StopWatch sw;
+            sw.start();
+
+            addData();
+
+            sw.stop();
+            import std.stdio : writefln;
+            writefln("Data adding took %s ms", sw.peek().msecs);
+        }
+
         makeDataLayout(); // генерируем неграфические данные
 
         about_closing = false;
@@ -166,7 +177,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElement
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        foreach(ref source_no, ref datasource; data_index)
+        foreach(ref source_no, ref datasource; *data_index)
         {
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
             dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
@@ -596,7 +607,7 @@ class DefaultViewer(HDataRange, DataSetHeader, DataElement, alias ProcessElement
         auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
         return buildDataItemArray(curr_id.map!((a) {
             auto id = unpack!uint(a.payload);
-            return &hdata[id].value;
+            return &(*data)[id].value;
         }));
     }
 
@@ -673,8 +684,8 @@ protected:
     IDataLayout[] data_layout;
     box3f box;
     IRenderableData[] renderable_data;
-    HDataRange hdata;
-    HDataIndex data_index;
+    HDataIndex* data_index;
+    HData* data;
     bool about_closing;
     RTree pointsRtree;
     Array!BaseDataItem ditem;
