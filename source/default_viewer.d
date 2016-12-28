@@ -66,6 +66,8 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
         pointsRtree = new RTree(":memory:");
 
+        distance_from = vec3f(0, 0, 0);
+
         this.color_table = color_table;
         this.data_index = &data_index;
         this.data = &data;
@@ -388,6 +390,9 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 igText("World coords x=%f y=%f", world.x, world.y);
             	igText("_camera_pos: x=%f y=%f", _camera_pos.x, _camera_pos.y);
             	igText("size: %f", size);
+            	auto distance = distanceTo(world);
+            	igText("distance from (%.1f, %.1f, %.1f) to mouse pointer: %.2f\0", 
+                distance_from.x, distance_from.y, distance_from.z, distance);
             }
 
             if(about_closing)
@@ -623,6 +628,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
     {
         if(is_hovered)
         {
+            distance_from = projectWindowToPlane0(vec2f(mouse_x, mouse_y));
             super.processMouseUp(event);
         }
     }
@@ -674,6 +680,11 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         return false; // cancel default behavior
     }
 
+    float distanceTo(ref const(vec3f) distance_to)
+    {
+        return (distance_to - distance_from).length;
+    }
+
 protected:
     import data_layout: IDataLayout;
 
@@ -691,6 +702,7 @@ protected:
     Array!BaseDataItem ditem;
     bool is_hovered; // defines if mouse pointer is hovered under the main window (and not under child ones)
     ColorTable color_table;
+    vec3f distance_from; // start point to calculate distance from it
 
     void __performanceTest()
     {
