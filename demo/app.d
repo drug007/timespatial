@@ -33,9 +33,9 @@ struct DataElement
     {
         import taggedalgebraic: get, hasType;
 
-        if (t.hasType!Data)
+        if (t.hasType!(Data*))
         {
-            this(no, t.get!Data);
+            this(no, *t.get!(Data*));
             return;
         }
         assert(0);
@@ -111,15 +111,15 @@ class GuiImpl(HData, HDataIndex) : DefaultViewer!(HData, HDataIndex)
             {
                 case Kind._data:
                     auto header = "Data\0";
-                    data_layout.addGroup!Data(e.value.get!Data, header);
+                    data_layout.addGroup(*e.value.get!(Data*), header);
                 break;
                 case Kind._bar:
                     auto header = "-----------Bar\0";
-                    data_layout.addGroup!Bar(e.value.get!Bar, header);
+                    data_layout.addGroup(*e.value.get!(Bar*), header);
                 break;
                 case Kind._foo:
                     auto header = "**************************Foo\0";
-                    data_layout.addGroup!Foo(e.value.get!Foo, header);
+                    data_layout.addGroup(*e.value.get!(Foo*), header);
                 break;
             }
         }
@@ -193,7 +193,7 @@ mixin template ProcessElement()
         import taggedalgebraic : hasType;
         import tests : Data;
         
-        if(e.value.hasType!(Data))
+        if(e.value.hasType!(Data*))
         {
             DataSource* datasource;
             if (!idx.containsKey(e.value.id.source))

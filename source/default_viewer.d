@@ -612,7 +612,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
         return buildDataItemArray(curr_id.map!((a) {
             auto id = unpack!uint(a.payload);
-            return &(*data)[id].value;
+            return (*data)[id].value;
         }));
     }
 

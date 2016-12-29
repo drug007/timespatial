@@ -294,10 +294,6 @@ Array!BaseDataItem buildDataItemArray(R)(R range)
     alias Kind = Element.Kind;
     alias Base = Element.Union;
 
-    static assert(isPointer!Element);
-    static assert(isInstanceOf!(TaggedAlgebraic, PointerTarget!Element));
-
-
     Array!BaseDataItem result;
     foreach(e; range)
     {
@@ -306,7 +302,8 @@ Array!BaseDataItem buildDataItemArray(R)(R range)
             foreach(i, T; FieldTypeTuple!Base)
             {
                 mixin("case Kind." ~ FieldNameTuple!Base[i] ~ ":");
-                    result ~= new DataItem!T((*e).get!T);
+                    alias Type = typeof(*e.get!T);
+                    result ~= new DataItem!Type(*e.get!T);
                 break;
             }
         }
