@@ -215,7 +215,7 @@ private mixin template ProcessElement()
         import taggedalgebraic : hasType;
         import tests : Data;
         
-        if(e.value.hasType!(Data))
+        if(e.value.hasType!(Data*))
         {
             DataSource* datasource;
             if (!idx.containsKey(e.value.id.source))

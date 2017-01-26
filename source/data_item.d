@@ -318,13 +318,16 @@ unittest
 
     union Base
     {
-        int i;
-        float f;
+        int* i;
+        float* f;
     }
 
+    auto i = 1;
+    auto f = 2.0f;
+
     auto ta = [
-          new TaggedAlgebraic!Base(2.0)
-        , new TaggedAlgebraic!Base(1)
+          TaggedAlgebraic!Base(&i)
+        , TaggedAlgebraic!Base(&f)
     ];
     auto di = buildDataItemArray(ta);
 
