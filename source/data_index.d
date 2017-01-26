@@ -6,19 +6,42 @@ module data_index;
 /// are not copyable (@disable this();)
 auto create(T, Allocator, Args...)(ref Allocator allocator, auto ref Args args)
 {
-    static assert (is (T == struct));
+    static assert (is (T == struct) || is (T == class));
 
-    // manually allocate memory
-    auto m = allocator.allocate(T.sizeof);
-    assert (m.ptr !is null);
-    scope(failure) allocator.deallocate(m);
-    auto obj = cast(T*) m.ptr;
-    // construct the object
-    import std.algorithm.mutation : move;
-    static assert(args.length);
-    *obj = T(move(args));
+    static if (is(T==struct))
+    {
+        // manually allocate memory
+        auto m = allocator.allocate(T.sizeof);
+        assert (m.ptr !is null);
+        scope(failure) allocator.deallocate(m);
+        
+        auto obj = cast(T*) m.ptr;
+        // construct the object
+        import std.algorithm.mutation : move;
+        static assert(args.length);
+        *obj = T(move(args));
 
-    return obj;
+        return obj;
+    }
+    else static if (is(T==class))
+    {
+        import std.algorithm.mutation : move;
+        
+        enum classSize = __traits(classInstanceSize, T);
+
+        // manually allocate memory
+        auto m = allocator.allocate(classSize);
+        assert (m.ptr !is null);
+        scope(failure) allocator.deallocate(m);
+        
+        m[0 .. classSize] = typeid(T).initializer[];
+        auto result = cast(T) m.ptr;
+        result.__ctor(move(args));
+
+        return result;
+    }
+
+    
 }
 
 @nogc
@@ -57,7 +80,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
 
     alias DataElement = DataElementType;
 
-    static struct DataSet
+    static class DataSet
     {
         alias Header = DataSetHeader;
 
@@ -73,7 +96,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
         }
     }
 
-    static struct DataSource
+    static class DataSource
     {
         alias Header = DataSourceHeader;
 
@@ -93,8 +116,8 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
     }
 
     alias DataElementIndex = DynamicArray!(DataElement, Mallocator, false);
-    alias DataSetIndex = Index!(uint, DataSet*);
-    alias DataSourceIndex = Index!(uint, DataSource*);
+    alias DataSetIndex = Index!(uint, DataSet);
+    alias DataSourceIndex = Index!(uint, DataSource);
     
     Allocator* allocator;
     DataSourceIndex idx;
@@ -135,19 +158,19 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
         }
     }
 
-    DataSource* opIndex(uint source_no)
+    DataSource opIndex(uint source_no)
     {
         return idx[source_no];
     }
 
-    DataSet* opIndex(uint source_no, uint dataset_no)
+    DataSet opIndex(uint source_no, uint dataset_no)
     {
-        return (*idx[source_no])[dataset_no];
+        return idx[source_no][dataset_no];
     }
 
     DataElement opIndex(uint source_no, uint dataset_no, size_t element_no)
     {
-        return (*(*idx[source_no])[dataset_no]).idx[element_no];
+        return idx[source_no][dataset_no].idx[element_no];
     }
 
     void toMsgpack(Packer)(ref Packer packer) //const
@@ -157,11 +180,11 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
         {
             packer.pack(source_no, datasource.header);
             packer.beginArray(datasource.length);
-            foreach(DataSetIndex.Key dataset_no, DataSetIndex.Value dataset; *datasource)
+            foreach(DataSetIndex.Key dataset_no, DataSetIndex.Value dataset; datasource)
             {
                 packer.pack(dataset_no, dataset.header);
                 packer.beginArray(dataset.length);
-                foreach(ref e; *dataset)
+                foreach(ref e; dataset)
                 {
                     packer.pack(e);
                 }
@@ -217,7 +240,7 @@ private mixin template ProcessElement()
         
         if(e.value.hasType!(Data*))
         {
-            DataSource* datasource;
+            DataSource datasource;
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
@@ -228,7 +251,7 @@ private mixin template ProcessElement()
             {
                 datasource = idx[e.value.id.source];
             }
-            DataSet* dataset;
+            DataSet dataset;
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);
@@ -307,13 +330,13 @@ unittest
     version(none)
     {
         import std.stdio;
-        foreach(DataIndex.BySourceIndex.Key source_no, DataIndex.BySourceIndex.Value dataset; idx)
+        foreach(source_no, source; idx.idx)
         {
-            writeln(source_no, ": ", dataset);
-            foreach(DataIndex.BySetIndex.Key dataset_no, DataIndex.BySetIndex.Value elements; *dataset)
+            writeln(source_no, ": ", source);
+            foreach(track_no, track; source)
             {
-                writeln("\t", dataset_no, ": ", elements);
-                foreach(ref e; *elements)
+                writeln("\t", track_no, ": ", track);
+                foreach(ref e; track)
                 {
                     writeln("\t\t", e);
                 }
@@ -338,14 +361,14 @@ unittest
 
     import std.algorithm: equal;
     assert(ds.idx[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
-    assert((*ds)[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
+    assert(ds[].map!"a.no".equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 
     import tests: Id;
     assert(hs[ds.idx[1].no].value.id == Id(29, 1));
-    assert(hs[(*ds)[1].no].value.id == Id(29, 1));
+    assert(hs[ds[1].no].value.id == Id(29, 1));
     
     assert(hs[ds.idx[1].no].value.state == Data.State.Middle);
-    assert(hs[(*ds)[1].no].value.state == Data.State.Middle);
+    assert(hs[ds[1].no].value.state == Data.State.Middle);
 }
 
 struct DataIndex(DataRange_, DataSourceHeader, DataSetHeader, DataElement, alias ProcessElementMethod)

@@ -195,7 +195,7 @@ mixin template ProcessElement()
         
         if(e.value.hasType!(Data*))
         {
-            DataSource* datasource;
+            DataSource datasource;
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
@@ -206,7 +206,7 @@ mixin template ProcessElement()
             {
                 datasource = idx[e.value.id.source];
             }
-            DataSet* dataset;
+            DataSet dataset;
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);

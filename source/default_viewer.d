@@ -187,14 +187,14 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(source_no);
             auto clr = color_table(source_no);
-            foreach(ref dataset_no, ref dataset; *datasource)
+            foreach(ref dataset_no, ref dataset; datasource)
             {
-                auto vp = makeVertexProvider(*dataset, clr);
-                rd.addDataSet(*dataset, vp);
+                auto vp = makeVertexProvider(dataset, clr);
+                rd.addDataSet(dataset, vp);
 
-                addDataSetLayout(dl, *dataset);
+                addDataSetLayout(dl, dataset);
 
-                foreach(ref e; *dataset)
+                foreach(ref e; dataset)
                 {
                     import msgpack: pack;
                     pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);

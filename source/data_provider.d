@@ -73,7 +73,7 @@ class RenderableData(DataSet) : IRenderableData
     box3f box;
 
     uint no;
-    DataSet*[] data; // TODO transfer dataset pointer to Auxillary struct 
+    DataSet[] data; // TODO transfer dataset to Auxillary struct 
     Auxillary[] aux;
     private bool _visibility;
 
@@ -85,7 +85,7 @@ class RenderableData(DataSet) : IRenderableData
 
     auto addDataSet(ref DataSet dataset, VertexProvider vp)
     {
-        data ~= &dataset;
+        data ~= dataset;
         aux ~= Auxillary(dataset.header.no, [vp]);
         updateBoundingBox(box, dataset.header.box);
     }
