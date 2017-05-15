@@ -2,6 +2,8 @@ module color_table;
 
 import std.experimental.color.hsx : HSL;
 import std.experimental.color.rgb : RGBAf32;
+import std.random : uniform;
+import std.math : fmod;
 
 struct ColorTable
 {
@@ -9,16 +11,27 @@ struct ColorTable
 
 	this(uint[] numbers)
 	{
-		uint i;
-		foreach(n; numbers)
+		// Первый цвет фиксированный (без учета кол-ва цветов)
 		{
-			auto hue = 2.0 / 3.0 + i++ / cast(float) numbers.length;
-		    auto saturation = 0.9;
-		    auto lightness = 0.6;
+			auto hue = 2/3.;
+			auto saturation = 0.9;
+			auto lightness = 0.03;
 
-		    auto rgba = cast(RGBAf32) HSL!float(hue, saturation, lightness);
-		    rgba.a = 1.0;
-		    tbl[n] = rgba;
+			auto rgba = cast(RGBAf32) HSL!float(hue, saturation, lightness);
+			rgba.a = 1.0;
+			tbl[numbers[0]] = rgba;
+		}
+		// Обрабатываем остальные цвета
+		const l = numbers.length;
+		foreach(i; 1..l)
+		{
+			auto hue = fmod(2/3. + (i + 1.5) / cast(float) l, 1.0);
+			auto saturation = 0.8 + uniform(0, 20)/100.0;
+			auto lightness = 0.5 + uniform(0, 20)/100.0;
+
+			auto rgba = cast(RGBAf32) HSL!float(hue, saturation, lightness);
+			rgba.a = 1.0;
+			tbl[numbers[i]] = rgba;
 		}
 	}
 
