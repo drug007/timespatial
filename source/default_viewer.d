@@ -85,6 +85,11 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             writefln("Data adding took %s ms", sw.peek().msecs);
         }
 
+import std.stdio;
+writeln(timestamp_storage_start);
+writeln(timestamp_storage_finish);
+writeln(data.time);
+
         makeDataLayout(); // генерируем неграфические данные
 
         about_closing = false;

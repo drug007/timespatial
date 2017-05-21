@@ -59,6 +59,7 @@ alias HData = TaggedAlgebraic!(Base);
 
 auto heterogeneousData()
 {
+	import std.algorithm : map, sort;
 	import std.array: array;
 	import std.range : iota;
 	import mir.ndslice.slice: sliced;
@@ -184,9 +185,9 @@ auto heterogeneousData()
 	   HData(new Data(Id(29,   2), 56916.5,    31945, 0, 2720000000, Data.State.Middle)), 
 	   HData(new Data(Id(29,   1), double.nan, double.nan, double.nan, 2810000000, Data.State.End)), 
 	   HData(new Data(Id(29,   2), double.nan, double.nan, double.nan, 2820000000, Data.State.End))
-	].sliced;
+	].sort!"a.timestamp<b.timestamp".array.sliced;
 
-	auto time = data.length.iota.array.sliced;
+	auto time = data.map!"a.timestamp".array.sliced;
 
 	return time.series(data);
 }
