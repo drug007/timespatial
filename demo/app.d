@@ -106,20 +106,20 @@ class GuiImpl(HData, HDataIndex) : DefaultViewer!(HData, HDataIndex)
 
         foreach(ref e; *data)
         {
-            alias Kind = typeof(e.value.kind);
-            final switch(e.value.kind)
+            alias Kind = typeof(e.data.kind);
+            final switch(e.data.kind)
             {
                 case Kind._data:
                     auto header = "Data\0";
-                    data_layout.addGroup(*e.value.get!(Data*), header);
+                    data_layout.addGroup(*e.data.get!(Data*), header);
                 break;
                 case Kind._bar:
                     auto header = "-----------Bar\0";
-                    data_layout.addGroup(*e.value.get!(Bar*), header);
+                    data_layout.addGroup(*e.data.get!(Bar*), header);
                 break;
                 case Kind._foo:
                     auto header = "**************************Foo\0";
-                    data_layout.addGroup(*e.value.get!(Foo*), header);
+                    data_layout.addGroup(*e.data.get!(Foo*), header);
                 break;
             }
         }
@@ -193,31 +193,31 @@ mixin template ProcessElement()
         import taggedalgebraic : hasType;
         import tests : Data;
         
-        if(e.value.hasType!(Data*))
+        if(e.data.hasType!(Data*))
         {
             DataSource datasource;
-            if (!idx.containsKey(e.value.id.source))
+            if (!idx.containsKey(e.data.id.source))
             {
-                auto datasource_header = DataSourceHeader(e.value.id.source);
+                auto datasource_header = DataSourceHeader(e.data.id.source);
                 datasource = allocator.make!DataSource(datasource_header);
-                idx[e.value.id.source] = datasource;
+                idx[e.data.id.source] = datasource;
             }
             else
             {
-                datasource = idx[e.value.id.source];
+                datasource = idx[e.data.id.source];
             }
             DataSet dataset;
-            if(!datasource.containsKey(e.value.id.no))
+            if(!datasource.containsKey(e.data.id.no))
             {
-                auto dataset_header = DataSetHeader(e.value.id.no);
+                auto dataset_header = DataSetHeader(e.data.id.no);
                 dataset = allocator.make!DataSet(dataset_header);
-                datasource.idx[e.value.id.no] = dataset;
+                datasource.idx[e.data.id.no] = dataset;
             }
             else
             {
-                dataset = datasource.idx[e.value.id.no];
+                dataset = datasource.idx[e.data.id.no];
             }
-            auto de = DataElement(e.index, e.value);
+            auto de = DataElement(cast(uint) e.time, e.data);
             dataset.insert(de);
         }
     }

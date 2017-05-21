@@ -60,9 +60,11 @@ alias HData = TaggedAlgebraic!(Base);
 auto heterogeneousData()
 {
 	import std.array: array;
-	import std.range: enumerate;
+	import std.range : iota;
+	import mir.ndslice.slice: sliced;
+	import mir.timeseries : series;
 
-	return [
+	auto data = [
 	   HData(new Bar("string #1", long.min, 9000000)),
 	   HData(new Data(Id( 1, 126), 3135.29,  668.659, 0, 10000000, Data.State.Begin)), 
 	   HData(new Data(Id(12,  89), 2592.73,  29898.1, 0, 20000000, Data.State.Begin)), 
@@ -182,5 +184,9 @@ auto heterogeneousData()
 	   HData(new Data(Id(29,   2), 56916.5,    31945, 0, 2720000000, Data.State.Middle)), 
 	   HData(new Data(Id(29,   1), double.nan, double.nan, double.nan, 2810000000, Data.State.End)), 
 	   HData(new Data(Id(29,   2), double.nan, double.nan, double.nan, 2820000000, Data.State.End))
-	].enumerate(0).array;
+	].sliced;
+
+	auto time = data.length.iota.array.sliced;
+
+	return time.series(data);
 }
