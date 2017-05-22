@@ -123,6 +123,30 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                     else
                         pos[i] = 0;
                 }
+
+                long timestamp_idx;
+                // start time
+                if (jv["start_timestamp_idx"].type == JSON_TYPE.INTEGER)
+                    timestamp_idx = jv["start_timestamp_idx"].integer;
+
+                auto max_idx = timestamp_storage_start.length-1;
+                if (timestamp_idx > max_idx)
+                    timestamp_idx = 0;
+                timestamp_storage_start.setIndex(timestamp_idx);
+
+                // finish time
+                if (jv["finish_timestamp_idx"].type == JSON_TYPE.INTEGER)
+                    timestamp_idx = jv["finish_timestamp_idx"].integer;
+                else
+                    timestamp_idx = 0;
+                if (timestamp_idx > max_idx)
+                    timestamp_idx = 0;
+                timestamp_storage_finish.setIndex(timestamp_idx);
+
+                if (jv["max_point"].type == JSON_TYPE.INTEGER)
+                    max_point_counts = cast(int) jv["max_point"].integer;
+
+                onMaxPointChange();
             }
             catch(Exception e)
             {
@@ -159,9 +183,17 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
     %f,
     %f
   ],
-  \"size\": %f
+  \"size\": %f,
+  \"start_timestamp_idx\": %d,
+  \"finish_timestamp_idx\": %d,
+  \"max_point\": %d
 }";
-        with(_camera_pos) json = format(pre_json, x, y, z, size);
+        with(_camera_pos) 
+        json = format(pre_json, x, y, z, size, 
+            timestamp_storage_start.currIndex,
+            timestamp_storage_finish.currIndex,
+            max_point_counts
+        );
         write(settingsFilename, json);
 
         destroy(pointsRtree);
