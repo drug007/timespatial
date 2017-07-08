@@ -14,7 +14,7 @@ auto create(T, Allocator, Args...)(ref Allocator allocator, auto ref Args args)
         auto m = allocator.allocate(T.sizeof);
         assert (m.ptr !is null);
         scope(failure) allocator.deallocate(m);
-        
+
         auto obj = cast(T*) m.ptr;
         // construct the object
         import std.algorithm.mutation : move;
@@ -26,22 +26,20 @@ auto create(T, Allocator, Args...)(ref Allocator allocator, auto ref Args args)
     else static if (is(T==class))
     {
         import std.algorithm.mutation : move;
-        
+
         enum classSize = __traits(classInstanceSize, T);
 
         // manually allocate memory
         auto m = allocator.allocate(classSize);
         assert (m.ptr !is null);
         scope(failure) allocator.deallocate(m);
-        
+
         m[0 .. classSize] = typeid(T).initializer[];
         auto result = cast(T) m.ptr;
         result.__ctor(move(args));
 
         return result;
     }
-
-    
 }
 
 @nogc
@@ -51,7 +49,7 @@ struct Index(K, V)
     alias Value = V;
     import containers.treemap: TreeMap;
     import std.experimental.allocator.mallocator: Mallocator;
-    
+
     alias Idx = TreeMap!(Key, Value, Mallocator, "a<b", false);
     public
     {
@@ -75,7 +73,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
     import std.experimental.allocator : make;
 
     import containers.dynamicarray: DynamicArray;
-    
+
     mixin ProcessElementMethod;
 
     alias DataElement = DataElementType;
@@ -118,7 +116,7 @@ struct DataIndexImpl(DataSourceHeader, DataSetHeader, DataElementType, Allocator
     alias DataElementIndex = DynamicArray!(DataElement, Mallocator, false);
     alias DataSetIndex = Index!(uint, DataSet);
     alias DataSourceIndex = Index!(uint, DataSource);
-    
+
     Allocator* allocator;
     DataSourceIndex idx;
     alias idx this;
@@ -237,7 +235,7 @@ private mixin template ProcessElement()
     {
         import taggedalgebraic : hasType;
         import tests : Data;
-        
+
         if(e.value.hasType!(Data*))
         {
             DataSource datasource;
@@ -297,7 +295,7 @@ unittest
 
         void add(T)(T t)
         {
-            
+
         }
     }
 
@@ -317,13 +315,13 @@ unittest
 
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
-    
+
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
     alias DataIndex = DataIndexImpl!(DataSource, DataSet, DataElement, Allocator, ProcessElement);
-    
+
     auto allocator = Allocator(BaseAllocator(1024 * 1024));
-    
+
     auto hs  = heterogeneousData();
     auto idx = DataIndex(allocator, hs);
 
@@ -366,7 +364,7 @@ unittest
     import tests: Id;
     assert(hs[ds.idx[1].no].value.id == Id(29, 1));
     assert(hs[ds[1].no].value.id == Id(29, 1));
-    
+
     assert(hs[ds.idx[1].no].value.state == Data.State.Middle);
     assert(hs[ds[1].no].value.state == Data.State.Middle);
 }
@@ -375,8 +373,6 @@ struct DataIndex(DataRange_, DataSourceHeader, DataSetHeader, DataElement, alias
 {
     import std.experimental.allocator.mallocator : Mallocator;
     import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
-
-    import tests : Data;
 
     alias BaseAllocator = Region!Mallocator;
     alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
