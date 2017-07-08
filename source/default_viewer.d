@@ -85,7 +85,18 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             writefln("Data adding took %s ms", sw.peek().msecs);
         }
 
-        makeDataLayout(); // генерируем неграфические данные
+        {
+            // benchmarking of data index creating
+            import std.datetime : StopWatch;
+            StopWatch sw;
+            sw.start();
+
+            makeDataLayout(); // генерируем неграфические данные
+
+            sw.stop();
+            import std.stdio : writefln;
+            writefln("Non visual data generating took %s ms", sw.peek().msecs);
+        }
 
         about_closing = false;
 
