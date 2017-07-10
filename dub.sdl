@@ -11,7 +11,7 @@ dependency "dstats" version="~>1.0.3"
 dependency "taggedalgebraic" version="~>0.10.4"
 dependency "emsi_containers" version="~>0.5.3"
 dependency "color" version="~>0.0.5"
-dependency "msgpack-d" version="~>1.0.0-beta.5"
+dependency "msgpack-d" version="~>1.0.0-beta.6"
 license "BSL-1.0"
 
 targetPath "bin"
