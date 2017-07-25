@@ -65,11 +65,6 @@ struct Attr(alias F)
     alias func = F;
 }
 
-auto makeDataItem(T, alias Kind K = Kind.Regular)(ref const(T) t, string header = "")
-{
-    return new DataItem!(T, K)(t, header);
-}
-
 class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 {
     @disable
@@ -90,9 +85,13 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
         mixin build!T;
     }
 
+    static auto make(T, alias Kind K = Kind.Regular)(ref const(T) t, string header = "")
+    {
+        return new DataItem!(T, K)(t, header);
+    }
+
     this(ref const(T) value, string header = "")
     {
-
         static if(kind == Kind.Converted)
         {
             the_copy = value;
@@ -220,16 +219,16 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                     {
                                         alias FieldType = ReturnType!(ATTR[0].func);
                                         auto converted_value = ATTR[0].func(mixin("value." ~ FieldName));
-                                        di[idx] = makeDataItem!(FieldType, Kind.Converted)(converted_value);
+                                        di[idx] = DataItem!(FieldType, Kind.Converted).make(converted_value);
                                     }
                                 }
                                 else static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
                                 {
-                                    mixin("di[idx] = makeDataItem!(Type, Kind.Disabled)(value." ~ FieldName ~ ");");
+                                    mixin("di[idx] = DataItem!(Type, Kind.Disabled).make(value." ~ FieldName ~ ");");
                                 }
                                 else static if(hasUDA!(mixin("T." ~ FieldName), "Timestamp"))
                                 {
-                                    mixin("di[idx] = makeDataItem!(Type, Kind.Timestamp)(value." ~ FieldName ~ ");");
+                                    mixin("di[idx] = DataItem!(Type, Kind.Timestamp).make(value." ~ FieldName ~ ");");
                                 }
                                 else static if(!isBasicType!T  && !isSomeString!T)
                                 {
@@ -239,10 +238,10 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                         auto header = text(Type.stringof[0..$-1] // remove closing bracket
                                             , length                             // insert length
                                             , "]\0");                            // add closing bracket and terminal 0
-                                        mixin("di[idx] = makeDataItem!Type(value." ~ FieldName ~ ", header);");
+                                        mixin("di[idx] = DataItem!Type.make(value." ~ FieldName ~ ", header);");
                                     }
                                     else
-                                        mixin("di[idx] = makeDataItem!Type(value." ~ FieldName ~ ");");
+                                        mixin("di[idx] = DataItem!Type.make(value." ~ FieldName ~ ");");
                                 }
                             }
                             else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
@@ -274,7 +273,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                 di.length = value.length;
                 alias Type = typeof(value[0]);
                 foreach(i; 0..di.length)
-                    di[i] = new DataItem!(Type)(value[i], text(Unqual!Type.stringof, "(", i, ")\0"));
+                    di[i] = DataItem!(Type).make(value[i], text(Unqual!Type.stringof, "(", i, ")\0"));
             }
         }
         else static assert(0, "Type '" ~ T.stringof ~ "' is not supported");
@@ -302,7 +301,7 @@ Array!BaseDataItem buildDataItemArray(R)(R range)
             {
                 mixin("case Kind." ~ FieldNameTuple!Base[i] ~ ":");
                     alias Type = typeof(*e.get!T);
-                    result ~= new DataItem!Type(*e.get!T);
+                    result ~= DataItem!Type.make(*e.get!T);
                 break;
             }
         }
