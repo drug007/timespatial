@@ -65,10 +65,9 @@ struct Attr(alias F)
     alias func = F;
 }
 
-auto makeDataItem(U, alias func)(U u)
+auto makeDataItem(T, alias Kind K = Kind.Regular)(ref const(T) t, string header = "")
 {
-    alias R = ReturnType!func;
-    return new DataItem!(R, kind.Converted)(u.func);
+    return new DataItem!(T, K)(t, header);
 }
 
 class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
@@ -221,16 +220,16 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                     {
                                         alias FieldType = ReturnType!(ATTR[0].func);
                                         auto converted_value = ATTR[0].func(mixin("value." ~ FieldName));
-                                        di[idx] = new DataItem!(FieldType, Kind.Converted)(converted_value);
+                                        di[idx] = makeDataItem!(FieldType, Kind.Converted)(converted_value);
                                     }
                                 }
                                 else static if(hasUDA!(mixin("T." ~ FieldName), "Disabled"))
                                 {
-                                    mixin("di[idx] = new DataItem!(Type, Kind.Disabled)(value." ~ FieldName ~ ");");
+                                    mixin("di[idx] = makeDataItem!(Type, Kind.Disabled)(value." ~ FieldName ~ ");");
                                 }
                                 else static if(hasUDA!(mixin("T." ~ FieldName), "Timestamp"))
                                 {
-                                    mixin("di[idx] = new DataItem!(Type, Kind.Timestamp)(value." ~ FieldName ~ ");");
+                                    mixin("di[idx] = makeDataItem!(Type, Kind.Timestamp)(value." ~ FieldName ~ ");");
                                 }
                                 else static if(!isBasicType!T  && !isSomeString!T)
                                 {
@@ -240,10 +239,10 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                         auto header = text(Type.stringof[0..$-1] // remove closing bracket
                                             , length                             // insert length
                                             , "]\0");                            // add closing bracket and terminal 0
-                                        mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ", header);");
+                                        mixin("di[idx] = makeDataItem!Type(value." ~ FieldName ~ ", header);");
                                     }
                                     else
-                                        mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ");");
+                                        mixin("di[idx] = makeDataItem!Type(value." ~ FieldName ~ ");");
                                 }
                             }
                             else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
