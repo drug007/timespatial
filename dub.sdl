@@ -24,4 +24,5 @@ configuration "demo" {
     targetType  "executable"
     targetName  "demoapp"
     sourcePaths "demo"
+    mainSourceFile "demo/app.d"
 }

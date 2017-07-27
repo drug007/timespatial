@@ -7,7 +7,7 @@ import gfm.math: box3f, vec3f, vec2f;
 import gfm.sdl2: SDL_Event;
 
 import base_viewer: BaseViewer;
-import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
+import data_item: timeToStringz, BaseDataItem;//, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
 import data_provider: IRenderableData, RenderableData, updateBoundingBox;
 import vertex_provider : VertexProvider;
@@ -467,16 +467,16 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             import std.algorithm: each;
             import std.array: empty;
 
-            // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
-            // приводит к изменениями внешнего вида пользовательского интерфейса.
-            if (is_hovered && is_lmb_clicked)
-            {
-                igOpenPopup("Popup\0".ptr);
+            //// выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
+            //// приводит к изменениями внешнего вида пользовательского интерфейса.
+            //if (is_hovered && is_lmb_clicked)
+            //{
+            //    igOpenPopup("Popup\0".ptr);
 
-                ditem.each!(a=>a.destroy);
-                ditem.clear;
-                ditem = makePopupDataItems();
-            }
+            //    ditem.each!(a=>a.destroy);
+            //    ditem.clear;
+            //    ditem = makePopupDataItems();
+            //}
 
             if (!ditem.empty && igBeginPopup("Popup\0".ptr))
             {
@@ -647,17 +647,17 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
-    Array!BaseDataItem makePopupDataItems()
-    {
-        import std.algorithm: map;
-        import msgpack: unpack;
+    //Array!BaseDataItem makePopupDataItems()
+    //{
+    //    import std.algorithm: map;
+    //    import msgpack: unpack;
 
-        auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
-        return buildDataItemArray(curr_id.map!((a) {
-            auto id = unpack!uint(a.payload);
-            return (*data)[id].value;
-        }));
-    }
+    //    auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
+    //    return buildDataItemArray(curr_id.map!((a) {
+    //        auto id = unpack!uint(a.payload);
+    //        return (*data)[id].value;
+    //    }));
+    //}
 
     override public void processMouseWheel(ref const(SDL_Event) event)
     {
