@@ -416,7 +416,7 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     {
         the_body = "
         {
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ this_name ~ ").stringof.toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {";
 
@@ -458,7 +458,7 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
 
         the_body = "
         {
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ this_name ~ ").stringof.toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {
                 foreach(ref const e" ~ l ~ "; " ~ this_name ~ ")
