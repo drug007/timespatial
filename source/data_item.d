@@ -318,10 +318,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 
     this(ref const(TT) data, string header = "")
     {
-        static if (is (T == struct))
-            data_ptr = &data;
-        else
-            data_ptr = null;
+        data_ptr = &data;
 
         if (header == "")
             this.header = T.stringof ~ "\0";
