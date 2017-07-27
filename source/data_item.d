@@ -329,6 +329,16 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
             this.header = header ~ "\0";
     }
 
+    static auto make(T, alias Kind K = Kind.Regular)(ref const(T) t, string header = "")
+    {
+        import std.conv : emplace;
+
+        enum Size = __traits(classInstanceSize, DataItem!(T, K));
+        auto buffer = allocator.allocate(Size);
+
+        return emplace!(DataItem!(T, K))(buffer, t, header);
+    }
+
     override bool draw()
     {
         import std.format : sformat;
@@ -341,57 +351,57 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
     }
 }
 
-///// Для каждого элемента диапазона создает DataItem(T) соответствующего типа
-//Array!BaseDataItem buildDataItemArray(R)(R range)
-//{
-//    import std.range: ElementType;
-//    import std.traits: isInstanceOf, FieldTypeTuple, FieldNameTuple, isPointer, PointerTarget;
+/// Для каждого элемента диапазона создает DataItem(T) соответствующего типа
+Array!BaseDataItem buildDataItemArray(R)(R range)
+{
+    import std.range: ElementType;
+    import std.traits: isInstanceOf, FieldTypeTuple, FieldNameTuple, isPointer, PointerTarget;
 
-//    import taggedalgebraic: TaggedAlgebraic, get;
+    import taggedalgebraic: TaggedAlgebraic, get;
 
-//    alias Element = ElementType!R;
-//    alias Kind = Element.Kind;
-//    alias Base = Element.Union;
+    alias Element = ElementType!R;
+    alias Kind = Element.Kind;
+    alias Base = Element.Union;
 
-//    Array!BaseDataItem result;
-//    foreach(e; range)
-//    {
-//    	final switch(e.kind)
-//        {
-//            foreach(i, T; FieldTypeTuple!Base)
-//            {
-//                mixin("case Kind." ~ FieldNameTuple!Base[i] ~ ":");
-//                    alias Type = typeof(*e.get!T);
-//                    result ~= DataItem!Type.make(*e.get!T);
-//                break;
-//            }
-//        }
-//    }
+    Array!BaseDataItem result;
+    foreach(e; range)
+    {
+    	final switch(e.kind)
+        {
+            foreach(i, T; FieldTypeTuple!Base)
+            {
+                mixin("case Kind." ~ FieldNameTuple!Base[i] ~ ":");
+                    alias Type = typeof(*e.get!T);
+                    result ~= DataItem!Type.make(*e.get!T);
+                break;
+            }
+        }
+    }
 
-//    return result;
-//}
+    return result;
+}
 
-//unittest
-//{
-//    import taggedalgebraic;
+unittest
+{
+    import taggedalgebraic;
 
-//    union Base
-//    {
-//        int* i;
-//        float* f;
-//    }
+    union Base
+    {
+        int* i;
+        float* f;
+    }
 
-//    auto i = 1;
-//    auto f = 2.0f;
+    auto i = 1;
+    auto f = 2.0f;
 
-//    auto ta = [
-//          TaggedAlgebraic!Base(&i)
-//        , TaggedAlgebraic!Base(&f)
-//    ];
-//    auto di = buildDataItemArray(ta);
+    auto ta = [
+          TaggedAlgebraic!Base(&i)
+        , TaggedAlgebraic!Base(&f)
+    ];
+    auto di = buildDataItemArray(ta);
 
-//    assert(di.length == ta.length);
-//}
+    assert(di.length == ta.length);
+}
 
 // draw
 auto generateDraw(DrawType, int level, string this_name, ThisType)()
@@ -441,6 +451,7 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     {
         the_body = "
         {
+            auto r" ~ l ~ " = false;
             try
             {
                 buffer.sformat(\"%s\\0\", " ~ this_name ~ ");
