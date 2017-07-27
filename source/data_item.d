@@ -396,7 +396,7 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     import std.traits: FieldTypeTuple, FieldNameTuple;
 
     // used to distinct nested levels
-    auto l = level.text;
+    enum l = level.text;
 
     static if (isPointer!ThisType)
     {
@@ -406,7 +406,9 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
         enum ptr = "&" ~ this_name;
     
 
-    string code = "
+    char[2048] buffer;
+    string the_body;
+    enum prolog = "
         import std.format : sformat;
         import core.exception : RangeError;
 
@@ -423,12 +425,12 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
         {
             import std.string, std.range, std.algorithm, std.conv, std.traits;
             
-            code ~= generateDraw!(Type, level+1, field_name, Type).splitLines.joiner("\n\t").array.to!string;
+            the_body = generateDraw!(Type, level+1, field_name, Type).splitLines.joiner("\n\t").array.to!string;
         }
         else static if(isBasicType!Type  || 
                        isSomeString!Type)
         {
-            code ~= "
+            the_body = "
                 try
                 {
                     buffer.sformat(\"%s\\0\", " ~ field_name ~ ");
@@ -441,20 +443,23 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
         }
     }
 
-    code ~= "
+    enum epilog1 = "
 
                 igTreePop();
             }";
 
     // if 0 level then add return operator
-    if (!level)
-        code ~= "
+    static if (!level)
+        enum epilog2 = "
             return r" ~ l ~ ";";
+    else
+        enum epilog2 = "";
 
-    code ~= "
+    enum epilog3 = "
         }";
 
-    return code;
+    import std.format : sformat;
+    return buffer.sformat("%s%s%s%s%s", prolog, the_body, epilog1, epilog2, epilog3).dup;
 }
 
 unittest
