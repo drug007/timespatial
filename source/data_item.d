@@ -306,19 +306,27 @@ static ~this()
 
 class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 {
-    import tests;
-    const(Data)* data_ptr;
-    static char[6] buffer;
+    alias T = Unqual!TT;
+
+    const(T)* data_ptr;
+    static char[128] buffer;
+
+    string header;
 
     @disable
     this();
 
-    this(ref const(TT) data, string str = "")
+    this(ref const(TT) data, string header = "")
     {
-        static if (is (TT == Data))
+        static if (is (T == struct))
             data_ptr = &data;
         else
             data_ptr = null;
+
+        if (header == "")
+            this.header = T.stringof ~ "\0";
+        else
+            this.header = header ~ "\0";
     }
 
     override bool draw()
@@ -326,7 +334,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
         if (data_ptr is null)
             return false;
 
-        mixin (generateDraw!(Data, 0, "data_ptr", Data*));
+        mixin (generateDraw!(T, 0, "data_ptr", T*));
     }
 }
 
@@ -402,17 +410,16 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
         import std.format : sformat;
         import core.exception : RangeError;
 
-        buffer[0] = 0;
-        auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", buffer.ptr, null);
-        if(r" ~ l ~ ")
-        {";
+        {
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", header.ptr, null);
+            if(r" ~ l ~ ")
+            {";
 
     foreach(i, Type; FieldTypeTuple!DrawType)
     {
-        alias Name = FieldNameTuple!DrawType[i];
-        enum field_name = this_name ~ "." ~ Name;
-        static if(is(Type == struct)  ||
-                    isArray!Type)
+        enum field_name = this_name ~ "." ~ FieldNameTuple!DrawType[i];
+        static if(is(Type == struct)/*  ||
+                    isArray!Type*/)
         {
             import std.string, std.range, std.algorithm, std.conv, std.traits;
             
@@ -422,27 +429,30 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
                        isSomeString!Type)
         {
             code ~= "
-            try
-            {
-                buffer.sformat(\"%s\\0\", " ~ field_name ~ ");
-            }
-            catch (RangeError re)
-            {
-                buffer.sformat(\"%s\\0\", " ~ field_name ~ ".text[0..buffer.length-1]);
-            }
-            igText(buffer.ptr);";
+                try
+                {
+                    buffer.sformat(\"%s\\0\", " ~ field_name ~ ");
+                }
+                catch (RangeError re)
+                {
+                    buffer.sformat(\"%s\\0\", " ~ field_name ~ ".text[0..buffer.length-1]);
+                }
+                igText(buffer.ptr);";
         }
     }
 
     code ~= "
 
-            igTreePop();
-        }";
+                igTreePop();
+            }";
 
     // if 0 level then add return operator
     if (!level)
         code ~= "
-        return r" ~ l ~ ";";
+            return r" ~ l ~ ";";
+
+    code ~= "
+        }";
 
     return code;
 }
