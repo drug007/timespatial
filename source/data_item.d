@@ -415,13 +415,11 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     else
         enum ptr = "&" ~ this_name;
     
-
-    char[2048*16] buffer;
-    string the_body;
+    string code;
 
     static if(is(DrawType == struct))
     {
-        the_body = "
+        code = "
         {
             auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ this_name ~ ").stringof.toStringz : header.ptr, null);
             if(r" ~ l ~ ")
@@ -434,10 +432,10 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
 
             import std.string, std.range, std.algorithm, std.conv, std.traits;
 
-            the_body ~= generateDraw!(Type, level+1, field_name, Type);//.splitLines.joiner("\n\t").array.to!string;
+            code ~= generateDraw!(Type, level+1, field_name, Type);//.splitLines.joiner("\n\t").array.to!string;
         }
 
-        the_body ~= "
+        code ~= "
 
                 igTreePop();
             }";
@@ -446,7 +444,7 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
                    isSomeString!DrawType ||
                    isPointer!DrawType)
     {
-        the_body = "
+        code = "
         {
             auto r" ~ l ~ " = false;
             try
@@ -464,7 +462,7 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
         import std.range : ElementType;
         import std.conv : to;
 
-        the_body = "
+        code = "
         {
             auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ this_name ~ ").stringof.toStringz : header.ptr, null);
             if(r" ~ l ~ ")
@@ -483,15 +481,14 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
 
     // if 0 level then add return operator
     static if (!level)
-        enum epilog = "
+        code ~= "
             return r" ~ l ~ ";
         }";
     else
-        enum epilog = "
+        code ~= "
         }";
 
-    import std.format : sformat;
-    return buffer.sformat("%s%s", the_body, epilog).dup;
+    return code;
 }
 
 unittest
