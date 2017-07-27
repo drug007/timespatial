@@ -417,9 +417,10 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
             if(r" ~ l ~ ")
             {";
 
-    foreach(i, Type; FieldTypeTuple!DrawType)
+    foreach(i, fname; FieldNameTuple!DrawType)
     {
-        enum field_name = this_name ~ "." ~ FieldNameTuple!DrawType[i];
+        enum field_name = this_name ~ "." ~ fname;
+        alias Type = FieldTypeTuple!DrawType[i];
         static if(is(Type == struct)/*  ||
                     isArray!Type*/)
         {
@@ -451,15 +452,14 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     // if 0 level then add return operator
     static if (!level)
         enum epilog2 = "
-            return r" ~ l ~ ";";
+            return r" ~ l ~ ";
+        }";
     else
-        enum epilog2 = "";
-
-    enum epilog3 = "
+        enum epilog2 = "
         }";
 
     import std.format : sformat;
-    return buffer.sformat("%s%s%s%s%s", prolog, the_body, epilog1, epilog2, epilog3).dup;
+    return buffer.sformat("%s%s%s%s", prolog, the_body, epilog1, epilog2).dup;
 }
 
 unittest
