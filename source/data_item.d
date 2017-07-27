@@ -331,6 +331,9 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 
     override bool draw()
     {
+        import std.format : sformat;
+        import core.exception : RangeError;
+
         if (data_ptr is null)
             return false;
 
@@ -406,60 +409,81 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
         enum ptr = "&" ~ this_name;
     
 
-    char[2048] buffer;
+    char[2048*16] buffer;
     string the_body;
-    enum prolog = "
-        import std.format : sformat;
-        import core.exception : RangeError;
 
+    static if(is(DrawType == struct))
+    {
+        the_body = "
         {
             auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", header.ptr, null);
             if(r" ~ l ~ ")
             {";
 
-    foreach(i, fname; FieldNameTuple!DrawType)
-    {
-        enum field_name = this_name ~ "." ~ fname;
-        alias Type = FieldTypeTuple!DrawType[i];
-        static if(is(Type == struct)/*  ||
-                    isArray!Type*/)
+        foreach(i, fname; FieldNameTuple!DrawType)
         {
-            import std.string, std.range, std.algorithm, std.conv, std.traits;
-            
-            the_body = generateDraw!(Type, level+1, field_name, Type).splitLines.joiner("\n\t").array.to!string;
-        }
-        else static if(isBasicType!Type  || 
-                       isSomeString!Type)
-        {
-            the_body = "
-                try
-                {
-                    buffer.sformat(\"%s\\0\", " ~ field_name ~ ");
-                }
-                catch (RangeError re)
-                {
-                    buffer.sformat(\"%s\\0\", " ~ field_name ~ ".text[0..buffer.length-1]);
-                }
-                igText(buffer.ptr);";
-        }
-    }
+            enum field_name = this_name ~ "." ~ fname;
+            alias Type = FieldTypeTuple!DrawType[i];
 
-    enum epilog1 = "
+            import std.string, std.range, std.algorithm, std.conv, std.traits;
+
+            the_body ~= generateDraw!(Type, level+1, field_name, Type);//.splitLines.joiner("\n\t").array.to!string;
+        }
+
+        the_body ~= "
 
                 igTreePop();
             }";
+    }
+    else static if(isBasicType!DrawType  || 
+                   isSomeString!DrawType ||
+                   isPointer!DrawType)
+    {
+        the_body = "
+        {
+            try
+            {
+                buffer.sformat(\"%s\\0\", " ~ this_name ~ ");
+            }
+            catch (RangeError re)
+            {
+                buffer.sformat(\"%s\\0\", " ~ this_name ~ ".text[0..buffer.length-1]);
+            }
+            igText(buffer.ptr);";
+    }
+    else static if(isArray!DrawType)
+    {
+        import std.range : ElementType;
+        import std.conv : to;
+
+        the_body = "
+        {
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", header.ptr, null);
+            if(r" ~ l ~ ")
+            {
+                foreach(ref const e" ~ l ~ "; " ~ this_name ~ ")
+                {
+                    " ~ generateDraw!(Unqual!(ElementType!DrawType), level+1, "e" ~ l, Unqual!(ElementType!DrawType)).to!string ~ "
+                }
+
+                igTreePop();
+            }";
+    }
+    else
+        static assert(0, "Unsupported type: " ~ DrawType.stringof);
+
 
     // if 0 level then add return operator
     static if (!level)
-        enum epilog2 = "
+        enum epilog = "
             return r" ~ l ~ ";
         }";
     else
-        enum epilog2 = "
+        enum epilog = "
         }";
 
     import std.format : sformat;
-    return buffer.sformat("%s%s%s%s", prolog, the_body, epilog1, epilog2).dup;
+    return buffer.sformat("%s%s", the_body, epilog).dup;
 }
 
 unittest
