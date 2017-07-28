@@ -410,6 +410,7 @@ unittest
 auto generateDraw(OriginFieldType, string field_name, int level = 0)()
 {
     import std.traits: FieldTypeTuple, FieldNameTuple, PointerTarget;
+    import std.array : appender;
 
     // textual representation of current level
     enum l = level.text;
@@ -431,12 +432,13 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
         alias FieldType = Unqual!OriginFieldType;
     }
 
-    string code;
+    auto code = appender!string;
+    code ~= "
+        {";
 
     static if(is(FieldType == struct))
     {
-        code = "
-        {
+        code ~= "
             auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\".toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {";
@@ -466,8 +468,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
                    isSomeString!FieldType ||
                    isPointer!FieldType)
     {
-        code = "
-        {
+        code ~= "
             auto r" ~ l ~ " = false;
             try
             {
@@ -484,8 +485,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
         import std.range : ElementType;
         import std.conv : to;
 
-        code = "
-        {
+        code ~= "
             auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\".toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {
@@ -510,7 +510,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
         code ~= "
         }";
 
-    return code;
+    return code.data;
 }
 
 unittest
