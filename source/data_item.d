@@ -348,7 +348,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
         if (data_ptr is null)
             return false;
 
-        mixin (generateDraw!(T, 0, "data_ptr", T*));
+        mixin (generateDraw!(T*, "data_ptr"));
     }
 }
 
@@ -404,12 +404,12 @@ unittest
     assert(di.length == ta.length);
 }
 
-/// DrawType is type of drawable entity
-/// level is number of nesting (from 0 as the upper level)
-/// field_name is a name of drawable field
-auto generateDraw(DrawType, int level, string field_name, ThisType)()
+/// OriginFieldType is type of a field being drawing
+/// field_name is a name of the field
+/// level is number of nesting (with 0 as the upper level)
+auto generateDraw(OriginFieldType, string field_name, int level = 0)()
 {
-    import std.traits: FieldTypeTuple, FieldNameTuple;
+    import std.traits: FieldTypeTuple, FieldNameTuple, PointerTarget;
 
     // textual representation of current level
     enum l = level.text;
@@ -417,16 +417,23 @@ auto generateDraw(DrawType, int level, string field_name, ThisType)()
     // igTreeNodePtr need the first argument to be pointer
     // so if the field is pointer passes it directly otherwise
     // pass a pointer to the field
-    static if (isPointer!ThisType)
+    //
+    // ptr is a pointer to the field, if the field is a pointer use it directly
+    // FieldType is a type of the pointer target 
+    static if (isPointer!OriginFieldType)
     {
         enum ptr =       field_name;
+        alias FieldType = PointerTarget!OriginFieldType;
     }
     else
+    {
         enum ptr = "&" ~ field_name;
-    
+        alias FieldType = OriginFieldType;
+    }
+
     string code;
 
-    static if(is(DrawType == struct))
+    static if(is(FieldType == struct))
     {
         code = "
         {
@@ -434,20 +441,20 @@ auto generateDraw(DrawType, int level, string field_name, ThisType)()
             if(r" ~ l ~ ")
             {";
 
-        foreach(i, fname; FieldNameTuple!DrawType)
+        foreach(i, fname; FieldNameTuple!FieldType)
         {
             enum sub_field_name = field_name ~ "." ~ fname;
-            alias Type = FieldTypeTuple!DrawType[i];
+            alias SubFieldType = FieldTypeTuple!FieldType[i];
 
             version(none)
             {
                 // Could be used to make output more human readable but can
                 // take huge memory durin compilation
                 import std.string, std.range, std.algorithm, std.conv, std.traits;
-                code ~= generateDraw!(Type, level+1, sub_field_name, Type).splitLines.joiner("\n\t").array.to!string;
+                code ~= generateDraw!(SubFieldType, sub_field_name, level+1).splitLines.joiner("\n\t").array.to!string;
             }
             else
-                code ~= generateDraw!(Type, level+1, sub_field_name, Type);
+                code ~= generateDraw!(SubFieldType, sub_field_name, level+1);
         }
 
         code ~= "
@@ -455,9 +462,9 @@ auto generateDraw(DrawType, int level, string field_name, ThisType)()
                 igTreePop();
             }";
     }
-    else static if(isBasicType!DrawType  || 
-                   isSomeString!DrawType ||
-                   isPointer!DrawType)
+    else static if(isBasicType!FieldType  || 
+                   isSomeString!FieldType ||
+                   isPointer!FieldType)
     {
         code = "
         {
@@ -472,7 +479,7 @@ auto generateDraw(DrawType, int level, string field_name, ThisType)()
             }
             igText(buffer.ptr);";
     }
-    else static if(isArray!DrawType)
+    else static if(isArray!FieldType)
     {
         import std.range : ElementType;
         import std.conv : to;
@@ -484,14 +491,14 @@ auto generateDraw(DrawType, int level, string field_name, ThisType)()
             {
                 foreach(ref const e" ~ l ~ "; " ~ field_name ~ ")
                 {
-                    " ~ generateDraw!(Unqual!(ElementType!DrawType), level+1, "e" ~ l, Unqual!(ElementType!DrawType)).to!string ~ "
+                    " ~ generateDraw!(Unqual!(ElementType!FieldType), "e" ~ l, level+1).to!string ~ "
                 }
 
                 igTreePop();
             }";
     }
     else
-        static assert(0, "Unsupported type: " ~ DrawType.stringof);
+        static assert(0, "Unsupported type: " ~ FieldType.stringof);
 
 
     // if 0 level then add return operator
@@ -515,6 +522,6 @@ unittest
     {
         import std.stdio;
 
-        writeln(generateDraw!(Data, 0, "data_ptr", Data*));
+        writeln(generateDraw!(Data*, "data_ptr"));
     }
 }
