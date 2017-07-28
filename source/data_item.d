@@ -423,12 +423,12 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
     static if (isPointer!OriginFieldType)
     {
         enum ptr =       field_name;
-        alias FieldType = PointerTarget!OriginFieldType;
+        alias FieldType = Unqual!(PointerTarget!OriginFieldType);
     }
     else
     {
         enum ptr = "&" ~ field_name;
-        alias FieldType = OriginFieldType;
+        alias FieldType = Unqual!OriginFieldType;
     }
 
     string code;
@@ -437,7 +437,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
     {
         code = "
         {
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ field_name ~ ").stringof.toStringz : header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\".toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {";
 
@@ -486,7 +486,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
 
         code = "
         {
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ field_name ~ ").stringof.toStringz : header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\".toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {
                 foreach(ref const e" ~ l ~ "; " ~ field_name ~ ")
