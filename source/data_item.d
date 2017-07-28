@@ -400,14 +400,19 @@ unittest
     assert(di.length == ta.length);
 }
 
-// draw
+/// DrawType is type of drawable entity
+/// level is number of nesting (from 0 as the upper level)
+/// this_name is a name of drawable field
 auto generateDraw(DrawType, int level, string this_name, ThisType)()
 {
     import std.traits: FieldTypeTuple, FieldNameTuple;
 
-    // used to distinct nested levels
+    // textual representation of current level
     enum l = level.text;
 
+    // igTreeNodePtr need the first argument to be pointer
+    // so if the field is pointer passes it directly otherwise
+    // pass a pointer to the field
     static if (isPointer!ThisType)
     {
         enum ptr =       this_name;
@@ -427,12 +432,18 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
 
         foreach(i, fname; FieldNameTuple!DrawType)
         {
-            enum field_name = this_name ~ "." ~ fname;
+            enum sub_field_name = this_name ~ "." ~ fname;
             alias Type = FieldTypeTuple!DrawType[i];
 
-            import std.string, std.range, std.algorithm, std.conv, std.traits;
-
-            code ~= generateDraw!(Type, level+1, field_name, Type);//.splitLines.joiner("\n\t").array.to!string;
+            version(none)
+            {
+                // Could be used to make output more human readable but can
+                // take huge memory durin compilation
+                import std.string, std.range, std.algorithm, std.conv, std.traits;
+                code ~= generateDraw!(Type, level+1, sub_field_name, Type).splitLines.joiner("\n\t").array.to!string;
+            }
+            else
+                code ~= generateDraw!(Type, level+1, sub_field_name, Type);
         }
 
         code ~= "
