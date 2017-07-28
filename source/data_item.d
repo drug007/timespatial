@@ -451,7 +451,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
             version(none)
             {
                 // Could be used to make output more human readable but can
-                // take huge memory durin compilation
+                // take huge memory during compilation
                 import std.string, std.range, std.algorithm, std.conv, std.traits;
                 code ~= generateDraw!(SubFieldType, sub_field_name, level+1).splitLines.joiner("\n\t").array.to!string;
             }
