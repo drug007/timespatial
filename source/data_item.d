@@ -309,6 +309,10 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
     alias T = Unqual!TT;
 
     const(T)* data_ptr;
+    // used to convert data to textual form
+    // before passing to imgui widget for rendering
+    // because all wigdets are rendered in consequece
+    // it's safe to have one static buffer for all
     static char[128] buffer;
 
     string header;
@@ -402,8 +406,8 @@ unittest
 
 /// DrawType is type of drawable entity
 /// level is number of nesting (from 0 as the upper level)
-/// this_name is a name of drawable field
-auto generateDraw(DrawType, int level, string this_name, ThisType)()
+/// field_name is a name of drawable field
+auto generateDraw(DrawType, int level, string field_name, ThisType)()
 {
     import std.traits: FieldTypeTuple, FieldNameTuple;
 
@@ -415,10 +419,10 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     // pass a pointer to the field
     static if (isPointer!ThisType)
     {
-        enum ptr =       this_name;
+        enum ptr =       field_name;
     }
     else
-        enum ptr = "&" ~ this_name;
+        enum ptr = "&" ~ field_name;
     
     string code;
 
@@ -426,13 +430,13 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
     {
         code = "
         {
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ this_name ~ ").stringof.toStringz : header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ field_name ~ ").stringof.toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {";
 
         foreach(i, fname; FieldNameTuple!DrawType)
         {
-            enum sub_field_name = this_name ~ "." ~ fname;
+            enum sub_field_name = field_name ~ "." ~ fname;
             alias Type = FieldTypeTuple!DrawType[i];
 
             version(none)
@@ -460,11 +464,11 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
             auto r" ~ l ~ " = false;
             try
             {
-                buffer.sformat(\"%s\\0\", " ~ this_name ~ ");
+                buffer.sformat(\"%s\\0\", " ~ field_name ~ ");
             }
             catch (RangeError re)
             {
-                buffer.sformat(\"%s\\0\", " ~ this_name ~ ".text[0..buffer.length-1]);
+                buffer.sformat(\"%s\\0\", " ~ field_name ~ ".text[0..buffer.length-1]);
             }
             igText(buffer.ptr);";
     }
@@ -475,10 +479,10 @@ auto generateDraw(DrawType, int level, string this_name, ThisType)()
 
         code = "
         {
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ this_name ~ ").stringof.toStringz : header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? typeof(" ~ field_name ~ ").stringof.toStringz : header.ptr, null);
             if(r" ~ l ~ ")
             {
-                foreach(ref const e" ~ l ~ "; " ~ this_name ~ ")
+                foreach(ref const e" ~ l ~ "; " ~ field_name ~ ")
                 {
                     " ~ generateDraw!(Unqual!(ElementType!DrawType), level+1, "e" ~ l, Unqual!(ElementType!DrawType)).to!string ~ "
                 }
