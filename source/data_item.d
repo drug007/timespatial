@@ -59,6 +59,25 @@ struct Attr(alias F)
     alias func = F;
 }
 
+import std.experimental.allocator.mallocator : Mallocator;
+import std.experimental.allocator.building_blocks.stats_collector : StatsCollector, Options;
+
+alias Allocator = StatsCollector!(Mallocator, Options.all, Options.all);
+
+static Allocator allocator;
+
+static ~this()
+{
+    debug
+    {
+        import std.stdio : File;
+
+        auto f = "stats_collector.txt";
+        Allocator.reportPerCallStatistics(File(f, "w"));
+        allocator.reportStatistics(File(f, "a"));
+    }
+}
+
 class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 {
     @disable
@@ -87,7 +106,12 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
 
     static auto make(T, alias Kind K = Kind.Regular)(ref const(T) t, string header = "")
     {
-        return new DataItem!(T, K)(t, header);
+        import std.conv : emplace;
+
+        enum Size = __traits(classInstanceSize, DataItem!(T, K));
+        auto buffer = allocator.allocate(Size);
+
+        return emplace!(DataItem!(T, K))(buffer, t, header);
     }
 
     override bool draw()
@@ -123,7 +147,7 @@ Array!BaseDataItem buildDataItemArray(R)(R range)
             {
                 mixin("case Kind." ~ FieldNameTuple!Base[i] ~ ":");
                     alias Type = typeof(*e.get!T);
-                    result ~= new DataItem!Type(*e.get!T);
+                    result ~= DataItem!Type.make(*e.get!T);
                 break;
             }
         }
