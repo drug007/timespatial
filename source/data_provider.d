@@ -4,7 +4,6 @@ import std.algorithm: map;
 
 import gfm.math: vec3f, vec4f, box3f;
 
-import data_item: DataItem, Attr;
 import vertex_provider: VertexProvider;
 
 ref box3f updateBoundingBox(ref box3f one, ref const(box3f) another)

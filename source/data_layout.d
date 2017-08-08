@@ -2,7 +2,7 @@ module data_layout;
 
 import std.traits : isInstanceOf;
 
-import data_item: DataItem, BaseDataItem;
+import data_item: BaseDataItem;
 
 struct DataItemGroup
 {
@@ -60,7 +60,6 @@ class DataLayout(Range) : IDataLayout
 		{
 			import taggedalgebraic : get;
 			import tests : Data, Bar, Foo;
-			import data_item : generateDraw;
 				
 	        alias Kind = typeof(_range[i].kind);
 	        final switch(_range[i].kind)
@@ -82,3 +81,119 @@ class DataLayout(Range) : IDataLayout
 		return false;
 	}
 }
+
+/// OriginFieldType is type of a field being drawing
+/// field_name is a name of the field
+/// level is number of nesting (with 0 as the upper level)
+auto generateDraw(OriginFieldType, string field_name, int level = 0)()
+{
+	import std.traits: FieldTypeTuple, FieldNameTuple, PointerTarget, isArray, 
+		isPointer, isBasicType, isSomeString, Unqual;
+    import std.array : appender;
+    import std.conv : text;
+
+    // textual representation of current level
+    enum l = level.text;
+
+    // igTreeNodePtr need the first argument to be pointer
+    // so if the field is pointer passes it directly otherwise
+    // pass a pointer to the field
+    //
+    // ptr is a pointer to the field, if the field is a pointer use it directly
+    // FieldType is a type of the pointer target 
+    static if (isPointer!OriginFieldType)
+    {
+        enum ptr =       field_name;
+        alias FieldType = Unqual!(PointerTarget!OriginFieldType);
+    }
+    else
+    {
+        enum ptr = "&" ~ field_name;
+        alias FieldType = Unqual!OriginFieldType;
+    }
+
+    auto code = appender!string;
+    code ~= "
+        import std.format : sformat;
+        import core.exception : RangeError;
+        import std.conv : text;
+            
+        {";
+
+    static if(is(FieldType == struct))
+    {
+        code ~= "
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\\0\" : header.ptr, null);
+            if(r" ~ l ~ ")
+            {";
+
+        foreach(i, fname; FieldNameTuple!FieldType)
+        {
+            enum sub_field_name = field_name ~ "." ~ fname;
+            alias SubFieldType = FieldTypeTuple!FieldType[i];
+
+            version(none)
+            {
+                // Could be used to make output more human readable but can
+                // take huge memory during compilation
+                import std.string, std.range, std.algorithm, std.conv, std.traits;
+                code ~= generateDraw!(SubFieldType, sub_field_name, level+1).splitLines.joiner("\n\t").array.to!string;
+            }
+            else
+                code ~= generateDraw!(SubFieldType, sub_field_name, level+1);
+        }
+
+        code ~= "
+
+                igTreePop();
+            }";
+    }
+    else static if(isBasicType!FieldType  || 
+                   isSomeString!FieldType ||
+                   isPointer!FieldType)
+    {
+        code ~= "
+            auto r" ~ l ~ " = false;
+            try
+            {
+                buffer.sformat(\"%s\\0\", " ~ field_name ~ ");
+            }
+            catch (RangeError re)
+            {
+                buffer.sformat(\"%s\\0\", " ~ field_name ~ ".text[0..buffer.length-1]);
+            }
+            igText(buffer.ptr);";
+    }
+    else static if(isArray!FieldType)
+    {
+        import std.range : ElementType;
+        import std.conv : to;
+
+        code ~= "
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\\0\" : header.ptr, null);
+            if(r" ~ l ~ ")
+            {
+                foreach(ref const e" ~ l ~ "; " ~ field_name ~ ")
+                {
+                    " ~ generateDraw!(Unqual!(ElementType!FieldType), "e" ~ l, level+1).to!string ~ "
+                }
+
+                igTreePop();
+            }";
+    }
+    else
+        static assert(0, "Unsupported type: " ~ FieldType.stringof);
+
+
+    // if 0 level then add return operator
+    static if (!level)
+        code ~= "
+            return r" ~ l ~ ";
+        }";
+    else
+        code ~= "
+        }";
+
+    return code.data;
+}
+
