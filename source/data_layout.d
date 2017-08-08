@@ -2,12 +2,25 @@ module data_layout;
 
 import std.traits : isInstanceOf;
 
-import data_item: BaseDataItem;
-
-struct DataItemGroup
+auto timeToStringz(long timestamp)
 {
-	BaseDataItem self;
-	BaseDataItem[] child;
+    import std.string: toStringz;
+
+    return timestamp.timeToString.toStringz;
+}
+
+auto timeToString(long timestamp)
+{
+    import std.algorithm: min;
+    import std.datetime: SysTime;
+    import std.string: lastIndexOf;
+
+    auto str = timestamp.SysTime.toUTC.toISOExtString;
+    auto idx = lastIndexOf(str, ".");
+    if(idx == -1)
+        return str;
+    
+    return str[0..min(idx + 3, $)];
 }
 
 interface IDataLayout
