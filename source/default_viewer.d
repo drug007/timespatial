@@ -486,18 +486,11 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                     
                     char[128] buffer;
                     string header;
-                    alias Kind = typeof(ditem[i].kind);
+                    alias _range = ditem;
+                    import data_layout : generateCase;
                     final switch(ditem[i].kind)
                     {
-                        case Kind._data:
-                            mixin (generateDraw!(Data*, "ditem[i].get!(Data*)", 1));
-                        break;
-                        case Kind._bar:
-                            mixin (generateDraw!(Bar*, "ditem[i].get!(Bar*)", 1));
-                        break;
-                        case Kind._foo:
-                            mixin (generateDraw!(Foo*, "ditem[i].get!(Foo*)", 1));
-                        break;
+                        mixin (generateCase);
                     }
                 }
                 

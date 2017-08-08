@@ -71,21 +71,9 @@ class DataLayout(Range) : IDataLayout
 		}
 		foreach(size_t i; start..end)
 		{
-			import taggedalgebraic : get;
-			import tests : Data, Bar, Foo;
-				
-	        alias Kind = typeof(_range[i].kind);
-	        final switch(_range[i].kind)
+			final switch(_range[i].kind)
 	        {
-	            case Kind._data:
-	                mixin (generateDraw!(Data*, "_range[i].get!(Data*)", 1));
-	            break;
-	            case Kind._bar:
-	                mixin (generateDraw!(Bar*, "_range[i].get!(Bar*)", 1));
-	            break;
-	            case Kind._foo:
-	                mixin (generateDraw!(Foo*, "_range[i].get!(Foo*)", 1));
-	            break;
+	            mixin (generateCase);
 	        }
 		}
 		version(widget_clipping_enabled) clipper.End();
@@ -210,3 +198,25 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
     return code.data;
 }
 
+/// generates cases for each data type nested in TaggedAlgebraic templated type
+auto generateCase()
+{
+	return q{
+		import taggedalgebraic : get;
+        import std.range : ElementType;
+        import std.traits : FieldTypeTuple, FieldNameTuple;
+        
+        alias Kind = typeof(_range[i].kind);
+        alias U = ElementType!(typeof(_range)).Union;
+        foreach(j, FieldName; FieldNameTuple!U)
+        {
+            enum TypeName = FieldTypeTuple!U[j].stringof;
+            mixin("
+                case Kind." ~ FieldName ~ ":
+                    alias T = typeof(U." ~ FieldName ~ ");
+                    mixin (generateDraw!(T, \"_range[i].get!(T)\", 1));
+                break;
+            ");
+        }
+    };
+}
