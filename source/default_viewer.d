@@ -1,17 +1,15 @@
 module default_viewer;
 
 import std.conv: text;
-import std.container: Array;
 
 import gfm.math: box3f, vec3f, vec2f;
 import gfm.sdl2: SDL_Event;
 
 import base_viewer: BaseViewer;
-import data_item: timeToStringz, BaseDataItem, buildDataItemArray;
 import timestamp_storage: TimestampStorage;
 import data_provider: IRenderableData, RenderableData, updateBoundingBox;
 import vertex_provider : VertexProvider;
-import data_layout: IDataLayout, DataLayout;
+import data_layout: IDataLayout, DataLayout, timeToStringz;
 import color_table: ColorTable;
 import rtree;
 
@@ -165,6 +163,8 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         }
         else
             centerCamera();
+
+        ditem = makePopupDataItems(0, 0);
     }
 
     void centerCamera()
@@ -473,14 +473,33 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             {
                 igOpenPopup("Popup\0".ptr);
 
-                ditem.each!(a=>a.destroy);
-                ditem.clear;
-                ditem = makePopupDataItems();
+                ditem = makePopupDataItems(mouse_x, mouse_y);
             }
 
             if (!ditem.empty && igBeginPopup("Popup\0".ptr))
             {
-                ditem.each!(a=>a.draw);
+                foreach(size_t i; 0..ditem.length)
+                {
+                    import taggedalgebraic : get;
+                    import data_layout : generateDraw;
+                    import tests : Data, Bar, Foo;
+                    
+                    char[128] buffer;
+                    string header;
+                    alias Kind = typeof(ditem[i].kind);
+                    final switch(ditem[i].kind)
+                    {
+                        case Kind._data:
+                            mixin (generateDraw!(Data*, "ditem[i].get!(Data*)", 1));
+                        break;
+                        case Kind._bar:
+                            mixin (generateDraw!(Bar*, "ditem[i].get!(Bar*)", 1));
+                        break;
+                        case Kind._foo:
+                            mixin (generateDraw!(Foo*, "ditem[i].get!(Foo*)", 1));
+                        break;
+                    }
+                }
                 
                 igEndPopup();
             }
@@ -647,16 +666,16 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
-    Array!BaseDataItem makePopupDataItems()
+    auto makePopupDataItems(int mx, int my)
     {
         import std.algorithm: map;
         import msgpack: unpack;
 
-        auto curr_id = pickPoint(vec2f(mouse_x, mouse_y));
-        return buildDataItemArray(curr_id.map!((a) {
-            auto id = unpack!uint(a.payload);
-            return (*data)[id].value;
-        }));
+        return pickPoint(vec2f(mx, my))
+                    .map!((a) {
+                        auto id = unpack!uint(a.payload);
+                        return (*data)[id].value;
+        });
     }
 
     override public void processMouseWheel(ref const(SDL_Event) event)
@@ -729,6 +748,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
     }
 
 protected:
+    import std.traits : ReturnType;
     import data_layout: IDataLayout;
 
     bool show_settings;
@@ -742,7 +762,7 @@ protected:
     HData* data;
     bool about_closing;
     RTree pointsRtree;
-    Array!BaseDataItem ditem;
+    ReturnType!(makePopupDataItems) ditem;
     bool is_hovered; // defines if mouse pointer is hovered under the main window (and not under child ones)
     ColorTable color_table;
     vec3f distance_from; // start point to calculate distance from it
