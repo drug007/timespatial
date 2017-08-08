@@ -163,8 +163,6 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         }
         else
             centerCamera();
-
-        ditem = makePopupDataItems(0, 0);
     }
 
     void centerCamera()
@@ -467,36 +465,40 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             import std.algorithm: each;
             import std.array: empty;
 
-            // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
-            // приводит к изменениями внешнего вида пользовательского интерфейса.
-            if (is_hovered && is_lmb_clicked)
             {
-                igOpenPopup("Popup\0".ptr);
+                static ReturnType!(makePopupDataItems) ditem;
 
-                ditem = makePopupDataItems(mouse_x, mouse_y);
-            }
-
-            if (!ditem.empty && igBeginPopup("Popup\0".ptr))
-            {
-                foreach(size_t i; 0..ditem.length)
+                // выводим popup menu в этом окне (а не главном) по той причине, что главное окно прозрачное и вывод в нем
+                // приводит к изменениями внешнего вида пользовательского интерфейса.
+                if (is_hovered && is_lmb_clicked)
                 {
-                    import taggedalgebraic : get;
-                    import data_layout : generateDraw;
-                    import tests : Data, Bar, Foo;
-                    
-                    char[128] buffer;
-                    string header;
-                    alias _range = ditem;
-                    import data_layout : generateCase;
-                    final switch(ditem[i].kind)
-                    {
-                        mixin (generateCase);
-                    }
+                    igOpenPopup("Popup\0".ptr);
+
+                    ditem = makePopupDataItems(mouse_x, mouse_y);
                 }
-                
-                igEndPopup();
+
+                if (!ditem.empty && igBeginPopup("Popup\0".ptr))
+                {
+                    foreach(size_t i; 0..ditem.length)
+                    {
+                        import taggedalgebraic : get;
+                        import data_layout : generateDraw;
+                        import tests : Data, Bar, Foo;
+                        
+                        char[128] buffer;
+                        string header;
+                        alias _range = ditem;
+                        import data_layout : generateCase;
+                        final switch(ditem[i].kind)
+                        {
+                            mixin (generateCase);
+                        }
+                    }
+                    
+                    igEndPopup();
+                }
+                igEnd();
             }
-            igEnd();
 
             {
                 // TODO all this block is hack
@@ -659,7 +661,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
-    auto makePopupDataItems(int mx, int my)
+    private final makePopupDataItems(int mx, int my)
     {
         import std.algorithm: map;
         import msgpack: unpack;
@@ -755,7 +757,6 @@ protected:
     HData* data;
     bool about_closing;
     RTree pointsRtree;
-    ReturnType!(makePopupDataItems) ditem;
     bool is_hovered; // defines if mouse pointer is hovered under the main window (and not under child ones)
     ColorTable color_table;
     vec3f distance_from; // start point to calculate distance from it
