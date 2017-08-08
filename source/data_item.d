@@ -214,12 +214,16 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
 
     auto code = appender!string;
     code ~= "
+        import std.format : sformat;
+        import core.exception : RangeError;
+        import std.conv : text;
+            
         {";
 
     static if(is(FieldType == struct))
     {
         code ~= "
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\".toStringz : header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\\0\" : header.ptr, null);
             if(r" ~ l ~ ")
             {";
 
@@ -266,7 +270,7 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
         import std.conv : to;
 
         code ~= "
-            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\".toStringz : header.ptr, null);
+            auto r" ~ l ~ " = igTreeNodePtr(cast(void*) " ~ ptr ~ ", " ~ l ~ " ? \"" ~ FieldType.stringof ~ "\\0\" : header.ptr, null);
             if(r" ~ l ~ ")
             {
                 foreach(ref const e" ~ l ~ "; " ~ field_name ~ ")

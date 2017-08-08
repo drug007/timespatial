@@ -102,27 +102,10 @@ class GuiImpl(HData, HDataIndex) : DefaultViewer!(HData, HDataIndex)
         import tests: Bar, Foo, Data;
         import taggedalgebraic: get;
 
-        auto data_layout = new DataLayout("Heterogeneous data");
+        auto payload = (*data).map!"a.value";
+        alias Payload = typeof(payload);
 
-        foreach(ref e; *data)
-        {
-            alias Kind = typeof(e.value.kind);
-            final switch(e.value.kind)
-            {
-                case Kind._data:
-                    auto header = "Data\0";
-                    data_layout.addGroup(*e.value.get!(Data*), header);
-                break;
-                case Kind._bar:
-                    auto header = "-----------Bar\0";
-                    data_layout.addGroup(*e.value.get!(Bar*), header);
-                break;
-                case Kind._foo:
-                    auto header = "**************************Foo\0";
-                    data_layout.addGroup(*e.value.get!(Foo*), header);
-                break;
-            }
-        }
+        auto data_layout = new DataLayout!Payload("Heterogeneous data", payload);
 
         addDataLayout(data_layout);
     }
@@ -146,7 +129,7 @@ class GuiImpl(HData, HDataIndex) : DefaultViewer!(HData, HDataIndex)
         ]);
     }
 
-    override void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset)
+    override void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset)
     {
         import std.conv : text;
         import data_item : BaseDataItem, DataItem, timeToString;
