@@ -58,9 +58,9 @@ struct Foo
 
 union Base
 {
-	Data* _data;
-	Bar*  _bar;
-	Foo*  _foo;
+	Data* Data_;
+	Bar*  Bar_;
+	Foo*  Foo_;
 }
 
 alias HData = TaggedAlgebraic!(Base);
