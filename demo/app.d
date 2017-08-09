@@ -6,9 +6,7 @@ import color_table: ColorTable;
 
 class GuiImpl(D, Index) : DefaultViewer!(D, Index)
 {
-//    import gfm.sdl2 : SDL_Event;
     import vertex_provider : VertexProvider;
-//    import data_layout : DataLayout;
 
     this(int width, int height, string title, ref D data, ref Index data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
     {
@@ -17,17 +15,16 @@ class GuiImpl(D, Index) : DefaultViewer!(D, Index)
 
     override void makeDataLayout()
     {
-//        import std.algorithm: map;
-//        import data_layout: DataLayout;
-//        import tests: Bar, Foo, Data;
-//        import taggedalgebraic: get;
+        import std.range : iota;
+        import std.array : array;
+        import data_layout: DataLayout;
 
-//        auto payload = (*data).map!"a.value";
-//        alias Payload = typeof(payload);
+        auto payload = DataSet(*data, data.length.iota.array);
+        alias Payload = typeof(payload);
 
-//        auto data_layout = new DataLayout!Payload("Heterogeneous data", payload);
+        auto data_layout = new DataLayout!Payload("Heterogeneous data", payload);
 
-//        addDataLayout(data_layout);
+        addDataLayout(data_layout);
     }
 
     override VertexProvider makeVertexProvider(ref DataSet dataset, ref const(Color) clr)

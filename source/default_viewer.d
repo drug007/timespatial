@@ -221,13 +221,6 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         import std.range : iota;
         import vertex_provider: VertexProvider;
 
-        auto payload = DataSet(*data, data.length.iota.array);
-        alias Payload = typeof(payload);
-
-        auto data_layout = new DataLayout!Payload("Test", payload);
-
-        addDataLayout(data_layout);
-
         import std.algorithm : each;
         import std.variant : visit, Algebraic;
         import tests : Node, Id, Leaf;
