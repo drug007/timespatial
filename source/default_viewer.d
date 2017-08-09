@@ -212,7 +212,6 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
     abstract void makeDataLayout();
     abstract VertexProvider makeVertexProvider(ref DataSet dataset, ref const(Color) clr);
-    abstract void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset);
 
     void addData()
     {
@@ -249,6 +248,10 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                     auto clr = color_table(curr_id.source);
                     auto vp = makeVertexProvider(dataset, clr);
                     rd.addDataSet(dataset, vp);
+
+                    auto dl = new DataLayout!DataSet("test", dataset);
+                    data_layout ~= dl;
+                    
                     updateBoundingBox(box, rd.box);
                     foreach(a; rd.aux)
                         setVertexProvider(a.vp);
