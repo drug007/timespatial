@@ -242,11 +242,20 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 (Leaf* leaf)
                 {
                     curr_id.no = cast(uint) leaf.no;
-                    auto r = DataSet(*data, leaf.indices);
+                    auto dataset = DataSet(*data, leaf.indices);
+
+                    size_t idx;
+                    foreach(ref e; dataset)
+                    {
+                        import msgpack: pack;
+                        auto ref_no = dataset.physicalIndex(idx);
+                        pointsRtree.addPoint(ref_no, vec3f(e.x, e.y, e.z), ref_no.pack);
+                        idx++;
+                    }
 
                     auto clr = color_table(curr_id.source);
-                    auto vp = makeVertexProvider(r, clr);
-                    rd.addDataSet(r, vp);
+                    auto vp = makeVertexProvider(dataset, clr);
+                    rd.addDataSet(dataset, vp);
                     updateBoundingBox(box, rd.box);
                     foreach(a; rd.aux)
                         setVertexProvider(a.vp);
