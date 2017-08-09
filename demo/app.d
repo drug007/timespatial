@@ -108,24 +108,25 @@ class GuiImpl(D, Index) : DefaultViewer!(D, Index)
 //        addDataLayout(data_layout);
     }
 
-    override VertexProvider makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr)
+    override VertexProvider makeVertexProvider(ref DataSet dataset, ref const(Color) clr)
     {
-//        import std.algorithm : map;
-//        import std.array : array;
-//        import gfm.math : vec3f, vec4f;
-//        import vertex_provider : Vertex, VertexSlice;
+        import std.algorithm : map;
+        import std.array : array;
+        import gfm.math : vec3f, vec4f;
+        import vertex_provider : Vertex, VertexSlice;
 
-//        auto vertices = dataset.idx[].map!(a=>Vertex(
-//            vec3f(a.x, a.y, a.z),              // position
-//            vec4f(clr.r, clr.g, clr.b, clr.a), // color
-//        )).array;
+        auto vertices = dataset.map!((a)
+            {
+                return Vertex(
+            vec3f(a.x, a.y, a.z),              // position
+            vec4f(clr.r, clr.g, clr.b, clr.a), // color
+        ); }).array;
 
-//        auto uniq_id = genVertexProviderHandle();
-//        return new VertexProvider(uniq_id, vertices, [
-//            VertexSlice(dataset.header.kind, 0, vertices.length),
-//            VertexSlice(VertexSlice.Kind.Points, 0, vertices.length),
-//        ]);
-return null;
+        auto uniq_id = genVertexProviderHandle();
+        return new VertexProvider(uniq_id, vertices, [
+            VertexSlice(VertexSlice.Kind.LineStrip, 0, vertices.length),
+            VertexSlice(VertexSlice.Kind.Points, 0, vertices.length),
+        ]);
     }
 
 //    //override void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset)
