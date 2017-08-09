@@ -46,7 +46,6 @@ ref box3f updateBoundingBox(ref box3f one, ref const(vec3f) another)
 
 interface IRenderableData
 {
-    //long[] getTimestamps();
     void setTimeWindow(long min, long max);
     void setMaxCount(long count);
     Auxillary[] getAuxillary();
@@ -88,18 +87,6 @@ class RenderableData(DataSet) : IRenderableData
         aux ~= Auxillary(/*dataset.header.no*/0, [vp]);
         //updateBoundingBox(box, dataset.header.box);
     }
-
-    //long[] getTimestamps()
-    //{
-    //    //import std.algorithm: sort, uniq;
-    //    //import std.array: array;
-
-    //    //long[] times;
-    //    //foreach(e; data)
-    //    //    times ~= e.idx[].map!(a=>a.timestamp).array;
-    //    //return times.sort().uniq().array;
-    //    return null;
-    //}
 
     /// Устанавливает временное окно, доступными становятся только
     /// данные внутри этого окна

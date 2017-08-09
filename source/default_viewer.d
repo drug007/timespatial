@@ -19,11 +19,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
     enum settingsFilename = "settings.json";
 
-    //alias DataSet = HDataIndex.DataSet;
-
-    import std.range : InputRangeObject;
-
-    alias DataSet = InputRangeObject!(Indexed!(HData, size_t[]));
+    alias DataSet = Indexed!(HData, size_t[]);
     alias Color = typeof(color_table(0));
 
     this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
@@ -222,96 +218,61 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
     {
         import std.array : array;
         import std.algorithm : map;
-        import std.range : indexed, iota;
+        import std.range : iota;
         import vertex_provider: VertexProvider;
 
-        auto payload = indexed(*data, data.length.iota.array);
+        auto payload = DataSet(*data, data.length.iota.array);
         alias Payload = typeof(payload);
 
         auto data_layout = new DataLayout!Payload("Test", payload);
 
         addDataLayout(data_layout);
-        
-        //foreach(ref source_no, ref datasource; *data_index)
-        //{
-        //    //auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-        //    //dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
-
-        //    // for each source create correspondence RenderableData
-        //    auto rd = new RenderableData!(DataSet)(source_no);
-        //    auto clr = color_table(source_no);
-        //    foreach(ref dataset_no, ref dataset; datasource)
-        //    {
-        //        auto vp = makeVertexProvider(dataset, clr);
-        //        rd.addDataSet(dataset, vp);
-
-        //        //addDataSetLayout(dl, dataset);
-
-        //        foreach(ref e; dataset)
-        //        {
-        //            import msgpack: pack;
-        //            pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
-        //        }
-        //    }
-            
-        //    auto ts = rd.getTimestamps();
-        //    timestamp_storage_start.addTimestamps(ts);
-        //    timestamp_storage_finish.addTimestamps(ts);
-
-        //    updateBoundingBox(box, rd.box);
-
-        //    foreach(a; rd.aux)
-        //        setVertexProvider(a.vp);
-
-        //    renderable_data ~= rd;
-        //}
-
-        // for each source create correspondence RenderableData
-        RenderableData!(DataSet) rd;
 
         import std.algorithm : each;
         import std.variant : visit, Algebraic;
         import tests : Node, Id, Leaf;
-        import std.stdio;
+
         Id curr_id;
         ubyte nesting_level;
+        RenderableData!(DataSet) rd;
+
+        void visitChilds(Algebraic!(Leaf*, Node*) n)
         {
-            import std.range : inputRangeObject, indexed;
+            n.visit!(
+                (Leaf* leaf)
+                {
+                    curr_id.no = cast(uint) leaf.no;
+                    auto r = DataSet(*data, leaf.indices);
 
-            void visitChilds(Algebraic!(Leaf*, Node*) n)
-            {
-                n.visit!((Leaf* leaf)
-                         {
-                            curr_id.no = cast(uint) leaf.no;
-                            auto r = inputRangeObject(indexed(*data, leaf.indices));
-                            writefln("%s:", curr_id);
-
-                            auto clr = color_table(curr_id.source);
-                            auto vp = makeVertexProvider(r, clr);
-                            rd.addDataSet(r, vp);
-                            updateBoundingBox(box, rd.box);
-                            foreach(a; rd.aux)
-                                setVertexProvider(a.vp);
-                         },
-                         (Node* node)
-                         { 
-                            if (nesting_level == 0)
-                            {
-                                curr_id.source = cast(uint) node.no;
-                                if (rd)                                    
-                                    renderable_data ~= rd;
-                                rd = new RenderableData!(DataSet)(curr_id.source);
-                            }
-                            else
-                                curr_id.no = cast(uint) node.no;
-                            nesting_level++;
-                            (*node)[].each!visitChilds;
-                            nesting_level--;
-                         }
-                );
-            }
-            (*data_index)[].each!visitChilds;
+                    auto clr = color_table(curr_id.source);
+                    auto vp = makeVertexProvider(r, clr);
+                    rd.addDataSet(r, vp);
+                    updateBoundingBox(box, rd.box);
+                    foreach(a; rd.aux)
+                        setVertexProvider(a.vp);
+                },
+                (Node* node)
+                { 
+                    if (nesting_level == 0)
+                    {
+                        curr_id.source = cast(uint) node.no;
+                        if (rd)
+                            renderable_data ~= rd;
+                        rd = new RenderableData!(DataSet)(curr_id.source);
+                    }
+                    else
+                        curr_id.no = cast(uint) node.no;
+                    nesting_level++;
+                    (*node)[].each!visitChilds;
+                    nesting_level--;
+                },
+            );
         }
+
+        (*data_index)[].each!visitChilds;
+
+        if (rd)
+            renderable_data ~= rd;
 
         import data_layout : generateGettingTimestamp;
         mixin ("auto ts = " ~ generateGettingTimestamp!"(*data)");
