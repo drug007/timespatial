@@ -270,26 +270,35 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         // for each source create correspondence RenderableData
         auto rd = new RenderableData!(DataSet)(source_no);
         auto clr = color_table(source_no);
-        foreach(dataset_no, dataset_index; *data_index)
-        {
-            import std.range : inputRangeObject, indexed;
-
 import std.algorithm : each;
 import std.variant : visit, Algebraic;
 import tests : Node, Id, Leaf;
 import std.stdio;
-//writeln("dataset_index: ", dataset_index[]);
+        Id curr_id;
+        ubyte nesting_level;
+        //foreach(dataset_no, dataset_index; *data_index)
+        {
+            import std.range : inputRangeObject, indexed;
 
-            Id curr_id;
+//writeln("dataset_index: ", dataset_index[]);
 
             void visitChilds(Algebraic!(Leaf*, Node*) n)
             {
-                n.visit!((Leaf* leaf) { writeln("Leaf"); writeln(leaf.indices); curr_id = Id.init; },
-                         (Node* node) { curr_id.source = cast(uint) node.no; writeln(curr_id); (*node)[].each!visitChilds; }
+                n.visit!((Leaf* leaf) { write(curr_id); writeln(leaf.indices); },
+                         (Node* node)
+                         { 
+                            if (nesting_level == 0)
+                                curr_id.source = cast(uint) node.no;
+                            else
+                                curr_id.no = cast(uint) node.no;
+                            nesting_level++;
+                            (*node)[].each!visitChilds;
+                            nesting_level--;
+                         }
                 );
             }
-writeln(dataset_index);
-            dataset_index[].each!visitChilds;
+//writeln(dataset_index);
+            (*data_index)[].each!visitChilds;
 
 
             //auto r = inputRangeObject(indexed(*data, dataset_index[]));
