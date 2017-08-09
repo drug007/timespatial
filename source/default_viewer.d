@@ -276,17 +276,19 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
 import std.algorithm : each;
 import std.variant : visit, Algebraic;
-import tests : Node, Id;
+import tests : Node, Id, Leaf;
 import std.stdio;
 //writeln("dataset_index: ", dataset_index[]);
 
-            void visitChilds(Algebraic!(size_t, Node*) n)
+            Id curr_id;
+
+            void visitChilds(Algebraic!(Leaf*, Node*) n)
             {
-                n.visit!((size_t i)   => write(i, " "),
-                         (Node* node) { (*node)[].each!visitChilds; writeln; }
+                n.visit!((Leaf* leaf) { writeln("Leaf"); writeln(leaf.indices); curr_id = Id.init; },
+                         (Node* node) { curr_id.source = cast(uint) node.no; writeln(curr_id); (*node)[].each!visitChilds; }
                 );
             }
-
+writeln(dataset_index);
             dataset_index[].each!visitChilds;
 
 
