@@ -220,3 +220,31 @@ auto generateDraw(alias string RangeStringOf)()
         }
     }";
 }
+
+auto generateGettingTimestamp(alias string RangeStringOf)()
+{
+    return 
+    RangeStringOf ~ ".map!((e)
+    {
+        import std.range : isInputRange;
+        static assert (isInputRange!(typeof(" ~ RangeStringOf ~ ")));
+
+        final switch(e.kind)
+        {
+            import taggedalgebraic : get;
+            import std.traits : FieldTypeTuple, FieldNameTuple;
+            
+            alias Kind = typeof(e.kind);
+            alias U = typeof(e).Union;
+            foreach(j, FieldName; FieldNameTuple!U)
+            {
+                enum TypeName = FieldTypeTuple!U[j].stringof;
+                mixin(\"
+                    case Kind.\" ~ FieldName ~ \":
+                        alias T = typeof(U.\" ~ FieldName ~ \");
+                    return e.get!(T).timestamp;
+                \");
+            }
+        }
+    });";
+}

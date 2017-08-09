@@ -15,9 +15,15 @@ import rtree;
 
 class DefaultViewer(HData, HDataIndex) : BaseViewer
 {
+    import std.range : Indexed;
+
     enum settingsFilename = "settings.json";
 
-    alias DataSet = HDataIndex.DataSet;
+    //alias DataSet = HDataIndex.DataSet;
+
+    import std.range : InputRangeObject;
+
+    alias DataSet = InputRangeObject!(Indexed!(HData, int[]));
     alias Color = typeof(color_table(0));
 
     this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
@@ -214,45 +220,82 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
     void addData()
     {
+        import std.array : array;
+        import std.algorithm : map;
+        import std.range : indexed, iota;
         import vertex_provider: VertexProvider;
-        //import data_layout: Dummy;
 
-        //auto dl = new DataLayout("test");
-        //data_layout ~= dl;
+        auto payload = indexed(*data, data.length.iota.array);
+        alias Payload = typeof(payload);
+
+        auto data_layout = new DataLayout!Payload("Test", payload);
+
+        addDataLayout(data_layout);
         
-        foreach(ref source_no, ref datasource; *data_index)
-        {
-            //auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            //dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
+        //foreach(ref source_no, ref datasource; *data_index)
+        //{
+        //    //auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
+        //    //dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
 
-            // for each source create correspondence RenderableData
-            auto rd = new RenderableData!(DataSet)(source_no);
-            auto clr = color_table(source_no);
-            foreach(ref dataset_no, ref dataset; datasource)
-            {
-                auto vp = makeVertexProvider(dataset, clr);
-                rd.addDataSet(dataset, vp);
+        //    // for each source create correspondence RenderableData
+        //    auto rd = new RenderableData!(DataSet)(source_no);
+        //    auto clr = color_table(source_no);
+        //    foreach(ref dataset_no, ref dataset; datasource)
+        //    {
+        //        auto vp = makeVertexProvider(dataset, clr);
+        //        rd.addDataSet(dataset, vp);
 
-                //addDataSetLayout(dl, dataset);
+        //        //addDataSetLayout(dl, dataset);
 
-                foreach(ref e; dataset)
-                {
-                    import msgpack: pack;
-                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
-                }
-            }
+        //        foreach(ref e; dataset)
+        //        {
+        //            import msgpack: pack;
+        //            pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
+        //        }
+        //    }
             
-            auto ts = rd.getTimestamps();
-            timestamp_storage_start.addTimestamps(ts);
-            timestamp_storage_finish.addTimestamps(ts);
+        //    auto ts = rd.getTimestamps();
+        //    timestamp_storage_start.addTimestamps(ts);
+        //    timestamp_storage_finish.addTimestamps(ts);
 
-            updateBoundingBox(box, rd.box);
+        //    updateBoundingBox(box, rd.box);
 
-            foreach(a; rd.aux)
-                setVertexProvider(a.vp);
+        //    foreach(a; rd.aux)
+        //        setVertexProvider(a.vp);
 
-            renderable_data ~= rd;
+        //    renderable_data ~= rd;
+        //}
+
+        auto source_no = 0;
+        // for each source create correspondence RenderableData
+        auto rd = new RenderableData!(DataSet)(source_no);
+        auto clr = color_table(source_no);
+        foreach(dataset_no, dataset_index; *data_index)
+        {
+            import std.range : inputRangeObject, indexed;
+
+            auto r = inputRangeObject(indexed(*data, dataset_index[]));
+            auto vp = makeVertexProvider(r, clr);
+            rd.addDataSet(r, vp);
+
+        //    //addDataSetLayout(dl, dataset);
+
+        //    foreach(ref e; dataset)
+        //    {
+        //        import msgpack: pack;
+        //        pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
+        //    }
         }
+
+        import data_layout : generateGettingTimestamp;
+        mixin ("auto ts = " ~ generateGettingTimestamp!"(*data)");
+
+        import std.array : array;
+        auto tsa = ts.array;
+
+        timestamp_storage_start.addTimestamps(tsa);
+        timestamp_storage_finish.addTimestamps(tsa);
+
         onCurrentTimestampChange();
     }
 
@@ -660,7 +703,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         return pickPoint(vec2f(mx, my))
                     .map!((a) {
                         auto id = unpack!uint(a.payload);
-                        return (*data)[id].value;
+                        return (*data)[id];
         });
     }
 

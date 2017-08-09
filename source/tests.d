@@ -55,7 +55,82 @@ union Base
 	Foo*  Foo_;
 }
 
+struct Node
+{
+	import std.algorithm : copy;
+	import std.variant : Algebraic;
+	size_t no;
+	Algebraic!(size_t, Node*)[] childs;
+
+	this(size_t no, size_t[] indices)
+	{
+		this.no = no;
+		childs.length = indices.length;
+		copy(indices, childs);
+	}
+
+	this(size_t no, Node[] nodes)
+	{
+		this.no = no;
+		childs.length = nodes.length;
+		import std.algorithm : map;
+		copy(nodes.map!((ref a) { return &a; }), childs);
+	}
+
+	static struct Range
+	{
+		private
+		{
+			Algebraic!(size_t, Node*)[] range;
+		
+			this(ref Node node)
+			{
+				this.range = node.childs;
+			}
+		}
+
+		@property
+		auto front()
+		{
+			import std.array : front;
+			return range.front();
+		}
+
+		void popFront()
+		{
+			import std.array : popFront;
+			range.popFront();
+		}
+
+		@property
+		bool empty()
+		{
+			import std.array : empty;
+			return range.empty();
+		}
+	}
+
+	auto opSlice()
+	{
+		return Range(this);
+	}
+}
+
 alias HData = TaggedAlgebraic!(Base);
+
+auto indices()
+{
+	auto node1_126 = Node(126, [ 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, ]);
+	auto node12_89 = Node( 89, [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, ]);
+	auto node29_1  = Node(  1, [ 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114, ]);
+	auto node29_2  = Node(  2, [ 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, ]);
+	return [
+		Node( 1, [node1_126]),
+		Node(12, [node12_89]),
+		Node(29, [node29_1]),
+		Node(29, [node29_2]),
+	];
+}
 
 auto heterogeneousData()
 {
@@ -310,5 +385,5 @@ auto heterogeneousData()
 	   HData(&data[113]), 
 	   HData(&data[114]), 
 	   HData(&data[115])
-	].enumerate(0).array;
+	];
 }
