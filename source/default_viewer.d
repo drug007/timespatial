@@ -284,7 +284,7 @@ import std.stdio;
 
             void visitChilds(Algebraic!(Leaf*, Node*) n)
             {
-                n.visit!((Leaf* leaf) { write(curr_id); writeln(leaf.indices); },
+                n.visit!((Leaf* leaf) { curr_id.no = cast(uint) leaf.no; write(curr_id); writeln(leaf.indices); },
                          (Node* node)
                          { 
                             if (nesting_level == 0)
