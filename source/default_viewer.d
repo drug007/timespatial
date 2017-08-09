@@ -494,21 +494,12 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
                 if (!ditem.empty && igBeginPopup("Popup\0".ptr))
                 {
-                    foreach(size_t i; 0..ditem.length)
-                    {
-                        import taggedalgebraic : get;
-                        import data_layout : generateDraw;
-                        import tests : Data, Bar, Foo;
-                        
-                        char[128] buffer;
-                        string header;
-                        alias _range = ditem;
-                        import data_layout : generateCase;
-                        final switch(ditem[i].kind)
-                        {
-                            mixin (generateCase);
-                        }
-                    }
+                    import data_layout : generateDraw;
+                    
+                    char[128] buffer;
+                    string header;
+                    
+                    mixin (generateDraw!"ditem");
                     
                     igEndPopup();
                 }

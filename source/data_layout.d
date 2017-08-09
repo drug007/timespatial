@@ -69,13 +69,7 @@ class DataLayout(Range) : IDataLayout
 			size_t start = 0;
 			size_t end = _range.length;
 		}
-		foreach(size_t i; start..end)
-		{
-			final switch(_range[i].kind)
-	        {
-	            mixin (generateCase);
-	        }
-		}
+        mixin (generateDraw!"_range[start..end]");
 		version(widget_clipping_enabled) clipper.End();
 		igEnd();
 
@@ -199,24 +193,30 @@ auto generateDraw(OriginFieldType, string field_name, int level = 0)()
 }
 
 /// generates cases for each data type nested in TaggedAlgebraic templated type
-auto generateCase()
+auto generateDraw(alias string RangeStringOf)()
 {
-	return q{
-		import taggedalgebraic : get;
-        import std.range : ElementType;
-        import std.traits : FieldTypeTuple, FieldNameTuple;
-        
-        alias Kind = typeof(_range[i].kind);
-        alias U = ElementType!(typeof(_range)).Union;
-        foreach(j, FieldName; FieldNameTuple!U)
+	return "
+    import std.range : isInputRange;
+    static assert (isInputRange!(typeof(" ~ RangeStringOf ~ ")));
+    foreach(ref e; " ~ RangeStringOf ~ ")
+    {
+        final switch(e.kind)
         {
-            enum TypeName = FieldTypeTuple!U[j].stringof;
-            mixin("
-                case Kind." ~ FieldName ~ ":
-                    alias T = typeof(U." ~ FieldName ~ ");
-                    mixin (generateDraw!(T, \"_range[i].get!(T)\", 1));
-                break;
-            ");
+    		import taggedalgebraic : get;
+            import std.traits : FieldTypeTuple, FieldNameTuple;
+            
+            alias Kind = typeof(e.kind);
+            alias U = typeof(e).Union;
+            foreach(j, FieldName; FieldNameTuple!U)
+            {
+                enum TypeName = FieldTypeTuple!U[j].stringof;
+                mixin(\"
+                    case Kind.\" ~ FieldName ~ \":
+                        alias T = typeof(U.\" ~ FieldName ~ \");
+                        mixin (generateDraw!(T, \\\"e.get!(T)\\\", 1));
+                    break;
+                \");
+            }
         }
-    };
+    }";
 }
