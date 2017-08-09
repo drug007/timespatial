@@ -85,70 +85,71 @@ class RenderableData(DataSet) : IRenderableData
     auto addDataSet(ref DataSet dataset, VertexProvider vp)
     {
         data ~= dataset;
-        aux ~= Auxillary(dataset.header.no, [vp]);
-        updateBoundingBox(box, dataset.header.box);
+        aux ~= Auxillary(/*dataset.header.no*/0, [vp]);
+        //updateBoundingBox(box, dataset.header.box);
     }
 
     long[] getTimestamps()
     {
-        import std.algorithm: sort, uniq;
-        import std.array: array;
+        //import std.algorithm: sort, uniq;
+        //import std.array: array;
 
-        long[] times;
-        foreach(e; data)
-            times ~= e.idx[].map!(a=>a.timestamp).array;
-        return times.sort().uniq().array;
+        //long[] times;
+        //foreach(e; data)
+        //    times ~= e.idx[].map!(a=>a.timestamp).array;
+        //return times.sort().uniq().array;
+        return null;
     }
 
     /// Устанавливает временное окно, доступными становятся только
     /// данные внутри этого окна
     void setTimeWindow(long min, long max)
     {
-        import std.algorithm: find;
-        import std.array: back, empty, front;
-        import std.range: enumerate, lockstep;
-        import vertex_provider: VertexSlice;
+        //import std.algorithm: find;
+        //import std.array: back, empty, front;
+        //import std.range: enumerate, lockstep;
+        //import vertex_provider: VertexSlice;
 
-        foreach(ref d, a; lockstep(data, aux))
-        {
-            // важным инвариантом является отсортированность данных по временным отметкам
-            // поэтому данные, попавшие во временное окно представляют собой также упорядоченную
-            // последовательность без пропусков
-            auto filtered = d.idx[].enumerate(0).find!((a,b)=>a.value.timestamp >= b)(min);
-            uint start, length;
-            if (filtered.empty)
-            {
-                // there is no any element with bigger than / equal to the minimal one, so
-                // the window is empty
-                start = 0;
-                length = 0;
-            }
-            else
-            {
-                // start is equal to the index of first element that is bigger or equal to the minimal element
-                start = filtered.front.index;
+        //foreach(ref d, a; lockstep(data, aux))
+        //{
+        //    // важным инвариантом является отсортированность данных по временным отметкам
+        //    // поэтому данные, попавшие во временное окно представляют собой также упорядоченную
+        //    // последовательность без пропусков
+        //    auto filtered = d.idx[].enumerate(0).find!((a,b)=>a.value.timestamp >= b)(min);
+        //    uint start, length;
+        //    if (filtered.empty)
+        //    {
+        //        // there is no any element with bigger than / equal to the minimal one, so
+        //        // the window is empty
+        //        start = 0;
+        //        length = 0;
+        //    }
+        //    else
+        //    {
+        //        // start is equal to the index of first element that is bigger or equal to the minimal element
+        //        start = filtered.front.index;
             
-                filtered = d.idx[].enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
-                if(!filtered.empty)
-                    // start+length is equal to index of first element that is bigger or equal to the maximal one
-                    length = filtered.front.index - start;
-                else
-                    // нет элемента больше/равного максимальному, значит
-                    // start+length должны равнятся индексу последнего элемента
-                    // if there is no element bigger or equal to the maximal element
-                    // then start+length = the last element index
-                    length = cast(uint) d.idx[].length - 1 - start;
-            }
+        //        filtered = d.idx[].enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
+        //        if(!filtered.empty)
+        //            // start+length is equal to index of first element that is bigger or equal to the maximal one
+        //            length = filtered.front.index - start;
+        //        else
+        //            // нет элемента больше/равного максимальному, значит
+        //            // start+length должны равнятся индексу последнего элемента
+        //            // if there is no element bigger or equal to the maximal element
+        //            // then start+length = the last element index
+        //            length = cast(uint) d.idx[].length - 1 - start;
+        //    }
 
-            foreach(vp; a.vp)
-            {
-                foreach(ref slice; vp.currSlices)
-                {
-                    slice.start  = start;
-                    slice.length = length;
-                }
-            }
-        }
+        //    foreach(vp; a.vp)
+        //    {
+        //        foreach(ref slice; vp.currSlices)
+        //        {
+        //            slice.start  = start;
+        //            slice.length = length;
+        //        }
+        //    }
+        //}
     }
 
     /// Ограничивает размер срезов не больше заданного

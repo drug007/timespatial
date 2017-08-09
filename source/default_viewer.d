@@ -274,9 +274,25 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         {
             import std.range : inputRangeObject, indexed;
 
-            auto r = inputRangeObject(indexed(*data, dataset_index[]));
-            auto vp = makeVertexProvider(r, clr);
-            rd.addDataSet(r, vp);
+import std.algorithm : each;
+import std.variant : visit, Algebraic;
+import tests : Node, Id;
+import std.stdio;
+//writeln("dataset_index: ", dataset_index[]);
+
+            void visitChilds(Algebraic!(size_t, Node*) n)
+            {
+                n.visit!((size_t i)   => write(i, " "),
+                         (Node* node) { (*node)[].each!visitChilds; writeln; }
+                );
+            }
+
+            dataset_index[].each!visitChilds;
+
+
+            //auto r = inputRangeObject(indexed(*data, dataset_index[]));
+            //auto vp = makeVertexProvider(r, clr);
+            //rd.addDataSet(r, vp);
 
         //    //addDataSetLayout(dl, dataset);
 
