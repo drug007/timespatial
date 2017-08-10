@@ -224,6 +224,11 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         import std.variant : visit, Algebraic;
         import tests : Node, Id, Leaf;
 
+        auto r = (*data_index)[];
+        alias R = typeof(r);
+        auto dl = new DataLayout!R("test", r);
+        data_layout ~= dl;
+
         Id curr_id;
         ubyte nesting_level;
         RenderableData!(DataSet) rd;
@@ -249,9 +254,6 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                     auto vp = makeVertexProvider(dataset, clr);
                     rd.addDataSet(dataset, vp);
 
-                    auto dl = new DataLayout!DataSet("test", dataset);
-                    data_layout ~= dl;
-                    
                     updateBoundingBox(box, rd.box);
                     foreach(a; rd.aux)
                         setVertexProvider(a.vp);

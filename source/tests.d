@@ -129,6 +129,12 @@ struct Node
 			import std.array : empty;
 			return range.empty();
 		}
+
+		@property
+		size_t length()
+		{
+			return range.length;
+		}
 	}
 
 	auto opSlice()
