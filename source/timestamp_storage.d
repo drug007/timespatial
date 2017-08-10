@@ -59,7 +59,7 @@ struct TimestampStorage
 
     auto setIndex(long idx)
     {        
-        assert(idx >= 0);
+        assert(_timestamp.length && idx >= 0);
         if(_timestamp.length)
             assert(idx < _timestamp.length);
         _idx = idx;

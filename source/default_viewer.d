@@ -47,6 +47,9 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         timestamp_storage_finish = TimestampStorage((long[]).init);
                 
         onMaxPointChange = () {
+            if (timestamp_storage_start.length == 0 || timestamp_storage_finish.length == 0)
+                return;
+
             assert(timestamp_storage_start.current <= timestamp_storage_finish.current, text(timestamp_storage_start.current, " ", timestamp_storage_finish.current));
             foreach(ref e; renderable_data)
             {
@@ -56,6 +59,9 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         };
 
         onCurrentTimestampChange = () {
+            if (timestamp_storage_start.length == 0 || timestamp_storage_finish.length == 0)
+                return;
+
             assert(timestamp_storage_start.current <= timestamp_storage_finish.current, text(timestamp_storage_start.current, " ", timestamp_storage_finish.current));
             foreach(ref e; renderable_data)
             {
@@ -140,22 +146,30 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 if (jv["start_timestamp_idx"].type == JSON_TYPE.INTEGER)
                     timestamp_idx = jv["start_timestamp_idx"].integer;
 
-                auto max_idx = timestamp_storage_start.length-1;
-                if (timestamp_idx > max_idx)
-                    timestamp_idx = 0;
-                timestamp_storage_start.setIndex(timestamp_idx);
+                size_t max_idx;
+                if (timestamp_storage_start.length)
+                {
+                    max_idx = timestamp_storage_start.length-1;
+                    if (timestamp_idx > max_idx)
+                        timestamp_idx = 0;
+                    timestamp_storage_start.setIndex(timestamp_idx);
+                }
 
                 // finish time
                 if (jv["finish_timestamp_idx"].type == JSON_TYPE.INTEGER)
                     timestamp_idx = jv["finish_timestamp_idx"].integer;
                 else
                     timestamp_idx = 0;
-                if (timestamp_idx > max_idx)
-                    timestamp_idx = 0;
-                timestamp_storage_finish.setIndex(timestamp_idx);
 
-                if (jv["max_point"].type == JSON_TYPE.INTEGER)
-                    max_point_counts = cast(int) jv["max_point"].integer;
+                if (timestamp_storage_start.length)
+                {
+                    if (timestamp_idx > max_idx)
+                        timestamp_idx = 0;
+                    timestamp_storage_finish.setIndex(timestamp_idx);
+
+                    if (jv["max_point"].type == JSON_TYPE.INTEGER)
+                        max_point_counts = cast(int) jv["max_point"].integer;
+                }
 
                 onMaxPointChange();
             }
@@ -371,6 +385,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             }
             import std.datetime: convert;
             enum minimalTimeWindowWidth = 1.convert!("minutes", "hnsecs");
+            static unknown_time = "Неизвестно\0";
             with(timestamp_storage_start)
             {
                 int curr_idx = cast(int) currIndex;
@@ -389,15 +404,15 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 }
                 igText("Min time");
                 igSameLine();
-                igText(timeByIndex(min).timeToStringz);
+                igText(timestamp_storage_start.length ? timeByIndex(min).timeToStringz : unknown_time.ptr);
                 igSameLine();
                 igText("Current time");
                 igSameLine();
-                igText(current.timeToStringz);
+                igText(timestamp_storage_start.length ? current.timeToStringz : unknown_time.ptr);
                 igSameLine();
                 igText("Max time");
                 igSameLine();
-                igText(timeByIndex(max).timeToStringz);
+                igText(timestamp_storage_start.length ? timeByIndex(max).timeToStringz : unknown_time.ptr);
             }
             with(timestamp_storage_finish)
             {
@@ -417,15 +432,15 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 }
                 igText("Min time");
                 igSameLine();
-                igText(timeByIndex(min).timeToStringz);
+                igText(timestamp_storage_finish.length ? timeByIndex(min).timeToStringz : unknown_time.ptr);
                 igSameLine();
                 igText("Current time");
                 igSameLine();
-                igText(current.timeToStringz);
+                igText(timestamp_storage_finish.length ? current.timeToStringz : unknown_time.ptr);
                 igSameLine();
                 igText("Max time");
                 igSameLine();
-                igText(timeByIndex(max).timeToStringz);
+                igText(timestamp_storage_finish.length ? timeByIndex(max).timeToStringz : unknown_time.ptr);
 
                 igText("Box: (%f, %f)(%f, %f)", box.min.x, box.max.x, box.min.y, box.max.y);
                 igText("Mouse coords x=%d y=%d", mouse_x, mouse_y);
