@@ -13,6 +13,12 @@ struct DataElement
     float x, y, z;
     @("Timestamp")
     long timestamp;
+    @property
+    position()
+    {
+        import gfm.math : vec3f;
+        return vec3f(x, y, z);
+    }
 
     this(uint no, ref const(Data) data)
     {

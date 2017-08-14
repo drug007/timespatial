@@ -254,7 +254,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 foreach(ref e; dataset)
                 {
                     import msgpack: pack;
-                    pointsRtree.addPoint(e.no, vec3f(e.x, e.y, e.z), e.ref_id.pack);
+                    pointsRtree.addPoint(e.no, e.position, e.ref_id.pack);
                 }
             }
             

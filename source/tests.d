@@ -32,6 +32,14 @@ struct Data
     @("Timestamp")
     long timestamp;
     State state;
+
+    @property
+    position()
+    {
+    	import gfm.math : vec3f;
+    	
+    	return vec3f(x, y, z);
+    }
 }
 
 struct Bar
