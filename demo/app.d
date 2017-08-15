@@ -238,7 +238,7 @@ int main(string[] args)
     version(Windows)
         DerelictImgui.load("cimgui.dll");
     else
-        DerelictImgui.load("DerelictImgui/cimgui/cimgui/cimgui.so");
+        DerelictImgui.load("DerelictImgui/cimgui/cimgui/cimgui.so", "/usr/local/lib/cimgui.so", "/usr/lib/x86_64-linux-gnu/cimgui.so");
 
     int width = 1800;
     int height = 768;
