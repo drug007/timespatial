@@ -1,4 +1,4 @@
 import reggae;
-alias main = dubDefaultTarget!(Flags("-g -debug"));
-alias ut = dubConfigurationTarget!(ExeName("ut"), Configuration("unittest"));
+alias main = dubDefaultTarget!(CompilerFlags("-g -debug"));
+alias ut = dubConfigurationTarget!(Configuration("unittest"));
 mixin build!(main, ut);
