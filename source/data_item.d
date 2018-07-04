@@ -246,7 +246,8 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                                         mixin("di[idx] = new DataItem!Type(value." ~ FieldName ~ ");");
                                 }
                             }
-                            else static assert(0, "Type '" ~ Type.stringof ~ "' is not supported");
+                            else
+                            	pragma(msg, "Type '" ~ Type.stringof ~ "' is not supported");
                         }
                     }
                 }
