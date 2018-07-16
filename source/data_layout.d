@@ -40,7 +40,7 @@ class DataLayout : IDataLayout
 	{
 		import derelict.imgui.imgui;
 
-		igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
+		igSetNextWindowSize(ImVec2(400,600), ImGuiCond_FirstUseEver);
 		igBegin(_title.ptr, &_uncollapsed);
 		version(widget_clipping_enabled)
 		{

@@ -1,6 +1,6 @@
 module imgui_helpers;
 
-import derelict.imgui.imgui;
+public import derelict.imgui.imgui;
 import gfm.opengl: GLuint, GLint;
 import gfm.sdl2: SDL_Event, SDL2Window; 
 
@@ -137,14 +137,14 @@ private extern(C) nothrow void renderDrawLists(ImDrawData* data)
     glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 
-private extern(C) nothrow const(char)* getClipboardText()
+private extern(C) nothrow const(char)* getClipboardText(void* user_data)
 {
 	import gfm.sdl2: SDL_GetClipboardText;
 
     return SDL_GetClipboardText();
 }
 
-private extern(C) nothrow void setClipboardText(const(char)* text)
+private extern(C) nothrow void setClipboardText(void* user_data, const(char)* text)
 {
     import gfm.sdl2: SDL_SetClipboardText;
 	
