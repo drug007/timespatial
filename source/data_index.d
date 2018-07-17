@@ -387,8 +387,13 @@ struct DataIndex(DataRange_, DataSourceHeader, DataSetHeader, DataElement, alias
         this.data = data;
     }
 
-    auto opApply(int delegate(ref Key k, ref Value v) dg)
+    auto opApply(int delegate(ref const(Key) k, ref Value v) dg)
     {
-        return didx.opApply(dg);
+        foreach(ref e; didx.byKeyValue)
+        {
+            auto result = dg(e.key, e.value);
+            if (result) return result;
+        }
+        return 0;
     }
 }

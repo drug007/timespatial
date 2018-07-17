@@ -187,7 +187,7 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                 {
                     foreach(idx, FieldName; Args)
                     {
-                        mixin("enum protection = __traits(getProtection, AggregateType." ~ FieldName ~ ");");
+                        mixin("enum protection = __traits(getProtection, T." ~ FieldName ~ ");");
                         static if (protection == "public")
                         {
                             import std.traits : PointerTarget;

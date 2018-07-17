@@ -197,6 +197,7 @@ mixin template ProcessElement()
     void processElement(U)(ref U e)
     {
         import taggedalgebraic : hasType;
+        import data_index : create;
         import tests : Data;
         
         if(e.value.hasType!(Data*))
@@ -205,7 +206,7 @@ mixin template ProcessElement()
             if (!idx.containsKey(e.value.id.source))
             {
                 auto datasource_header = DataSourceHeader(e.value.id.source);
-                datasource = allocator.make!DataSource(datasource_header);
+                datasource = allocator.create!DataSource(datasource_header);
                 idx[e.value.id.source] = datasource;
             }
             else
@@ -216,7 +217,7 @@ mixin template ProcessElement()
             if(!datasource.containsKey(e.value.id.no))
             {
                 auto dataset_header = DataSetHeader(e.value.id.no);
-                dataset = allocator.make!DataSet(dataset_header);
+                dataset = allocator.create!DataSet(dataset_header);
                 datasource.idx[e.value.id.no] = dataset;
             }
             else
