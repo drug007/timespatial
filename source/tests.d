@@ -1,47 +1,45 @@
 module tests;
 
-import std.meta : AliasSeq;
 import taggedalgebraic : TaggedAlgebraic;
-import color_table : ColorTable;
 
 struct Id
 {
 	alias Source = uint;
 	alias No = uint;
-    Source source;
-    No no;
+	Source source;
+	No no;
 
-    int opCmp(ref const(Id) other) const pure @nogc @safe nothrow
-    {
-    	if(source < other.source)
-    		return -1;
-    	if(source > other.source)
-    		return 1;
-    	if(no < other.no)
-    		return -1;
-    	if(no > other.no)
-    		return 1;
-    	return 0;
-    }
+	int opCmp(ref const(Id) other) const pure @nogc @safe nothrow
+	{
+		if(source < other.source)
+			return -1;
+		if(source > other.source)
+			return 1;
+		if(no < other.no)
+			return -1;
+		if(no > other.no)
+			return 1;
+		return 0;
+	}
 }
 
 struct Data
 {
-    enum State { Begin, Middle, End, }
+	enum State { Begin, Middle, End, }
 
-    Id id;
-    double x, y, z;
-    @("Timestamp")
-    long timestamp;
-    State state;
+	Id id;
+	double x, y, z;
+	@("Timestamp")
+	long timestamp;
+	State state;
 
-    @property
-    position()
-    {
-    	import gfm.math : vec3f;
-    	
-    	return vec3f(x, y, z);
-    }
+	@property
+	position()
+	{
+		import gfm.math : vec3f;
+		
+		return vec3f(x, y, z);
+	}
 }
 
 struct Bar
@@ -154,24 +152,6 @@ struct Node
 }
 
 alias HData = TaggedAlgebraic!(Base);
-
-auto indices()
-{
-	// Трассы
-	auto leaf1_126 = Leaf(126, [ 1, 3, 6, 8, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, ]);
-	auto leaf12_89 = Leaf( 89, [ 2, 5, 7, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, ]);
-	auto leaf29_1  = Leaf(  1, [ 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, ]);
-	auto leaf29_2  = Leaf(  2, [ 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114, 116, 118, ]);
-
-	// Источники с трассами
-	auto node1  = Node( 1, [leaf1_126]);
-	auto node12 = Node(12, [leaf12_89]);
-	auto node29 = Node(29, [leaf29_1, leaf29_2]);
-	// Набор источников
-	auto root = Node(0, [ node1, node12, node29, ]);
-
-	return root;
-}
 
 auto heterogeneousData()
 {
@@ -427,4 +407,188 @@ auto heterogeneousData()
 	   HData(&data[114]), 
 	   HData(&data[115])
 	];
+}
+
+struct Dataset
+{
+	alias Id = uint;
+	alias Element = Data*;
+
+	Id id;
+	import containers.dynamicarray: DynamicArray;
+	import std.experimental.allocator.mallocator : Mallocator;
+	DynamicArray!(Element, Mallocator) data;
+	alias data this;
+
+	this(Id id)
+	{
+		this.id = id;
+	}
+
+	auto opSlice()
+	{
+		return data[];
+	}
+
+	void toString(scope void delegate(const(char)[]) sink) const
+	{
+		import std.conv : text;
+		sink(typeof(this).stringof);
+		sink("(");
+		sink(typeof(id).stringof);
+		sink(": ");
+		sink(id.text);
+		sink(", ");
+		sink(typeof(data).stringof);
+		sink(": ");
+		sink(data[].text);
+		sink(")");
+	}
+}
+
+struct Source
+{
+	alias Id = uint;
+	alias Element = Dataset;
+
+	Id id;
+	import containers.treemap: TreeMap;
+	import std.experimental.allocator.mallocator: Mallocator;
+
+	TreeMap!(Id, Element*, Mallocator, "a<b", false) data;
+	alias data this;
+
+	this(Id id)
+	{
+		this.id = id;
+	}
+
+	auto opSlice()
+	{
+		return data[];
+	}
+
+	void toString(scope void delegate(const(char)[]) sink) const
+	{
+		import std.conv : text;
+		sink(typeof(this).stringof);
+		sink("(");
+		sink(typeof(id).stringof);
+		sink(": ");
+		sink(id.text);
+		sink(", ");
+		sink(typeof(data).stringof);
+		sink(": ");
+		sink(data[].text);
+		sink(")");
+	}
+}
+
+class Index
+{
+	import containers.treemap: TreeMap;
+	import std.experimental.allocator.mallocator: Mallocator;
+	import tests : Id;
+	
+	TreeMap!(Id.Source, Source*, Mallocator, "a<b", false) idx;
+	alias idx this;
+
+	this()
+	{
+		
+	}
+}
+
+auto indices(Allocator, Range)(ref Allocator allocator, Range range)
+{
+	import std.experimental.allocator : make;
+	import tests : HData, Data, Id;
+	import data_index : create;
+	import taggedalgebraic : get;
+	Index root = allocator.create!Index();
+
+	foreach(ref e; range)
+	{
+		final switch(e.kind) with(HData.Kind)
+		{
+			case Data_:
+				auto id = e.get!(Data*).id;
+				if (!root.containsKey(id.source))
+					root[id.source] = allocator.make!Source(id.source);
+				Source* source = root[id.source];
+				
+				if (!source.containsKey(id.no))
+					source.data[id.no] = allocator.make!Dataset(id.no);
+				Dataset* dataset = source.data[id.no];
+
+				dataset.data ~= e.get!(Data*);
+			break;
+			case Bar_:
+			break;
+			case Foo_:
+			break;
+		}
+	}
+
+	return root;
+}
+
+unittest
+{
+	import tests : Data, heterogeneousData;
+
+	import std.experimental.allocator.mallocator : Mallocator;
+	import std.experimental.allocator.building_blocks : Region, StatsCollector, Options;
+
+	alias BaseAllocator = Region!Mallocator;
+	alias Allocator = StatsCollector!(BaseAllocator, Options.all, Options.all);
+
+	auto allocator = Allocator(BaseAllocator(1024 * 1024));
+
+	auto root = indices(allocator, heterogeneousData());
+	
+	assert(root);
+	assert(root.length == 3);
+	
+	import std.conv : text;
+	import std.stdio;
+	foreach(ref source; root.idx[])
+	{
+		writeln("Source: ", source.id);
+		foreach(ref dataset; source.data[])
+		{
+			writeln("\tDataset: ", dataset.id);
+			foreach(e; dataset.data[])
+				writeln("\t\t", *e);
+		}
+	}
+
+	assert(!root.containsKey(999)); // не существует источника номер 999
+	assert(root.containsKey(29));   // источник номер 29 существует
+
+	auto src = root[29]; // выбираем источник номер 29
+	assert(src.length == 2);  // у источника номер 29 имеется два набора данных
+
+	assert(!src.containsKey(888)); // источник номер 29 не содержит набор данных с номером 888
+	assert(src.containsKey(1));    // источник номер 29 содержит набор данных с номером 1
+
+	// выбираем набор данных с номером 1
+	auto ds0 = src.data[1];   // один вариант выбора набора данных с номером 1
+	auto ds = src.opIndex(1); // другой вариант выбора набора данных с номером 1
+	assert(ds0 is ds);        // оба варианты дают один и тот же результат
+	assert(ds.length == 29);  // набор данных имеет 29 элементов
+
+	import std.algorithm: equal;
+	
+	auto arr = [Data(Id(29, 1), 3135.29, 668.659, 0, 10000000, Data.State.Begin), Data(Id(29, 1), 4860.4, -85.6403, 0, 110000000, Data.State.Middle), Data(Id(29, 1), 7485.96, -190.656, 0, 210000000, Data.State.Middle), Data(Id(29, 1), 9361.67, 2587.7, 0, 310000000, Data.State.Middle), Data(Id(29, 1), 10817.4, 2053.81, 0, 410000000, Data.State.Middle), Data(Id(29, 1), 12390.7, 2317.39, 0, 510000000, Data.State.Middle), Data(Id(29, 1), 15186.9, 4456.81, 0, 610000000, Data.State.Middle), Data(Id(29, 1), 15811, 4352.42, 0, 710000000, Data.State.Middle), Data(Id(29, 1), 18040.1, 4411.44, 0, 810000000, Data.State.Middle), Data(Id(29, 1), 20886.9, 4700.86, 0, 910000000, Data.State.Middle), Data(Id(29, 1), 22232.5, 6572.29, 0, 1010000000, Data.State.Middle), Data(Id(29, 1), 23841.5, 7520, 0, 1110000000, Data.State.Middle), Data(Id(29,1), 25883.6, 8127.31, 0, 1210000000, Data.State.Middle), Data(Id(29, 1), 27827, 9057.05, 0, 1310000000, Data.State.Middle), Data(Id(29, 1), 29128.5, 9154.44, 0, 1410000000, Data.State.Middle), Data(Id(29, 1), 31602.9, 9282.4, 0, 1510000000, Data.State.Middle), Data(Id(29, 1), 33973.6, 8615.77, 0, 1610000000, Data.State.Middle), Data(Id(29, 1), 37100.9, 8723.32, 0, 1710000000, Data.State.Middle), Data(Id(29, 1), 38716.1, 8272.56, 0, 1810000000, Data.State.Middle), Data(Id(29, 1), 40968.5, 6778.36, 0, 1910000000, Data.State.Middle), Data(Id(29, 1), 41736.1, 6818.2, 0, 2010000000, Data.State.Middle), Data(Id(29, 1), 44605.6, 6152.04, 0, 2110000000, Data.State.Middle), Data(Id(29, 1), 46346.3, 5509.49, 0, 2210000000, Data.State.Middle), Data(Id(29, 1), 47749.2, 4449.36, 0, 2310000000, Data.State.Middle), Data(Id(29,1), 50347.4, 3547.09, 0, 2410000000, Data.State.Middle), Data(Id(29, 1), 52208.5, 2735.65, 0, 2510000000, Data.State.Middle), Data(Id(29, 1), 54349.9, 2661.61, 0, 2610000000, Data.State.Middle), Data(Id(29, 1), 57004.1, 2121.54, 0, 2710000000, Data.State.Middle)];
+	
+	// сравниваем эталон и результат за исключением последнего элемента
+	assert(ds.data[0..$-1].equal!"*a==b"(arr));
+	assert(ds.data[].length == arr.length+1);
+
+	// проверяем последний элемент (из-за double.nan делаем проверку отдельно)
+	auto last = Data(Id(29, 1), double.nan, double.nan, double.nan, 2810000000, Data.State.End);
+	assert(ds.data[$-1].id == last.id);
+	assert(ds.data[$-1].timestamp == last.timestamp);
+	assert(ds.data[$-1].state == last.state);
 }
