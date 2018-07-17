@@ -57,11 +57,6 @@ struct Index(K, V)
     }
 
     alias idx this;
-
-    int opApply(int delegate(ref Key k, ref Value v) dg)
-    {
-        return idx.opApply(dg);
-    }
 }
 
 @nogc

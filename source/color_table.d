@@ -1,7 +1,7 @@
 module color_table;
 
 import std.experimental.color.hsx : HSL;
-import std.experimental.color.rgb : RGBAf32;
+import std.experimental.color : RGBAf32;
 import std.random : uniform;
 import std.math : fmod;
 

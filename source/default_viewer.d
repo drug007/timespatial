@@ -80,7 +80,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
         {
             // benchmarking of data index creating
-            import std.datetime : StopWatch;
+            import std.datetime.stopwatch : StopWatch;
             StopWatch sw;
             sw.start();
 
@@ -88,12 +88,12 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
             sw.stop();
             import std.stdio : writefln;
-            writefln("Data adding took %s ms", sw.peek().msecs);
+            writefln("Data adding took %s ms", sw.peek.total!"msecs");
         }
 
         {
             // benchmarking of data index creating
-            import std.datetime : StopWatch;
+            import std.datetime.stopwatch : StopWatch;
             StopWatch sw;
             sw.start();
 
@@ -101,7 +101,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
             sw.stop();
             import std.stdio : writefln;
-            writefln("Non visual data generating took %s ms", sw.peek().msecs);
+            writefln("Non visual data generating took %s ms", sw.peek().total!"msecs");
         }
 
         about_closing = false;
@@ -236,22 +236,22 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         auto dl = new DataLayout("test");
         data_layout ~= dl;
         
-        foreach(ref source_no, ref datasource; *data_index)
+        foreach(ref datasource; data_index.byKeyValue)
         {
             auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            dl.addGroup!Dummy(*dummy, text(source_no, "\0"));
+            dl.addGroup!Dummy(*dummy, text(datasource.key, "\0"));
 
             // for each source create correspondence RenderableData
-            auto rd = new RenderableData!(DataSet)(source_no);
-            auto clr = color_table(source_no);
-            foreach(ref dataset_no, ref dataset; datasource)
+            auto rd = new RenderableData!(DataSet)(datasource.key);
+            auto clr = color_table(datasource.key);
+            foreach(ref dataset; datasource.value.byKeyValue)
             {
-                auto vp = makeVertexProvider(dataset, clr);
-                rd.addDataSet(dataset, vp);
+                auto vp = makeVertexProvider(dataset.value, clr);
+                rd.addDataSet(dataset.value, vp);
 
-                addDataSetLayout(dl, dataset);
+                addDataSetLayout(dl, dataset.value);
 
-                foreach(ref e; dataset)
+                foreach(ref e; dataset.value)
                 {
                     import msgpack: pack;
                     pointsRtree.addPoint(e.no, e.position, e.ref_id.pack);
@@ -358,8 +358,8 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             // Главное глобальное окно для перехвата пользовательского ввода вне других окон
             // (т.е. весь пользовательских ввод, который не попал в другие окна, будет обработан
             // данным окном)
-            igSetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            igSetNextWindowSize(ImVec2(width,height), ImGuiSetCond_FirstUseEver);
+            igSetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+            igSetNextWindowSize(ImVec2(width,height), ImGuiCond_FirstUseEver);
             // Окно без заголовка, неизменяемое, неперемещаемое, без настроек и не выносится на передний 
             // план если получает фокус ввода
             auto flags = ImGuiWindowFlags_NoTitleBar 
@@ -375,7 +375,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
             igEnd();
             igPopStyleColor(1);
 
-            igSetNextWindowSize(ImVec2(400,600), ImGuiSetCond_FirstUseEver);
+            igSetNextWindowSize(ImVec2(400,600), ImGuiCond_FirstUseEver);
             igBegin("Settings", &show_settings);
             const old_value = max_point_counts;
             igSliderInt("Max point counts", &max_point_counts, 1, 32);
@@ -510,7 +510,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 const Amount = min(renderable_data.length, Count);
                 bool changed = false;
 
-                igSetNextWindowSize(ImVec2(width/10, height/3), ImGuiSetCond_FirstUseEver);
+                igSetNextWindowSize(ImVec2(width/10, height/3), ImGuiCond_FirstUseEver);
                 igBegin("Visibility", null);
                 
                 foreach(uint n; 0..Amount)
@@ -579,8 +579,8 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 igEnd();
 
                 auto wh = height * 0.025;
-                igSetNextWindowPos(ImVec2(0, height - wh), ImGuiSetCond_FirstUseEver);
-                igSetNextWindowSize(ImVec2(width, wh), ImGuiSetCond_FirstUseEver);
+                igSetNextWindowPos(ImVec2(0, height - wh), ImGuiCond_FirstUseEver);
+                igSetNextWindowSize(ImVec2(width, wh), ImGuiCond_FirstUseEver);
                 // Окно без заголовка, неизменяемое, неперемещаемое и без настроек
                 flags = ImGuiWindowFlags_NoTitleBar 
                     | ImGuiWindowFlags_NoResize 
@@ -811,13 +811,14 @@ protected:
 
             foreach(i; 0..n)
             {
+                import std.datetime.stopwatch : StopWatch;
                 StopWatch sw;
 
                 sw.start();
                 auto point_id = pickPoint(vec2f(uniform(0, width), uniform(0, height)));
                 sw.stop();
 
-                auto t = sw.peek().nsecs/1000_000.;
+                auto t = sw.peek().total!"nsecs"/1000_000.;
                 timings.put(t);
             }
 

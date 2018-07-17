@@ -1,8 +1,8 @@
 module tests;
 
-import std.typecons: AliasSeq;
-import taggedalgebraic: TaggedAlgebraic;
-import color_table: ColorTable;
+import std.meta : AliasSeq;
+import taggedalgebraic : TaggedAlgebraic;
+import color_table : ColorTable;
 
 struct Id
 {
