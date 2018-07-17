@@ -48,81 +48,81 @@ class GuiImpl(D, Index) : DefaultViewer!(D, Index)
         ]);
     }
 
-//    //override void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset)
-//    //{
-//    //    import std.conv : text;
-//    //    import data_item : BaseDataItem, DataItem, timeToString;
+   override void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset)
+   {
+      import std.conv : text;
+      import data_item : BaseDataItem, DataItem, timeToString;
 
-//    //    static class CustomDataItem : BaseDataItem
-//    //    {
-//    //        string header;
-//    //        BaseDataItem[] di;
+      static class CustomDataItem : BaseDataItem
+      {
+          string header;
+          BaseDataItem[] di;
 
-//    //        override bool draw()
-//    //        {
-//    //            import derelict.imgui.imgui: igTreeNodePtr, igText, igIndent, igUnindent, igTreePop;
+          override bool draw()
+          {
+              import derelict.imgui.imgui: igTreeNodePtr, igText, igIndent, igUnindent, igTreePop;
 
-//    //            auto r = igTreeNodePtr(cast(void*)this, header.ptr, null);
-//    //            if(r)
-//    //            {
-//    //                igIndent();
-//    //                foreach(e; di)
-//    //                {
-//    //                    assert(e);
-//    //                    e.draw();
-//    //                }
-//    //                igUnindent();
+              auto r = igTreeNodePtr(cast(void*)this, header.ptr, null);
+              if(r)
+              {
+                  igIndent();
+                  foreach(e; di)
+                  {
+                      assert(e);
+                      e.draw();
+                  }
+                  igUnindent();
 
-//    //                igTreePop();
-//    //            }
-//    //            return r;
-//    //        }
-//    //    }
+                  igTreePop();
+              }
+              return r;
+          }
+      }
 
-//    //    auto cdi = new CustomDataItem();
-//    //    cdi.header = text(dataset.header.no, "\0");
-//    //    foreach(ref e; dataset)
-//    //        cdi.di ~= new DataItem!DataElement(e, e.timestamp.timeToString);
+      auto cdi = new CustomDataItem();
+      cdi.header = text(dataset.header.no, "\0");
+      foreach(ref e; dataset)
+          cdi.di ~= new DataItem!DataElement(e, e.timestamp.timeToString);
 
-//    //    dl.addItemRaw!CustomDataItem(cdi);
-//    //}
-//};
+      dl.addItemRaw!CustomDataItem(cdi);
+   }
+}
 
-//mixin template ProcessElement()
-//{
-//    void processElement(U)(ref U e)
-//    {
-//        import taggedalgebraic : hasType;
-//        import tests : Data;
+mixin template ProcessElement()
+{
+   void processElement(U)(ref U e)
+   {
+       import taggedalgebraic : hasType;
+       import tests : Data;
         
-//        if(e.value.hasType!(Data*))
-//        {
-//            DataSource datasource;
-//            if (!idx.containsKey(e.value.id.source))
-//            {
-//                auto datasource_header = DataSourceHeader(e.value.id.source);
-//                datasource = allocator.make!DataSource(datasource_header);
-//                idx[e.value.id.source] = datasource;
-//            }
-//            else
-//            {
-//                datasource = idx[e.value.id.source];
-//            }
-//            DataSet dataset;
-//            if(!datasource.containsKey(e.value.id.no))
-//            {
-//                auto dataset_header = DataSetHeader(e.value.id.no);
-//                dataset = allocator.make!DataSet(dataset_header);
-//                datasource.idx[e.value.id.no] = dataset;
-//            }
-//            else
-//            {
-//                dataset = datasource.idx[e.value.id.no];
-//            }
-//            auto de = DataElement(e.index, e.value);
-//            dataset.insert(de);
-//        }
-//    }
+       if(e.value.hasType!(Data*))
+       {
+           DataSource datasource;
+           if (!idx.containsKey(e.value.id.source))
+           {
+               auto datasource_header = DataSourceHeader(e.value.id.source);
+               datasource = allocator.make!DataSource(datasource_header);
+               idx[e.value.id.source] = datasource;
+           }
+           else
+           {
+               datasource = idx[e.value.id.source];
+           }
+           DataSet dataset;
+           if(!datasource.containsKey(e.value.id.no))
+           {
+               auto dataset_header = DataSetHeader(e.value.id.no);
+               dataset = allocator.make!DataSet(dataset_header);
+               datasource.idx[e.value.id.no] = dataset;
+           }
+           else
+           {
+               dataset = datasource.idx[e.value.id.no];
+           }
+           auto de = DataElement(e.index, e.value);
+           dataset.insert(de);
+       }
+   }
 }
 
 import std.traits : ReturnType;
@@ -145,7 +145,7 @@ int main(string[] args)
 
     auto hdata = heterogeneousData();
     auto data_index = indices();
-    auto gui = new Gui(width, height, "Test gui", hdata, data_index, ColorTable([0, 1, 12, 29]), Gui.FullScreen.yes);
+    auto gui = new Gui(width, height, "Test gui", hdata, data_index, ColorTable([0, 1, 12, 29]), Gui.FullScreen.no);
     gui.run();
     gui.close();
     destroy(gui);
