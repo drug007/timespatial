@@ -47,12 +47,6 @@ public:
     }
 }
 
-template isFieldPublic(AggregateType, alias string FieldName)
-{
-    mixin("enum s = __traits(getProtection, AggregateType." ~ FieldName ~ ");");
-    enum isFieldPublic = (s == "public") ? true : false;
-}
-
 // Определяет способ вывода на экран
 // по умолчанию
 // как время
@@ -193,7 +187,8 @@ class DataItem(TT, alias Kind kind = Kind.Regular) : BaseDataItem
                 {
                     foreach(idx, FieldName; Args)
                     {
-                        static if(isFieldPublic!(T, FieldName))
+                        mixin("enum protection = __traits(getProtection, AggregateType." ~ FieldName ~ ");");
+                        static if (protection == "public")
                         {
                             import std.traits : PointerTarget;
                             /// return type of field
