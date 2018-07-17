@@ -226,20 +226,20 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
 
     abstract void makeDataLayout();
     abstract VertexProvider makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr);
-    abstract void addDataSetLayout(DataLayout dl, ref const(DataSet) dataset);
+    abstract void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset);
 
     void addData()
     {
         import vertex_provider: VertexProvider;
-        import data_layout: Dummy;
+        //import data_layout: Dummy;
 
-        auto dl = new DataLayout("test");
-        data_layout ~= dl;
+        //auto dl = new DataLayout("test");
+        //data_layout ~= dl;
         
         foreach(ref datasource; data_index.byKeyValue)
         {
-            auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            dl.addGroup!Dummy(*dummy, text(datasource.key, "\0"));
+            //auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
+            //dl.addGroup!Dummy(*dummy, text(datasource.key, "\0"));
 
             // for each source create correspondence RenderableData
             auto rd = new RenderableData!(DataSet)(datasource.key);
@@ -249,7 +249,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                 auto vp = makeVertexProvider(dataset.value, clr);
                 rd.addDataSet(dataset.value, vp);
 
-                addDataSetLayout(dl, dataset.value);
+                //addDataSetLayout(dl, dataset.value);
 
                 foreach(ref e; dataset.value)
                 {
@@ -315,7 +315,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         return pointsRtree.searchPoints(searchBox);
     }
 
-    void addDataLayout(DataLayout dl)
+    void addDataLayout(DataLayoutType)(DataLayoutType dl)
     {
         data_layout ~= dl;
     }
