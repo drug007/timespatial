@@ -15,9 +15,11 @@ import rtree;
 
 class DefaultViewer(HData, HDataIndex) : BaseViewer
 {
+    import std.range : Indexed;
+
     enum settingsFilename = "settings.json";
 
-    alias DataSet = HDataIndex.DataSet;
+    alias DataSet = Indexed!(HData, size_t[]);
     alias Color = typeof(color_table(0));
 
     this(int width, int height, string title, ref HData data, ref HDataIndex data_index, ColorTable color_table, FullScreen fullscreen = FullScreen.no)
@@ -223,50 +225,80 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
     }
 
     abstract void makeDataLayout();
-    abstract VertexProvider makeVertexProvider(ref const(DataSet) dataset, ref const(Color) clr);
-    abstract void addDataSetLayout(DataLayoutType)(DataLayoutType dl, ref const(DataSet) dataset);
+    abstract VertexProvider makeVertexProvider(ref DataSet dataset, ref const(Color) clr);
 
     void addData()
     {
+        import std.array : array;
+        import std.algorithm : map;
+        import std.range : iota;
         import vertex_provider: VertexProvider;
-        //import data_layout: Dummy;
 
-        //auto dl = new DataLayout("test");
-        //data_layout ~= dl;
-        
-        foreach(ref datasource; data_index.byKeyValue)
+        import std.algorithm : each;
+        import std.variant : visit, Algebraic;
+        import tests : Node, Id, Leaf;
+
+        Id curr_id;
+        ubyte nesting_level;
+        RenderableData!(DataSet) rd;
+
+        void visitChilds(Algebraic!(Leaf*, Node*) n)
         {
-            //auto dummy = new Dummy(); // делаем пустышку, но пустышка должна иметь уникальный адрес, поэтому на куче, не на стеке
-            //dl.addGroup!Dummy(*dummy, text(datasource.key, "\0"));
-
-            // for each source create correspondence RenderableData
-            auto rd = new RenderableData!(DataSet)(datasource.key);
-            auto clr = color_table(datasource.key);
-            foreach(ref dataset; datasource.value.byKeyValue)
-            {
-                auto vp = makeVertexProvider(dataset.value, clr);
-                rd.addDataSet(dataset.value, vp);
-
-                //addDataSetLayout(dl, dataset.value);
-
-                foreach(ref e; dataset.value)
+            n.visit!(
+                (Leaf* leaf)
                 {
-                    import msgpack: pack;
-                    pointsRtree.addPoint(e.no, e.position, e.ref_id.pack);
-                }
-            }
-            
-            auto ts = rd.getTimestamps();
-            timestamp_storage_start.addTimestamps(ts);
-            timestamp_storage_finish.addTimestamps(ts);
+                    curr_id.no = cast(uint) leaf.no;
+                    auto dataset = DataSet(*data, leaf.indices);
 
-            updateBoundingBox(box, rd.box);
+                    size_t idx;
+                    foreach(ref e; dataset)
+                    {
+                        import msgpack: pack;
+                        auto ref_no = dataset.physicalIndex(idx);
+                        pointsRtree.addPoint(ref_no, vec3f(e.x, e.y, e.z), ref_no.pack);
+                        idx++;
+                    }
 
-            foreach(a; rd.aux)
-                setVertexProvider(a.vp);
+                    auto clr = color_table(curr_id.source);
+                    auto vp = makeVertexProvider(dataset, clr);
+                    rd.addDataSet(dataset, vp);
 
-            renderable_data ~= rd;
+                    updateBoundingBox(box, rd.box);
+                    foreach(a; rd.aux)
+                        setVertexProvider(a.vp);
+                },
+                (Node* node)
+                { 
+                    if (nesting_level == 0)
+                    {
+                        curr_id.source = cast(uint) node.no;
+                        if (rd)
+                            renderable_data ~= rd;
+                        rd = new RenderableData!(DataSet)(curr_id.source);
+                    }
+                    else
+                        curr_id.no = cast(uint) node.no;
+                    nesting_level++;
+                    (*node)[].each!visitChilds;
+                    nesting_level--;
+                },
+            );
         }
+
+        (*data_index)[].each!visitChilds;
+
+        if (rd)
+            renderable_data ~= rd;
+
+        import data_layout : generateGettingTimestamp;
+        mixin ("auto ts = " ~ generateGettingTimestamp!"(*data)");
+
+        import std.array : array;
+        auto tsa = ts.array;
+
+        timestamp_storage_start.addTimestamps(tsa);
+        timestamp_storage_finish.addTimestamps(tsa);
+
         onCurrentTimestampChange();
     }
 
@@ -675,7 +707,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
         return pickPoint(vec2f(mx, my))
                     .map!((a) {
                         auto id = unpack!uint(a.payload);
-                        return (*data)[id].value;
+                        return (*data)[id];
         });
     }
 

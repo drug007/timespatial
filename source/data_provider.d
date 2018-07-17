@@ -46,7 +46,6 @@ ref box3f updateBoundingBox(ref box3f one, ref const(vec3f) another)
 
 interface IRenderableData
 {
-    long[] getTimestamps();
     void setTimeWindow(long min, long max);
     void setMaxCount(long count);
     Auxillary[] getAuxillary();
@@ -85,19 +84,8 @@ class RenderableData(DataSet) : IRenderableData
     auto addDataSet(ref DataSet dataset, VertexProvider vp)
     {
         data ~= dataset;
-        aux ~= Auxillary(dataset.header.no, [vp]);
-        updateBoundingBox(box, dataset.header.box);
-    }
-
-    long[] getTimestamps()
-    {
-        import std.algorithm: sort, uniq;
-        import std.array: array;
-
-        long[] times;
-        foreach(e; data)
-            times ~= e.idx[].map!(a=>a.timestamp).array;
-        return times.sort().uniq().array;
+        aux ~= Auxillary(/*dataset.header.no*/0, [vp]);
+        //updateBoundingBox(box, dataset.header.box);
     }
 
     /// Устанавливает временное окно, доступными становятся только
@@ -114,7 +102,7 @@ class RenderableData(DataSet) : IRenderableData
             // важным инвариантом является отсортированность данных по временным отметкам
             // поэтому данные, попавшие во временное окно представляют собой также упорядоченную
             // последовательность без пропусков
-            auto filtered = d.idx[].enumerate(0).find!((a,b)=>a.value.timestamp >= b)(min);
+            auto filtered = d.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(min);
             uint start, length;
             if (filtered.empty)
             {
@@ -128,7 +116,7 @@ class RenderableData(DataSet) : IRenderableData
                 // start is equal to the index of first element that is bigger or equal to the minimal element
                 start = filtered.front.index;
             
-                filtered = d.idx[].enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
+                filtered = d.enumerate(0).find!((a,b)=>a.value.timestamp >= b)(max);
                 if(!filtered.empty)
                     // start+length is equal to index of first element that is bigger or equal to the maximal one
                     length = filtered.front.index - start;
@@ -137,7 +125,7 @@ class RenderableData(DataSet) : IRenderableData
                     // start+length должны равнятся индексу последнего элемента
                     // if there is no element bigger or equal to the maximal element
                     // then start+length = the last element index
-                    length = cast(uint) d.idx[].length - 1 - start;
+                    length = cast(uint) d.length - 1 - start;
             }
 
             foreach(vp; a.vp)
