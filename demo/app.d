@@ -34,12 +34,9 @@ class GuiImpl(D, Index) : DefaultViewer!(D, Index)
         import gfm.math : vec3f, vec4f;
         import vertex_provider : Vertex, VertexSlice;
 
-        auto vertices = dataset.map!((a)
-            {
-                return Vertex(
-            vec3f(a.x, a.y, a.z),              // position
-            vec4f(clr.r, clr.g, clr.b, clr.a), // color
-        ); }).array;
+        auto vertices = dataset.map!(
+            a=>Vertex(a.position, vec4f(clr.r, clr.g, clr.b, clr.a))
+        ).array;
 
         auto uniq_id = genVertexProviderHandle();
         return new VertexProvider(uniq_id, vertices, [

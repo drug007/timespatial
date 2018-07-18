@@ -502,7 +502,6 @@ class Index
 auto indices(Allocator, Range)(ref Allocator allocator, Range range)
 {
 	import std.experimental.allocator : make;
-	import tests : HData, Data, Id;
 	import data_index : create;
 	import taggedalgebraic : get;
 	Index root = allocator.create!Index();

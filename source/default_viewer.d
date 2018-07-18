@@ -246,7 +246,7 @@ class DefaultViewer(HData, HDataIndex) : BaseViewer
                     {
                         import msgpack: pack;
                         auto ref_no = dataset.physicalIndex(idx);
-                        pointsRtree.addPoint(ref_no, vec3f(el.x, el.y, el.z), ref_no.pack);
+                        pointsRtree.addPoint(ref_no, el.position, ref_no.pack);
                         idx++;
                     }
                 }
