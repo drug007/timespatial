@@ -412,7 +412,7 @@ auto heterogeneousData()
 struct Dataset
 {
 	alias Id = uint;
-	alias Element = Data*;
+	alias Element = size_t;
 
 	Id id;
 	import containers.dynamicarray: DynamicArray;
@@ -507,7 +507,7 @@ auto indices(Allocator, Range)(ref Allocator allocator, Range range)
 	import taggedalgebraic : get;
 	Index root = allocator.create!Index();
 
-	foreach(ref e; range)
+	foreach(uint no, ref e; range)
 	{
 		final switch(e.kind) with(HData.Kind)
 		{
@@ -521,7 +521,7 @@ auto indices(Allocator, Range)(ref Allocator allocator, Range range)
 					source.data[id.no] = allocator.make!Dataset(id.no);
 				Dataset* dataset = source.data[id.no];
 
-				dataset.data ~= e.get!(Data*);
+				dataset.data ~= no;
 			break;
 			case Bar_:
 			break;
@@ -545,7 +545,8 @@ unittest
 
 	auto allocator = Allocator(BaseAllocator(1024 * 1024));
 
-	auto root = indices(allocator, heterogeneousData());
+	auto hdata = heterogeneousData();
+	auto root = indices(allocator, hdata);
 	
 	assert(root);
 	assert(root.length == 3);
@@ -559,7 +560,7 @@ unittest
 		{
 			writeln("\tDataset: ", dataset.id);
 			foreach(e; dataset.data[])
-				writeln("\t\t", *e);
+				writeln("\t\t", hdata[e]);
 		}
 	}
 
@@ -579,16 +580,5 @@ unittest
 	assert(ds.length == 29);  // набор данных имеет 29 элементов
 
 	import std.algorithm: equal;
-	
-	auto arr = [Data(Id(29, 1), 3135.29, 668.659, 0, 10000000, Data.State.Begin), Data(Id(29, 1), 4860.4, -85.6403, 0, 110000000, Data.State.Middle), Data(Id(29, 1), 7485.96, -190.656, 0, 210000000, Data.State.Middle), Data(Id(29, 1), 9361.67, 2587.7, 0, 310000000, Data.State.Middle), Data(Id(29, 1), 10817.4, 2053.81, 0, 410000000, Data.State.Middle), Data(Id(29, 1), 12390.7, 2317.39, 0, 510000000, Data.State.Middle), Data(Id(29, 1), 15186.9, 4456.81, 0, 610000000, Data.State.Middle), Data(Id(29, 1), 15811, 4352.42, 0, 710000000, Data.State.Middle), Data(Id(29, 1), 18040.1, 4411.44, 0, 810000000, Data.State.Middle), Data(Id(29, 1), 20886.9, 4700.86, 0, 910000000, Data.State.Middle), Data(Id(29, 1), 22232.5, 6572.29, 0, 1010000000, Data.State.Middle), Data(Id(29, 1), 23841.5, 7520, 0, 1110000000, Data.State.Middle), Data(Id(29,1), 25883.6, 8127.31, 0, 1210000000, Data.State.Middle), Data(Id(29, 1), 27827, 9057.05, 0, 1310000000, Data.State.Middle), Data(Id(29, 1), 29128.5, 9154.44, 0, 1410000000, Data.State.Middle), Data(Id(29, 1), 31602.9, 9282.4, 0, 1510000000, Data.State.Middle), Data(Id(29, 1), 33973.6, 8615.77, 0, 1610000000, Data.State.Middle), Data(Id(29, 1), 37100.9, 8723.32, 0, 1710000000, Data.State.Middle), Data(Id(29, 1), 38716.1, 8272.56, 0, 1810000000, Data.State.Middle), Data(Id(29, 1), 40968.5, 6778.36, 0, 1910000000, Data.State.Middle), Data(Id(29, 1), 41736.1, 6818.2, 0, 2010000000, Data.State.Middle), Data(Id(29, 1), 44605.6, 6152.04, 0, 2110000000, Data.State.Middle), Data(Id(29, 1), 46346.3, 5509.49, 0, 2210000000, Data.State.Middle), Data(Id(29, 1), 47749.2, 4449.36, 0, 2310000000, Data.State.Middle), Data(Id(29,1), 50347.4, 3547.09, 0, 2410000000, Data.State.Middle), Data(Id(29, 1), 52208.5, 2735.65, 0, 2510000000, Data.State.Middle), Data(Id(29, 1), 54349.9, 2661.61, 0, 2610000000, Data.State.Middle), Data(Id(29, 1), 57004.1, 2121.54, 0, 2710000000, Data.State.Middle)];
-	
-	// сравниваем эталон и результат за исключением последнего элемента
-	assert(ds.data[0..$-1].equal!"*a==b"(arr));
-	assert(ds.data[].length == arr.length+1);
-
-	// проверяем последний элемент (из-за double.nan делаем проверку отдельно)
-	auto last = Data(Id(29, 1), double.nan, double.nan, double.nan, 2810000000, Data.State.End);
-	assert(ds.data[$-1].id == last.id);
-	assert(ds.data[$-1].timestamp == last.timestamp);
-	assert(ds.data[$-1].state == last.state);
+	assert(ds.data[].equal([61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117]));
 }
