@@ -126,9 +126,10 @@ mixin template ProcessElement()
 }
 
 import std.traits : ReturnType;
+import tests : Index;
 
 alias DataType = ReturnType!heterogeneousData;
-alias IndexType = ReturnType!indices;
+alias IndexType = Index;
 alias Gui = GuiImpl!(DataType, IndexType);
 
 int main(string[] args)
@@ -144,7 +145,8 @@ int main(string[] args)
     int height = 768;
 
     auto hdata = heterogeneousData();
-    auto data_index = indices();
+    import std.experimental.allocator : theAllocator;
+    auto data_index = indices(theAllocator, hdata);
     auto gui = new Gui(width, height, "Test gui", hdata, data_index, ColorTable([0, 1, 12, 29]), Gui.FullScreen.no);
     gui.run();
     gui.close();
